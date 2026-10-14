@@ -18,6 +18,7 @@ inheritSkills: false
 2. 为**每个有实现内容的目录**产出一份 `DESIGN.md`（模板字段：职责描述、能力范围-做/不做、对外接口/约定、依赖约束、模块级验收要点、变更记录）；纯结构目录并入父级文档，不单独成文。
 3. 将 `AC.md` 总验收清单拆分为模块级验收要点，写入对应 DESIGN.md，保证模块 AC 之和覆盖总 AC。
 4. 横切规范引用 ARCHITECTURE.md，DESIGN.md 只写本模块差异点。
+5. 需求变更时：依据"模块级 AC ↔ 总 AC 双向追溯"圈定受影响的 DESIGN.md 集合，输出影响清单（需重设计目录/不受影响目录），仅重设计受影响目录（流程见 skill references/process-details.md 主题C）。
 
 ## 硬性约束
 - 文档树路径必须与代码目录路径同构（如 `src/core/parser/` → `docs/design/src/core/parser/DESIGN.md`，或按仓库约定存放于就近目录）。

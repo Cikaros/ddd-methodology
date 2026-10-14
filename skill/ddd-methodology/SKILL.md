@@ -5,7 +5,7 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 
 # 分治式设计驱动开发（DDD-Methodology）
 
-完整规范见 `references/spec.md`，文档模板见 `references/templates.md`，缺陷路由详见 `references/defect-routing.md`。**调度任何子代理前必须先通读这三份文件。**
+完整规范见 `references/spec.md`，文档模板见 `references/templates.md`，缺陷路由详见 `references/defect-routing.md`，多模块并行/需求变更/二次开发细则/质量门禁详见 `references/process-details.md`（v1.4 增补）。**调度任何子代理前必须先通读这些文件。**
 
 ## 核心流程
 
@@ -50,8 +50,16 @@ subagent({ workflow: "<skill目录>/workflows/ddd-workflow.js", args: { root: "<
 
 **限制**：脚本只自动推进固定阶段；缺陷四级路由（A/B/C/D）与定级仲裁必须回到本会话（根会话）处理，测试报告返回后按 `references/defect-routing.md` 调度修复轮次。默认仍优先使用手工逐段调度。
 
+## 质量门禁（阶段门）
+
+每阶段交付物必须通过退出条件才可进入下一阶段（G1需求→G2验收→G3架构→G4分解设计→G5实现/测试规划→G6交付，详见 references/process-details.md）。未过门禁一律退回上一代理；并行实现时各接缝需过子门才可集成收口。
+
+## 需求变更（开发中途）
+
+用户变更需求 → 登记变更单 → 代理1/0 版本化修订（追加变更记录，不覆盖历史）→ 代理3 依据 AC 双向追溯圈定受影响 DESIGN.md 集合 → 仅对受影响接缝重设计/重实现/回归。详见 references/process-details.md。
+
 ## 子代理调度要求
 
 - 每次派发必须在任务描述中给出：目标、仓库/cwd、权限边界（可改哪些文件）、相关文档的**具体路径**（就近加载）、验收标准、期望输出报告格式、停止条件。
 - 实现者任务必须列明其负责目录的 `DESIGN.md` 路径，禁止要求整卷加载所有设计文档。
-- 多模块实现可并行派发（每个 writer 负责互斥的目录，一个目录只有一个 writer）。
+- 多模块实现可并行派发（按互斥接缝划分，一个接缝一个 writer，通过 DESIGN.md 声明的接口耦合；集成由根会话统一收口后触发集成测试。详见 references/process-details.md）。
