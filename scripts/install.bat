@@ -36,6 +36,13 @@ xcopy "%ROOT%skill\ddd-methodology" "%SKILL_DST%\" /e /i /q >nul
 if errorlevel 1 ( echo [错误] Skill 安装失败 & exit /b 1 )
 echo [完成] Skill  -^> %SKILL_DST%
 
+rem 1.5 安装 Workflow 脚本（供 subagent workflow 调用的可选加速档）
+if exist "%ROOT%workflows" (
+    if not exist "%SKILL_DST%\workflows" mkdir "%SKILL_DST%\workflows"
+    xcopy "%ROOT%workflows" "%SKILL_DST%\workflows\" /e /i /q >nul
+    echo [完成] Workflow -^> %SKILL_DST%\workflows
+)
+
 rem 2. 安装 7 个 agent 定义
 if not exist "%AGENT_DST%" mkdir "%AGENT_DST%"
 set N=0

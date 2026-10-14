@@ -52,6 +52,13 @@ mkdir -p "$(dirname "$SKILL_DST")"
 cp -r "$ROOT/skill/ddd-methodology" "$SKILL_DST"
 echo "[完成] Skill  -> $SKILL_DST"
 
+# 1.5 安装 Workflow 脚本（作为 skill 包的一部分，供 subagent workflow 调用）
+if [[ -d "$ROOT/workflows" ]]; then
+    mkdir -p "$SKILL_DST/workflows"
+    cp -r "$ROOT"/workflows/* "$SKILL_DST/workflows/"
+    echo "[完成] Workflow -> $SKILL_DST/workflows"
+fi
+
 # 2. 安装 agent 定义
 mkdir -p "$AGENT_DST"
 count=0

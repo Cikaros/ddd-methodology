@@ -15,6 +15,8 @@ ddd-methodology/
 │       ├── spec.md               # 规范（随 skill 分发）
 │       ├── templates.md          # 文档模板库
 │       └── defect-routing.md     # 缺陷四级路由细则
+├── workflows/
+│   └── ddd-workflow.js           # 可选加速档：固定阶段自动编排脚本
 ├── agents/                       # 7 个子代理定义（pi-subagents 格式）
 │   ├── ddd-requirements.md       # 代理1 需求采集者
 │   ├── ddd-acceptance.md         # 代理0 验收标准制定者
