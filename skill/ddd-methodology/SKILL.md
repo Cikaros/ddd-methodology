@@ -39,10 +39,14 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 当用户明确要求"一键跑完全链"且需求已充分明确时，可使用 workflow 脚本自动推进固定阶段：
 
 ```
-subagent({ workflow: "<skill目录>/../../ddd-workflow.js", cwd: "<项目根>" })
+subagent({ workflow: "<skill目录>/workflows/ddd-workflow.js", args: { root: "<项目根绝对路径>" } })
 ```
 
-脚本路径：安装后位于 `~/.pi/agent/skills/ddd-methodology/` 同级的 workflows 目录不可用时，从仓库 `workflows/ddd-workflow.js` 获取；脚本会依次执行 需求采集→AC→架构→分解设计→（实现∥测试规划）→测试执行。
+安装后脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`；若本机未安装（仅在仓库内开发调试），则使用仓库内 `workflows/ddd-workflow.js` 相对路径。
+
+**前置条件**：7 个 `ddd-*` 代理必须已安装，否则运行时校验失败。脚本通过 `args.root` 接收项目根绝对路径（沙箱中无 process 全局，args 是唯一数据通道）。
+
+脚本会依次执行 需求采集→AC→架构→分解设计→（实现∥测试规划）→测试执行。
 
 **限制**：脚本只自动推进固定阶段；缺陷四级路由（A/B/C/D）与定级仲裁必须回到本会话（根会话）处理，测试报告返回后按 `references/defect-routing.md` 调度修复轮次。默认仍优先使用手工逐段调度。
 
