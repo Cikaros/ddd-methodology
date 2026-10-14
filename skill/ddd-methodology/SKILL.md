@@ -5,7 +5,7 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 
 # 分治式设计驱动开发（DDD-Methodology）
 
-完整规范见 `references/spec.md`，文档模板见 `references/templates.md`，缺陷路由详见 `references/defect-routing.md`，多模块并行/需求变更/二次开发细则/质量门禁详见 `references/process-details.md`（v1.4 增补）。**调度任何子代理前必须先通读这些文件。**
+完整规范见 `references/spec.md`，文档模板见 `references/templates.md`，缺陷路由详见 `references/defect-routing.md`，多模块并行/需求变更/二次开发细则/质量门禁详见 `references/process-details.md`。**调度任何子代理前必须先通读这些文件。**
 
 ## 核心流程
 
@@ -46,9 +46,9 @@ subagent({ workflow: "<skill目录>/workflows/ddd-workflow.js", args: { root: "<
 
 **前置条件**：7 个 `ddd-*` 代理必须已安装，否则运行时校验失败。脚本通过 `args.root` 接收项目根绝对路径（沙箱中无 process 全局，args 是唯一数据通道）。
 
-脚本会依次执行 需求采集→AC→架构→分解设计→（实现∥测试规划）→测试执行。
+脚本会依次执行 需求采集→AC→架构→分解设计→（实现∥测试规划）→测试执行；C/D 级缺陷自动派发修复并重测（最多 2 轮），A/B 级缺陷中断脚本返回本会话仲裁。
 
-**限制**：脚本只自动推进固定阶段；缺陷四级路由（A/B/C/D）与定级仲裁必须回到本会话（根会话）处理，测试报告返回后按 `references/defect-routing.md` 调度修复轮次。默认仍优先使用手工逐段调度。
+**限制**：A/B 级缺陷定级仲裁、超 2 轮未解的缺陷、以及需求变更受理必须回到本会话（根会话）处理，依据 `references/defect-routing.md` 调度。默认仍优先使用手工逐段调度。
 
 ## 质量门禁（阶段门）
 
