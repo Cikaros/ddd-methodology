@@ -1,5 +1,12 @@
 # 变更记录（CHANGELOG）
 
+## v1.9.2（2026-10-15）
+- **知识分阶段固定加载（机制保证，不依赖模型记忆）**：
+  - 子代理侧：共享知识切片 `knowledge/defect-routing.md` 新增，经代理 frontmatter `skills: ddd-defect-routing` 在派发时自动注入（tester/implementer/interface-reviewer 挂载）——上下文压缩不会丢失。
+  - 新增第 9 个代理 **ddd-arbiter（路由仲裁者）**：定级争议优先派发它仲裁（路由知识经 skills 自动注入），根会话仅做最终裁决/升级用户；三层递进：常规路由自动完成 → 争议派仲裁代理 → 根会话仅终裁。
+  - 根会话侧：SKILL.md 改为"流程内联加载标注"——每个流程步骤末尾标注本步需加载的知识切片，禁止整卷通读 references；根会话常驻收窄为 SKILL.md + spec.md。
+  - 安装/卸载清单扩为 9 个代理；spec.md 头部声明知识加载模式。
+
 ## v1.9.1（2026-10-15）可靠/效率/准确性优化（无新功能）
 
 ### 可靠性（reviewer/scout 双重排查）

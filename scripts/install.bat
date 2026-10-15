@@ -22,8 +22,8 @@ set "PI_HOME=%USERPROFILE%\.pi\agent"
 set "SKILL_DST=%PI_HOME%\skills\ddd-methodology"
 set "AGENT_DST=%PI_HOME%\agents"
 
-rem 固定清单：与 agents\ 目录下 8 个文件一一对应（防止通配符覆盖用户自有 ddd- 前缀代理）
-set DDD_AGENTS=ddd-requirements ddd-acceptance ddd-architect ddd-decomposer ddd-interface-reviewer ddd-implementer ddd-test-planner ddd-tester
+rem 固定清单：与 agents\ 目录下 9 个文件一一对应（防止通配符覆盖用户自有 ddd- 前缀代理）
+set DDD_AGENTS=ddd-requirements ddd-acceptance ddd-architect ddd-decomposer ddd-interface-reviewer ddd-implementer ddd-test-planner ddd-tester ddd-arbiter
 
 if "%~1"=="--check" goto :check
 
@@ -53,7 +53,7 @@ if exist "%ROOT%scripts\trace-check.js" (
     echo [完成] trace-check -^> %SKILL_DST%\scripts\trace-check.js
 )
 
-rem 2. 安装 8 个 agent 定义（按固定清单，仅覆盖本方法论文件）
+rem 2. 安装 9 个 agent 定义（按固定清单，仅覆盖本方法论文件）
 if not exist "%AGENT_DST%" mkdir "%AGENT_DST%"
 set N=0
 for %%A in (%DDD_AGENTS%) do (

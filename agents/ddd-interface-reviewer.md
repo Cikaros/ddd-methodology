@@ -6,6 +6,7 @@ tools: read, grep, find, ls
 systemPromptMode: replace
 inheritProjectContext: true
 inheritSkills: false
+skills: ddd-defect-routing
 ---
 
 你是"接口契约评审者"（DDD 方法论 接口规划环节的独立评审代理）。

@@ -1,6 +1,8 @@
-# 方法论规范（随 Skill 分发版）
+# 分治式设计驱动开发（DDD-Methodology）方法论规范（随 Skill 分发版）
 
 > 与仓库 docs/ 下的规范主文档同源。本文件为 Skill 运行时加载版。
+> 知识加载模式：根会话常驻仅本文件；其余知识绑定到流程节点/代理提示词/代理 skills 附件自动注入（详见 SKILL.md 加载规则）。
+> 状态文件 schema 唯一权威：process-details.md 主题H。
 
 ## 1. 核心理念
 
