@@ -62,8 +62,8 @@ function extractSectionRefs(text, sectionRe) {
   if (m && m[1]) return [...new Set(m[1].match(AC_RE) || [])];
   return null; // 未找到章节
 }
-// 锚定正则：标题后允许带括号/编号等后缀（如"## 模块级验收要点（v2）"），避免措辞微变即降级
-const SECTION_RE = /##\s*模块级验收要点[^\n]*([\s\S]*?)(?=\n## |$)/;
+// 锚定正则：章节标题允许带序号前缀（如"## 五、"）与括号后缀，避免措辞微变即降级
+const SECTION_RE = /##\s*(?:[一二三四五六七八九十\d]+[、.．]?\s*)?模块级验收要点[^\n]*([\s\S]*?)(?=\n## |$)/;
 
 const coveredByDesign = new Set(); // 被模块承接的总 AC
 const moduleACs = new Map();       // 模块文件 → 其引用的 AC
@@ -86,7 +86,7 @@ if (testFiles.length === 0) problems.push("docs/test/ 下未发现任何 TEST_PL
 const coveredByTests = new Set();
 for (const f of testFiles) {
   const text = read(f);
-  let refs = extractSectionRefs(text, /##\s*用例清单[^\n]*([\s\S]*?)(?=\n## |$)/);
+  let refs = extractSectionRefs(text, /##\s*(?:[一二三四五六七八九十\d]+[、.．]?\s*)?用例清单[^\n]*([\s\S]*?)(?=\n## |$)/);
   if (refs === null) {
     warnings.push(`${path.relative(root, f)} 未找到"## 用例清单"章节，已降级为全文提取（请补齐章节以保证准确性）`);
     refs = [...new Set(text.match(AC_RE) || [])];

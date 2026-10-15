@@ -1,5 +1,9 @@
 # 变更记录（CHANGELOG）
 
+## v1.10（2026-10-15）
+- **设计粒度规则（主题I，实战反馈）**：大体量同构业务场景的拆解——判定标准（同构场景 ≥3 或单一 DESIGN.md 超 200 行/10 契约）、两种拆解形态（分类文件 DESIGN.<场景>.md / 内部子目录 <场景>/DESIGN.md）、配套硬规则（父级只留共性契约+子场景索引表、代码镜像文档树、场景级 AC、G4.5 评审增项查巨石空壳反模式、变更影响按场景级最小圈定）。
+- ddd-decomposer 职责新增粒度判定；ddd-interface-reviewer 新增拆解均匀性检查；templates.md 新增子场景索引表模板；spec.md §7 索引补 H/I 两行。
+
 ## v1.9.2（2026-10-15）
 - **知识分阶段固定加载（机制保证，不依赖模型记忆）**：
   - 子代理侧：共享知识切片 `knowledge/defect-routing.md` 新增，经代理 frontmatter `skills: ddd-defect-routing` 在派发时自动注入（tester/implementer/interface-reviewer 挂载）——上下文压缩不会丢失。
