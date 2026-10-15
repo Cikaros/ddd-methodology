@@ -62,6 +62,13 @@ if [[ -d "$ROOT/workflows" ]]; then
     echo "[完成] Workflow -> $SKILL_DST/workflows/"
 fi
 
+# 1.6 安装追溯校验脚本（G2/G4/G5 门禁证据工具）
+if [[ -f "$ROOT/scripts/trace-check.js" ]]; then
+    mkdir -p "$SKILL_DST/scripts"
+    cp -f "$ROOT/scripts/trace-check.js" "$SKILL_DST/scripts/"
+    echo "[完成] trace-check -> $SKILL_DST/scripts/trace-check.js"
+fi
+
 # 2. 安装 7 个 agent 定义（按固定清单，仅覆盖本方法论文件）
 mkdir -p "$AGENT_DST"
 count=0

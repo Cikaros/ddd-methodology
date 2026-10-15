@@ -46,6 +46,13 @@ if exist "%ROOT%workflows" (
     echo [完成] Workflow -^> %SKILL_DST%\workflows\
 )
 
+rem 1.6 安装追溯校验脚本（G2/G4/G5 门禁证据工具）
+if exist "%ROOT%scripts\trace-check.js" (
+    if not exist "%SKILL_DST%\scripts" mkdir "%SKILL_DST%\scripts"
+    copy /y "%ROOT%scripts\trace-check.js" "%SKILL_DST%\scripts\" >nul
+    echo [完成] trace-check -^> %SKILL_DST%\scripts\trace-check.js
+)
+
 rem 2. 安装 7 个 agent 定义（按固定清单，仅覆盖本方法论文件）
 if not exist "%AGENT_DST%" mkdir "%AGENT_DST%"
 set N=0
