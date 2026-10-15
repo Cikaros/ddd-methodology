@@ -17,11 +17,12 @@ ddd-methodology/
 │       └── defect-routing.md     # 缺陷四级路由细则
 ├── workflows/
 │   └── ddd-workflow.js           # 可选加速档：固定阶段自动编排脚本（args.root 传项目根）
-├── agents/                       # 7 个子代理定义（pi-subagents 格式）
+├── agents/                       # 子代理定义（pi-subagents 格式）
 │   ├── ddd-requirements.md       # 代理1 需求采集者
 │   ├── ddd-acceptance.md         # 代理0 验收标准制定者
 │   ├── ddd-architect.md          # 代理2 架构师
 │   ├── ddd-decomposer.md         # 代理3 分解设计者
+│   ├── ddd-interface-reviewer.md # 接口契约评审者（G4.5 接口冻结门）
 │   ├── ddd-implementer.md        # 代理4 实现者
 │   ├── ddd-test-planner.md       # 代理5 测试规划者
 │   └── ddd-tester.md             # 代理6 测试执行者

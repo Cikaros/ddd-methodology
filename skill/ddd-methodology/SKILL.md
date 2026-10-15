@@ -8,13 +8,13 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 完整规范见 `references/spec.md`，文档模板见 `references/templates.md`，缺陷路由详见 `references/defect-routing.md`，多模块并行/需求变更/二次开发细则/质量门禁详见 `references/process-details.md`。**调度任何子代理前必须先通读这些文件。**
 
 ## 核心流程
-
 1. **代理1 需求采集（ddd-requirements）**：派发子代理采集细化需求并与用户确认对齐，产出 `REQUIREMENTS.md`（含项目类型判定：新建/二次开发）。未对齐前禁止进入下一步。
 2. **代理0 验收标准（ddd-acceptance）**：将需求转为可执行 AC（Given/When/Then），产出项目根 `AC.md`；模块级 AC 由代理3 分发到各 `DESIGN.md`。
 3. **代理2 架构师（ddd-architect)**：新建项目→定技术环境与目录规划；二次开发项目且缺少规范文档→先现状分析。产出 `ARCHITECTURE.md`（含横切规范）与目录规划。
-4. **代理3 分解设计（ddd-decomposer）**：为每个有实现内容的目录产出同构 `DESIGN.md`，分发模块级 AC。产出 `docs/design/` 文档树。
-5. **代理4 实现者（ddd-implementer）与 代理5 测试规划（ddd-test-planner）可并行**：实现者就近加载 DESIGN.md 实现（允许上溯父级/更高层文档）；测试规划者基于总 AC + 模块级 AC 产出同构 `docs/test/` 测试计划树。
-6. **代理6 测试执行（ddd-tester）**：按计划执行测试，失败项按四级路由定级处理。
+4. **代理3 分解设计（ddd-decomposer）**：为每个有实现内容的目录产出同构 `DESIGN.md`（含签名级接口契约），分发模块级 AC。产出 `docs/design/` 文档树。
+5. **接口冻结门 G4.5**：派发 ddd-interface-reviewer 独立交叉审查接口契约（能力覆盖/重复/缺口/依赖方向），根会话复核后冻结接口；冻结后接口为硬约束，修改接口 = B 级设计变更。
+6. **代理4 实现者（ddd-implementer）与 代理5 测试规划（ddd-test-planner）可并行**：实现者就近加载 DESIGN.md 实现并逐字匹配冻结接口（允许上溯父级/更高层文档）；测试规划者基于总 AC + 模块级 AC + **冻结接口** 产出同构 `docs/test/` 测试计划树（可直接含契约测试）。
+7. **代理6 测试执行（ddd-tester）**：按计划执行测试，失败项按四级路由定级处理。
 
 ## 根会话职责（你自己的职责）
 

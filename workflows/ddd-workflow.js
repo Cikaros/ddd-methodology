@@ -170,7 +170,14 @@ const stages = [
     runKey: "ddd-decomposer",
     label: "分解设计产出文档树",
     agent: "ddd-decomposer",
-    task: `读取 ${root}/ARCHITECTURE.md 与 ${root}/AC.md，产出 docs/design/ 目录同构设计文档树，分发模块级 AC。完成后附文档树清单。`,
+    task: `读取 ${root}/ARCHITECTURE.md 与 ${root}/AC.md，产出 docs/design/ 目录同构设计文档树（含签名级接口契约），分发模块级 AC。完成后附文档树清单。`,
+  },
+  {
+    key: "interface-review",
+    runKey: "ddd-interface-reviewer",
+    label: "接口契约独立评审",
+    agent: "ddd-interface-reviewer",
+    task: `只读评审 ${root}/docs/design/ 全部 DESIGN.md 的签名级接口契约：能力覆盖/模块间重复/缺口/依赖方向（对照 ARCHITECTURE.md 依赖约束）/契约质量。输出缺陷清单与结论（通过/有条件通过/不通过）。发现接口设计问题报告 B 级缺陷。`,
   },
 ];
 
@@ -185,7 +192,7 @@ const parallelStages = [
     key: "ddd-test-plan",
     label: "制定测试计划树",
     agent: "ddd-test-planner",
-    task: `基于 ${root}/AC.md 与 ${root}/docs/design/ 各 DESIGN.md 的模块级验收要点，产出 ${root}/docs/test/ 同构测试计划树（每用例含含超时的执行命令、风险级别、桩化说明、手动测试清单），附覆盖映射表（保证 trace-check 可通过）。`,
+    task: `基于 ${root}/AC.md 与 ${root}/docs/design/ 各 DESIGN.md 的模块级验收要点及**已冻结的签名级接口契约**，产出 ${root}/docs/test/ 同构测试计划树（每用例含含超时的执行命令、风险级别、桩化说明、手动测试清单；可基于冻结接口直接产出契约测试），附覆盖映射表（保证 trace-check 可通过）。`,
   },
 ];
 

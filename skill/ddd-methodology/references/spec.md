@@ -82,5 +82,6 @@
 | B | 多模块并行实现（互斥接缝/一接缝一writer/集成收口） | process-details.md 主题B |
 | C | 需求变更流程（变更单/版本化/影响圈定） | process-details.md 主题C |
 | D | 二次开发现状分析格式+检查清单 | process-details.md 主题D |
-| E | 质量门禁 G1–G6（含 G5 子门与 G5-INT） | process-details.md 主题E |
+| E | 质量门禁 G1–G6（含 G4.5 接口冻结门与 G5 子门、G5-INT） | process-details.md 主题E |
 | F | 测试阻塞防护（用例分级/桩化/超时/手动清单） | process-details.md 主题F |
+| G | 接口先行规划（签名级契约+独立评审+冻结门） | process-details.md 主题E-G4.5 |
