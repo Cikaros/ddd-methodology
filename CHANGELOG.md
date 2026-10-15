@@ -1,5 +1,30 @@
 # 变更记录（CHANGELOG）
 
+## v1.9.1（2026-10-15）可靠/效率/准确性优化（无新功能）
+
+### 可靠性（reviewer/scout 双重排查）
+- **P0 断点检查失败静默失效修复**：readResumeState 增加 __failed 检查并抛错，resume-check 失败不再被 String(obj) 吞成空数组静默当全新启动。
+- **P1 G4.5 门被加速档绕过修复**：接口评审报告新增机读行契约 `VERDICT: pass|conditional|fail`；workflow 解析结论，非 pass（含无机读行）一律中断返回根会话复核，不再直接进实现。
+- **P1 stateNote 作用域收敛**：只读代理（interface-reviewer）不再被注入写状态指令（原指示其写状态但无写工具，状态键永不落盘致每次续跑重复评审）。
+- **状态键漂移统一**：process-details 主题E 的 interface-frozen 修正为与脚本一致的 interface-review。
+- **状态 schema 正式化**：新增 process-details 主题H（.ddd-state.json 字段表+写入规则），SKILL.md/workflow 注释只留指针。
+
+### 一致性（scout 双源清单清理）
+- 代理计数 8 处口径统一为 8（SKILL description/前置条件/workflow 注释/4 个脚本注释/spec §2）。
+- spec.md §2 职责链补入接口评审代理与 G4.5 门；§3 编辑残留重复段删除。
+- SKILL.md 加速档阶段流补接口评审与 G5-INT 段；workflow 头注释同步。
+- defect-routing.md 路由矩阵登记 G4.5 接口评审缺陷来源。
+- decomposer 停止条件去除下游门纠缠；需求变更路径补冻结接口约束；implementer 补无静态类型语言的可操作口径与契约测试失败定级（C 自修/不可实现 B 上报）。
+- stageOrder 死变量改为阶段注册表 stageRegistry。
+
+### 准确性
+- extractDefects 否定白名单扩展（0 failed/0 defects 等通过性表述不再误报中断）。
+- trace-check 章节锚定正则放宽（标题允许后缀），templates.md 顶部加锚定保护注释。
+- interface-reviewer 结论分级补可操作判据（结构性问题→fail，仅瑕疵→conditional）。
+
+### 验证
+workflow 模拟沙箱 10 场景回归全绿（含 VERDICT 三态拦截/断点跳过/resume 失败抛错/白名单/C+D/B/超限）；trace-check 带后缀标题回归通过。
+
 ## v1.9（2026-10-15）
 - **接口先行规划（用户构思落地）**：
   - 分解设计（代理3）新增职责：将 DESIGN.md"对外接口/约定"升格为**签名级契约**（签名/参数/返回/错误语义/调用示例）。
