@@ -58,7 +58,7 @@ async function readResumeState() {
 function parseDoneStages(reportText) {
   const text = String(reportText || "");
   const done = [];
-  for (const m of text.matchAll(/DONE:\s*([a-z-]+)/gi)) done.push(m[1]);
+  for (const m of text.matchAll(/DONE:\s*([a-z0-9-]+)/gi)) done.push(m[1]);
   return done;
 }
 
