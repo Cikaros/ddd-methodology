@@ -77,6 +77,6 @@ set N=0
 for %%A in (%DDD_AGENTS%) do (
     if exist "%AGENT_DST%\%%A.md" set /a N+=1
 )
-echo   Agents   : !N! / 7 已安装
+echo   Agents   : !N! / 10 已安装
 if exist "%SKILL_DST%\workflows\ddd-workflow.js" ( echo   Workflow : 已安装 ) else ( echo   Workflow : 未安装 )
 exit /b 0
