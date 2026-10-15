@@ -57,7 +57,7 @@ subagent({ workflow: "<skill目录>/workflows/ddd-workflow.js", args: { root: "<
 
 安装后脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`；若本机未安装，即仅在仓库内开发调试，则使用仓库内 `workflows/ddd-workflow.js` 相对路径。
 
-**前置条件**：8 个 `ddd-*` 代理必须已安装，否则运行时校验失败。脚本通过 `args.root` 接收项目根绝对路径，沙箱中无 process 全局，args 是唯一数据通道。
+**前置条件**：10 个 `ddd-*` 代理必须已安装，否则运行时校验失败。脚本通过 `args.root` 接收项目根绝对路径，沙箱中无 process 全局，args 是唯一数据通道。
 
 脚本会依次执行 需求采集→AC→架构→分解设计，含签名级接口契约，→接口契约独立评审，G4.5，VERDICT 非 pass 中断，→实现与测试规划并行→G5-INT 集成收口→测试执行；C/D 级缺陷自动派发修复并重测，最多 2 轮，A/B 级缺陷中断脚本返回本会话仲裁。
 
