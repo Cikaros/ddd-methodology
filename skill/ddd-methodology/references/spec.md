@@ -2,7 +2,7 @@
 
 标题补充说明：本规范即 DDD-Methodology，为随 Skill 分发版。
 
-> 与仓库 docs/ 下的规范主文档同源。本文件为 Skill 运行时加载版。
+> 本文件为方法论规范的唯一权威源，Skill 运行时加载版。变更历史见仓库 CHANGELOG.md。
 > 知识加载模式：根会话常驻仅本文件；其余知识绑定到流程节点/代理提示词/代理 skills 附件自动注入，详见 SKILL.md 加载规则。
 > 状态文件 schema 唯一权威：process-details.md 主题H。
 

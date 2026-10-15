@@ -111,3 +111,6 @@ workflow 模拟沙箱 10 场景回归全绿（含 VERDICT 三态拦截/断点跳
 
 ## v1.0（2026-10-14）
 - 方法论规范最终版：决策点 1–9 全部确认（代理0 验收标准制定者、缺陷四级路由、DESIGN.md 模板字段、就近加载+上溯、横切规范集中、2 轮终止条件、实现形式为 Skill+agents+可选 workflow、DESIGN.md 粒度、二次开发现状分析仅限缺文档项目）。
+
+## 附记（v1.11 后）
+- 删除 docs/方法论规范-v1.0.md 历史快照及其目录，消除双源误导；规范唯一权威源为 skill/ddd-methodology/references/spec.md。

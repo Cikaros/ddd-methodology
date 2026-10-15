@@ -9,9 +9,8 @@
 
 ```
 ddd-methodology/
-├── docs/
-│   └── 方法论规范-v1.0.md        # 方法论最终版规范（git tag: v1.0）
-├── skill/ddd-methodology/        # pi Skill（安装后由根会话加载调度）
+├── CHANGELOG.md                  # 变更记录（v1.0 起）
+├── skill/ddd-methodology/        # pi Skill，规范唯一权威源为 references/spec.md
 │   ├── SKILL.md                  # 调度流程入口
 │   └── references/
 │       ├── spec.md               # 规范（随 skill 分发）
