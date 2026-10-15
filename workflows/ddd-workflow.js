@@ -41,54 +41,86 @@ const stateFile = `${root}/docs/.ddd-state.json`;
 const stageOrder = ["requirements", "acceptance", "architect", "decomposer", "implement-plan", "test-execute"];
 
 /**
- * 读取断点状态：派发一个只读任务让 ddd-tester? 不合适——
- * 使用 ddd-implementer 前置只读任务不合规。改用：由代理1 在启动时读状态文件并汇报。
- * 简化方案：启动阶段 0 由 ddd-requirements 读取状态文件，若存在且 resume=true 则报告已完成阶段。
+ * 读取断点状态：由代理1 执行只读检查。
+ * 契约：报告必须逐行输出机读行 "DONE: <stageKey>"（每个已完成阶段一行），
+ * 便于 parseDoneStages 可靠解析；JSON 损坏时输出 "STATE_CORRUPT" 并停止。
  */
 async function readResumeState() {
-  const r = await runs.run("ddd-resume-check", {
+  const r = await runStage("ddd-resume-check", {
     label: "读取断点状态",
     agent: "ddd-requirements",
-    task: `只读检查 ${stateFile}（断点状态文件）。若存在：读取 JSON，报告已完成阶段列表、缺陷摘要、最近已过门记录，然后停止（不写 REQUIREMENTS.md）；若不存在：报告"无状态文件，全新启动"。禁止修改任何文件。`,
+    task: `只读检查 ${stateFile}（断点状态文件，字段 schema：doneStages 数组 / lastStage / status）。
+规则：
+1. 若文件存在且 JSON 有效：对 doneStages 数组中每个阶段键，输出一行机读行 "DONE: <阶段键>"（格式严格为 DONE: 空格 阶段键，如 "DONE: architect"）；并简要报告缺陷摘要与最近已过门记录。然后停止，不写 REQUIREMENTS.md。
+2. 若文件存在但 JSON 损坏/不可解析：输出 "STATE_CORRUPT" 并停止，不得当全新启动处理。
+3. 若文件不存在：输出 "NO_STATE_FILE"，报告全新启动。
+禁止修改任何文件。`,
   });
-  return r; // 文本报告，由调用方（根会话）或本脚本关键字解析
+  return r;
 }
 
-// 从报告文本解析已完成阶段（兜底解析；规范上代理应输出结构化行 "DONE: <stage>"）
+// 从报告文本解析已完成阶段（依赖 readResumeState 契约输出的 "DONE: <stage>" 机读行）
 function parseDoneStages(reportText) {
   const text = String(reportText || "");
+  if (/STATE_CORRUPT/.test(text)) {
+    throw new Error("断点状态文件损坏（STATE_CORRUPT）：请人工检查 " + stateFile + " 后决定删除重跑或手工修复。");
+  }
+  if (/NO_STATE_FILE/.test(text)) return [];
   const done = [];
   for (const m of text.matchAll(/DONE:\s*([a-z0-9-]+)/gi)) done.push(m[1]);
   return done;
 }
 
-// 从报告文本解析缺陷级别（兜底；规范上报告含机读行 "DEFECTS: {...JSON...}"）
+// 从报告文本解析缺陷级别。
+// 优先机读行 "DEFECTS: {...}"；机读行存在但解析失败、或计数全 0 但散文含失败语义词 → 视为格式缺陷，抛错交根会话，不猜测。
 function extractDefects(reportText) {
   const text = String(reportText || "");
   const found = { A: 0, B: 0, C: 0, D: 0, unresolved: false };
-  // 优先机读段
   const mr = text.match(/DEFECTS:\s*(\{[\s\S]*?\})\s*(?:\n|$)/);
   if (mr) {
-    try {
-      const j = JSON.parse(mr[1]);
-      if (j && typeof j === "object") {
-        for (const k of ["A", "B", "C", "D"]) found[k] = Number(j[k]) || 0;
-        found.unresolved = j.unresolved === true || found.A + found.B + found.C + found.D > 0;
-        return found;
-      }
-    } catch (e) { /* 机读段损坏则兜底正则 */ }
+    let j = null;
+    try { j = JSON.parse(mr[1]); } catch (e) { j = null; }
+    if (!j || typeof j !== "object") {
+      throw new Error("测试报告机读行 DEFECTS JSON 损坏：按格式缺陷处理，请重新派发 ddd-tester 产出合规报告。");
+    }
+    for (const k of ["A", "B", "C", "D"]) found[k] = Number(j[k]) || 0;
+    const sum = found.A + found.B + found.C + found.D;
+    if (sum > 0) { found.unresolved = true; return found; }
+    // 计数全 0：核对散文（先剔除机读行，避免英文关键字干扰），若明确存在失败语义词则机读与散文矛盾 → 中断
+    const prose = text.replace(/DEFECTS:\s*\{[\s\S]*?\}\s*(?:\n|$)/g, "");
+    const failWord = /(未通过|未解决|存在失败|有失败|修复未果|FAIL(ED)?\b|defect\b)/i.test(prose) && !/失败项\s*[:：]?\s*(无|0)|FAILED\s*[:：]\s*0|回归未通过项已清零|无失败/.test(prose);
+    if (failWord) {
+      throw new Error("测试报告机读计数全 0 但正文存在失败表述，二者矛盾：按格式缺陷中断，请人工核对报告。");
+    }
+    found.unresolved = j.unresolved === true;
+    return found;
   }
-  const m = text.match(/判定级别\s*[:：]\s*([ABCD])/i);
-  if (m) found[m[1].toUpperCase()]++;
-  const all = text.match(/\b([ABCD])\s*(级|级缺陷|需求级|设计级|实现级|测试级)/g) || [];
-  for (const item of all) found[item[0].toUpperCase()]++;
-  found.unresolved = /未通过|未解决|失败|FAIL|defect/i.test(text);
-  return found;
+  // 无机读行：不猜测，按格式缺陷中断
+  throw new Error("测试报告缺少机读行 DEFECTS:{...}：按格式缺陷中断，请重新派发 ddd-tester 产出合规报告（含机读行）。",
+  );
 }
 
-// 状态更新指令：注入到每个阶段任务的末尾，要求代理完成后写状态文件
+// 状态更新指令：注入到阶段任务末尾。
+// 并行段竞写防护：仅实现者写状态（writer 唯一），测试规划者不写。
 function stateNote(stageKey) {
-  return `\n\n【状态记录】完成后更新 ${stateFile}：追加/合并 JSON 字段 {"lastStage":"${stageKey}","status":"done"}，并保留已有字段（如 doneStages 数组追加 "${stageKey}"）。文件不存在则创建并初始化 {"doneStages":["${stageKey}"],"lastStage":"${stageKey}"}。`;
+  return `\n\n【状态记录】完成后更新 ${stateFile}：追加/合并 JSON 字段 {"lastStage":"${stageKey}","status":"done"}，并保留已有字段（如 doneStages 数组追加 "${stageKey}"）。文件不存在则创建并初始化。`;
+}
+
+// 统一的阶段执行包装：失败时返回结构化结果而非裸抛，保 Fictional 阶段名/轮次/状态文件路径供根会话断点接管。
+async function runStage(key, params, meta) {
+  try {
+    return await runs.run(key, params);
+  } catch (e) {
+    return {
+      __failed: true,
+      status: "failed",
+      failedStage: (meta && meta.stage) || key,
+      round: (meta && meta.round) || null,
+      stateFile,
+      error: String((e && e.message) || e),
+      hint: "根会话可依据 stateFile 的 doneStages 断点接管：修复问题后重新启动 workflow，已完成阶段将自动跳过。",
+    };
+  }
 }
 
 function defectAction(level) {
@@ -175,31 +207,34 @@ for (const s of stages) {
   if (doneStages.includes(s.key)) {
     continue;
   }
-  await runs.run(s.runKey + "-" + s.key, {
+  const r = await runStage(s.runKey + "-" + s.key, {
     label: s.label,
     agent: s.agent,
     task: s.task + stateNote(s.key),
-  });
+  }, { stage: s.key });
+  if (r && r.__failed) return r;
 }
 
 // —— 并行段：实现与测试规划（均为产出类，无进程执行） ——
+// 竞写防护：仅实现者写状态文件（writer 唯一），测试规划者不写状态。
 if (!doneStages.includes("implement-plan")) {
   await runs.all(parallelStages.map(p => ({
     key: p.key,
     label: p.label,
     agent: p.agent,
-    task: p.task + stateNote("implement-plan"),
+    task: p.key === "ddd-implement" ? p.task + stateNote("implement-plan") : p.task,
   })));
 }
 
 // —— G5-INT 集成收口门（与手工档标准一致） ——
 // 并行实现多目录后，必须先做集成检查：构建通过 + 全量单测通过，才允许进入测试执行段
 if (!doneStages.includes("g5-int")) {
-  await runs.run("ddd-int-check", {
+  const r = await runStage("ddd-int-check", {
     label: "G5-INT 集成收口检查",
     agent: "ddd-implementer",
     task: `在项目根 ${root} 执行集成收口检查（G5-INT 门）：1) 全项目构建通过；2) 全量单元测试（仅自动用例，按 TEST_PLAN 执行命令）通过；3) 修复因多接缝合并产生的集成问题（仅实现级修改）。完成后更新 ${stateFile} 追加 "g5-int"。若发现设计级矛盾（集成暴露接口不匹配），停止并报告 B 级缺陷。`,
-  });
+  }, { stage: "g5-int" });
+  if (r && r.__failed) return r;
 }
 
 // —— 测试执行（单独串行段） + C/D 缺陷自动修复轮次 ——
@@ -209,11 +244,12 @@ let escalated = null;
 
 while (round <= maxFixRounds) {
   round += 1;
-  lastReport = await runs.run(finalStage.runKey + "-r" + round, {
+  lastReport = await runStage(finalStage.runKey + "-r" + round, {
     label: `${finalStage.label}（第${round}轮）`,
     agent: finalStage.agent,
-    task: finalStage.task(round),
-  });
+    task: finalStage.task(round) + (round === 1 ? `\n完成后更新 ${stateFile} 追加 "test-execute"。` : ""),
+  }, { stage: finalStage.key, round });
+  if (lastReport && lastReport.__failed) return lastReport;
 
   const defects = extractDefects(lastReport);
 
@@ -248,11 +284,12 @@ while (round <= maxFixRounds) {
   if (defects.D > 0) fixes.push(defectAction("D"));
   if (fixes.length === 1) {
     const f = fixes[0];
-    await runs.run(f.key + "-r" + round, {
+    const r = await runStage(f.key + "-r" + round, {
       label: f.label + `（第${round}轮）`,
       agent: f.agent,
       task: f.task,
-    });
+    }, { stage: f.key, round });
+    if (r && r.__failed) return r;
   } else if (fixes.length === 2) {
     await runs.all(fixes.map(f => ({
       key: f.key,

@@ -23,7 +23,14 @@ const warnings = [];
 // ---- 收集文件 ----
 function walk(dir, ext, out = []) {
   if (!fs.existsSync(dir)) return out;
-  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch (e) {
+    warnings.push(`目录不可读，已跳过：${dir}（${e.code || e.message}）`);
+    return out;
+  }
+  for (const e of entries) {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) walk(p, ext, out);
     else if (e.name.endsWith(ext)) out.push(p);
@@ -32,7 +39,8 @@ function walk(dir, ext, out = []) {
 }
 
 const read = (p) => (fs.existsSync(p) ? fs.readFileSync(p, "utf8") : "");
-const AC_RE = /\bAC-\d{3,}\b/g;
+const AC_RE = /\bAC-\d{3,}\b/g;      // 标准格式：三位及以上数字
+const AC_LOOSE_RE = /\bAC-\d{1,}\b/g; // 宽松格式：检测变体（AC-1、ac-001 等）
 
 // ---- 1. 总 AC ----
 const acFile = path.join(root, "AC.md");
@@ -43,28 +51,53 @@ if (!fs.existsSync(acFile)) {
 const totalACs = [...new Set(read(acFile).match(AC_RE) || [])];
 if (totalACs.length === 0) problems.push("AC.md 中未发现任何 AC-xxx 编号条目");
 
-// ---- 2. 模块级 AC（DESIGN.md） ----
+// ---- 2. 模块级 AC（DESIGN.md）——锚定章节提取，避免变更记录等散文提及导致假通过 ----
 const designDir = path.join(root, "docs", "design");
 const designFiles = fs.existsSync(designDir) ? walk(designDir, ".md") : [];
 if (designFiles.length === 0) problems.push("docs/design/ 下未发现任何 DESIGN.md（G4 门禁前置）");
 
+// 从 DESIGN.md 中仅提取"## 模块级验收要点"章节内的 AC 引用；若无该章节则告警并全文提取（降级）
+function extractSectionRefs(text, sectionRe) {
+  const m = text.match(sectionRe);
+  if (m && m[1]) return [...new Set(m[1].match(AC_RE) || [])];
+  return null; // 未找到章节
+}
+const SECTION_RE = /##\s*模块级验收要点([\s\S]*?)(?=\n## |$)/;
+
 const coveredByDesign = new Set(); // 被模块承接的总 AC
 const moduleACs = new Map();       // 模块文件 → 其引用的 AC
 for (const f of designFiles) {
-  const refs = [...new Set(read(f).match(AC_RE) || [])];
+  const text = read(f);
+  let refs = extractSectionRefs(text, SECTION_RE);
+  if (refs === null) {
+    warnings.push(`${path.relative(root, f)} 未找到"## 模块级验收要点"章节，已降级为全文提取（请补齐章节以保证准确性）`);
+    refs = [...new Set(text.match(AC_RE) || [])];
+  }
   moduleACs.set(path.relative(root, f), refs);
   refs.forEach((r) => coveredByDesign.add(r));
 }
 
-// ---- 3. 测试用例覆盖（TEST_PLAN.md） ----
+// ---- 3. 测试用例覆盖（TEST_PLAN.md）——锚定用例表 ----
 const testDir = path.join(root, "docs", "test");
 const testFiles = fs.existsSync(testDir) ? walk(testDir, ".md") : [];
 if (testFiles.length === 0) problems.push("docs/test/ 下未发现任何 TEST_PLAN.md（G5 门禁前置）");
 
 const coveredByTests = new Set();
 for (const f of testFiles) {
-  const refs = [...new Set(read(f).match(AC_RE) || [])];
+  const text = read(f);
+  let refs = extractSectionRefs(text, /##\s*用例清单([\s\S]*?)(?=\n## |$)/);
+  if (refs === null) {
+    warnings.push(`${path.relative(root, f)} 未找到"## 用例清单"章节，已降级为全文提取（请补齐章节以保证准确性）`);
+    refs = [...new Set(text.match(AC_RE) || [])];
+  }
   refs.forEach((r) => coveredByTests.add(r));
+}
+
+// 格式变体检查：宽松正则计数 > 标准正则计数 → 存在 AC-1/ac-001 类变体
+function variantCheck(text, label) {
+  const loose = (text.match(AC_LOOSE_RE) || []).length;
+  const std = (text.match(AC_RE) || []).length;
+  if (loose > std) warnings.push(`${label} 检测到非标准 AC 编号格式变体（如 AC-1/小写），请统一为 AC-XXX（三位数字），否则可能被静默漏计`);
 }
 
 // ---- 4. 校验 ----
@@ -88,6 +121,10 @@ if (!/\|?\s*需求编号|需求ID|对应需求/.test(read(acFile))) {
 if (designFiles.length > 0 && totalACs.length > 0 && coveredByDesign.size === 0) {
   warnings.push("DESIGN.md 存在但未引用任何 AC 编号，请检查验收要点章节格式");
 }
+
+// 格式变体扫描
+variantCheck(read(acFile), "AC.md");
+for (const f of [...designFiles, ...testFiles]) variantCheck(read(f), path.relative(root, f));
 
 // ---- 5. 输出 ----
 console.log("=== DDD 追溯一致性校验 ===");
