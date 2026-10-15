@@ -1,9 +1,11 @@
-# DDD-Methodology：分治式设计驱动开发
+# DDD-Methodology 分治式设计驱动开发
 
-基于 pi（pi.dev）与 pi-subagents 实现的方法论工具包。
+基于 pi，即 pi.dev，与 pi-subagents 实现的方法论工具包。
 核心：将大设计文档拆解为与目录结构同构的分布式小设计文档，通过 7 个固定职责子代理与缺陷四级路由，降低子代理上下文负担，防止实现偏离设计。
 
 ## 仓库结构
+
+仓库结构如下。
 
 ```
 ddd-methodology/
@@ -33,16 +35,18 @@ ddd-methodology/
     └── uninstall.sh              # Linux/macOS/Git Bash 卸载
 ```
 
-## 安装 / 卸载（全局）
+## 安装与卸载
 
-**Windows（cmd）：**
+安装卸载均为全局操作。
+
+**Windows，cmd 环境**
 ```bat
 scripts\install.bat              rem 安装/覆盖更新
 scripts\install.bat --check     rem 检查安装状态
 scripts\uninstall.bat           rem 卸载
 ```
 
-**Linux / macOS / Git Bash：**
+**Linux、macOS 与 Git Bash**
 ```bash
 chmod +x scripts/*.sh
 ./scripts/install.sh             # 安装/覆盖更新
@@ -51,23 +55,22 @@ chmod +x scripts/*.sh
 ```
 
 安装内容：
-- Skill（含 workflows 加速档脚本）→ `~/.pi/agent/skills/ddd-methodology/`
+- Skill，含 workflows 加速档脚本，安装到 `~/.pi/agent/skills/ddd-methodology/`
   - 其中 workflow 脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`，供根会话以 `subagent({ workflow: ... , args: { root: "<项目根>" } })` 调用
-- 7 个 agent 定义（按固定文件名清单）→ `~/.pi/agent/agents/ddd-*.md`
+- 7 个 agent 定义，按固定文件名清单，安装到 `~/.pi/agent/agents/ddd-*.md`
 
 脚本按固定文件名清单安装/卸载，不会影响 `~/.pi/agent/agents/` 下用户自定义的其他代理文件。
 
 ## 使用
 
-安装后在任意 pi 会话中：
+安装后在任意 pi 会话中使用。
 
 ```
 /skill:ddd-methodology 按此方法论开发一个 <项目描述>
 ```
 
-或直接说"**按 ddd 方法论开发……**"触发。根会话将按流程依次派发：
-需求采集（代理1）→ 验收标准（代理0）→ 架构设计（代理2）→ 分解设计（代理3）→ 实现（代理4）∥ 测试规划（代理5）→ 测试执行与缺陷路由（代理6）。
+或直接说"**按 ddd 方法论开发……**"触发。根会话将按流程依次派发：需求采集，即代理1，→ 验收标准，即代理0，→ 架构设计，即代理2，→ 分解设计，即代理3，→ 实现代理4 与测试规划代理5 并行，→ 测试执行与缺陷路由，即代理6。
 
 ## 版本管理
 
-本仓库使用 git tag 管理版本。规范修订流程：修改文档 → commit → 打递增版本 tag（`v1.2`、`v1.3`…）。
+本仓库使用 git tag 管理版本。规范修订流程：修改文档 → commit → 打递增版本 tag，例如 `v1.2`、`v1.3`。

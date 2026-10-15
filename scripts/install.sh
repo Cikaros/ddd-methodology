@@ -21,8 +21,8 @@ PI_HOME="$HOME/.pi/agent"
 SKILL_DST="$PI_HOME/skills/ddd-methodology"
 AGENT_DST="$PI_HOME/agents"
 
-# 固定清单：与 agents/ 目录下的 9 个文件一一对应（防止通配符覆盖用户自有 ddd- 前缀代理）
-DDD_AGENTS=(ddd-requirements ddd-acceptance ddd-architect ddd-decomposer ddd-interface-reviewer ddd-implementer ddd-test-planner ddd-tester ddd-arbiter)
+# 固定清单：与 agents/ 目录下的 10 个文件一一对应（防止通配符覆盖用户自有 ddd- 前缀代理）
+DDD_AGENTS=(ddd-requirements ddd-acceptance ddd-architect ddd-decomposer ddd-interface-reviewer ddd-implementer ddd-test-planner ddd-tester ddd-arbiter ddd-doc-sync)
 
 if [[ "${1:-}" == "--check" ]]; then
     echo "[检查] 安装状态："
@@ -69,7 +69,7 @@ if [[ -f "$ROOT/scripts/trace-check.js" ]]; then
     echo "[完成] trace-check -> $SKILL_DST/scripts/trace-check.js"
 fi
 
-# 2. 安装 9 个 agent 定义（按固定清单，仅覆盖本方法论文件）
+# 2. 安装 10 个 agent 定义（按固定清单，仅覆盖本方法论文件）
 mkdir -p "$AGENT_DST"
 count=0
 for name in "${DDD_AGENTS[@]}"; do

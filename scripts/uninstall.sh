@@ -10,8 +10,8 @@ PI_HOME="$HOME/.pi/agent"
 SKILL_DST="$PI_HOME/skills/ddd-methodology"
 AGENT_DST="$PI_HOME/agents"
 
-# 固定清单：与 agents/ 目录下的 9 个文件一一对应（防止通配符误删用户自有 ddd- 前缀代理）
-DDD_AGENTS=(ddd-requirements ddd-acceptance ddd-architect ddd-decomposer ddd-interface-reviewer ddd-implementer ddd-test-planner ddd-tester ddd-arbiter)
+# 固定清单：与 agents/ 目录下的 10 个文件一一对应（防止通配符误删用户自有 ddd- 前缀代理）
+DDD_AGENTS=(ddd-requirements ddd-acceptance ddd-architect ddd-decomposer ddd-interface-reviewer ddd-implementer ddd-test-planner ddd-tester ddd-arbiter ddd-doc-sync)
 
 echo "[卸载] 目标: $PI_HOME"
 
