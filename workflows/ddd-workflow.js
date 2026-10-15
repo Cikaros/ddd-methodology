@@ -192,6 +192,16 @@ if (!doneStages.includes("implement-plan")) {
   })));
 }
 
+// —— G5-INT 集成收口门（与手工档标准一致） ——
+// 并行实现多目录后，必须先做集成检查：构建通过 + 全量单测通过，才允许进入测试执行段
+if (!doneStages.includes("g5-int")) {
+  await runs.run("ddd-int-check", {
+    label: "G5-INT 集成收口检查",
+    agent: "ddd-implementer",
+    task: `在项目根 ${root} 执行集成收口检查（G5-INT 门）：1) 全项目构建通过；2) 全量单元测试（仅自动用例，按 TEST_PLAN 执行命令）通过；3) 修复因多接缝合并产生的集成问题（仅实现级修改）。完成后更新 ${stateFile} 追加 "g5-int"。若发现设计级矛盾（集成暴露接口不匹配），停止并报告 B 级缺陷。`,
+  });
+}
+
 // —— 测试执行（单独串行段） + C/D 缺陷自动修复轮次 ——
 let round = 0;
 let lastReport = null;

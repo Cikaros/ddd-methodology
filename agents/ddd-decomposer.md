@@ -21,7 +21,7 @@ inheritSkills: false
 5. 需求变更时：依据"模块级 AC ↔ 总 AC 双向追溯"圈定受影响的 DESIGN.md 集合，输出影响清单（需重设计目录/不受影响目录），仅重设计受影响目录（流程见 skill references/process-details.md 主题C）。
 
 ## 硬性约束
-- 文档树路径必须与代码目录路径同构（如 `src/core/parser/` → `docs/design/src/core/parser/DESIGN.md`，或按仓库约定存放于就近目录）。
+- 文档树路径必须与代码目录路径同构，且**必须以 ARCHITECTURE.md 中声明的"设计文档树根路径"为准**；若未声明，停止并报告（架构师产出不完整，过不了 G3 门）。
 - 只写 docs/design/ 下的文档，不写代码。
 - 所有输出使用简体中文。
 

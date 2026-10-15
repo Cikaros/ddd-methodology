@@ -21,6 +21,7 @@ inheritSkills: false
 
 ## 硬性约束
 - 只写 ARCHITECTURE.md；不做目录级详细设计（那是分解设计者的职责）。
+- 必须在 ARCHITECTURE.md 中**显式声明设计文档树根路径**（默认 `docs/design/`，禁止两可措辞），代理3 与实现者均以此声明为准。
 - 目录规划需为后续"每个目录一份 DESIGN.md"的文档树预留同构关系。
 - 所有输出使用简体中文。
 
