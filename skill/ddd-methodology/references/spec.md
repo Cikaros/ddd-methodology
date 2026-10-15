@@ -22,8 +22,9 @@
    代理1 需求采集 ⇄ 用户确认（未对齐不放行）
    代理0 验收标准（总 AC → 模块 AC 分发）
    代理2 架构师（新建：环境+目录规划 / 二次开发且缺文档：先现状分析）
-   代理3 分解设计（目录同构 DESIGN.md 树）
-   代理4 实现者 ∥ 代理5 测试规划（均为产出，无进程执行）
+   代理3 分解设计（目录同构 DESIGN.md 树 + 签名级接口契约）
+   [G4.5 接口冻结门：ddd-interface-reviewer 独立评审 → 根会话复核冻结]
+   代理4 实现者（逐字匹配冻结接口）∥ 代理5 测试规划（均为产出，无进程执行）
    [G5 收口门：实现全部完成]
    代理6 测试执行（单独串行，与代理4 永不同段）→ 缺陷四级路由闭环
 ```
@@ -33,9 +34,10 @@
 | 1 | ddd-requirements | 需求细化采集，与用户确认对齐；判定新建/二次开发 | REQUIREMENTS.md |
 | 0 | ddd-acceptance | 需求→可执行 AC（G/W/T） | AC.md（总） |
 | 2 | ddd-architect | 技术环境、目录规划、横切规范；二次开发现状分析 | ARCHITECTURE.md（+现状分析报告） |
-| 3 | ddd-decomposer | 复杂功能分解设计，目录级文档 | docs/design/**/DESIGN.md |
-| 4 | ddd-implementer | 就近加载设计文档实现代码与单元测试 | 各目录代码 |
-| 5 | ddd-test-planner | 基于总 AC+模块 AC 制定测试计划 | docs/test/**/TEST_PLAN.md |
+| 3 | ddd-decomposer | 复杂功能分解设计，目录级文档 + 签名级接口契约 | docs/design/**/DESIGN.md |
+| 3.5 | ddd-interface-reviewer | 接口契约独立交叉评审（只读） | 接口评审报告 |
+| 4 | ddd-implementer | 就近加载设计文档实现代码与单元测试（逐字匹配冻结接口） | 各目录代码 |
+| 5 | ddd-test-planner | 基于总 AC+模块 AC+冻结接口制定测试计划 | docs/test/**/TEST_PLAN.md |
 | 6 | ddd-tester | 执行测试，缺陷定级路由 | 测试报告 + 缺陷路由单 |
 
 ## 3. 缺陷四级路由

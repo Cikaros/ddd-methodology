@@ -6,18 +6,18 @@
  * 必须通过 args.root 传入项目根绝对路径——workflow 脚本运行在沙箱中，
  * 没有 process 全局，唯一合法的数据通道就是冻结的 args。
  *
- * 前置条件：7 个 ddd-* 代理必须已安装（~/.pi/agent/agents/），否则运行时校验失败。
+ * 前置条件：8 个 ddd-* 代理必须已安装（~/.pi/agent/agents/），否则运行时校验失败。
  *
- * 阶段流：代理1 需求采集 → 代理0 验收标准 → 代理2 架构师 → 代理3 分解设计
+ * 阶段流：代理1 需求采集 → 代理0 验收标准 → 代理2 架构师 → 代理3 分解设计（含签名级接口契约）
+ *        → 接口契约独立评审（G4.5，ddd-interface-reviewer）
  *        → [代理4 实现 ∥ 代理5 测试规划]（均为产出类，无进程执行）
- *        → [G5 收口门] → 代理6 测试执行（单独串行，与代理4 永不同段）
+ *        → [G5-INT 集成收口门] → 代理6 测试执行（单独串行，与代理4 永不同段）
  *        → C/D 级缺陷自动修复并重测（最多 maxFixRounds 轮，默认 2）
  *
  * 实现/测试硬分离：代理6 与代理4 永不同段；并行段仅为实现∥测试规划。
  *
- * 断点续跑：每完成一个阶段，通过派发 ddd-implementer 之外的方式不可行——沙箱无文件写能力，
- * 因此状态文件由各阶段代理在任务中负责写入/更新 <root>/docs/.ddd-state.json；
- * 本脚本启动时通过首个代理读取状态文件决定从哪个阶段续跑（args.resume 阶段键可选覆盖）。
+ * 断点续跑：状态文件由各阶段代理在任务中负责写入/更新 <root>/docs/.ddd-state.json（schema 见 references/process-details.md）；
+ * 本脚本启动时由 ddd-requirements 只读检查状态文件并按契约输出 DONE: <stageKey> 机读行，已完成阶段自动跳过。
  *
  * 缺陷路由策略：
  *   - C（实现级）：派发 ddd-implementer 修复 → 重测
@@ -37,8 +37,12 @@ const maxFixRounds = args && Number.isFinite(Number(args.maxFixRounds))
   : 2; // 方法论约定：轮回修复超过 2 轮强制升级用户
 const stateFile = `${root}/docs/.ddd-state.json`;
 
-// 阶段顺序（用于断点续跑判定）
-const stageOrder = ["requirements", "acceptance", "architect", "decomposer", "implement-plan", "test-execute"];
+// 阶段注册表（唯一权威源）：所有可断点的阶段键都在此声明；
+// 串行段/接口评审/G5-INT/首轮测试执行均用 stateNote 写入对应键。
+const stageRegistry = [
+  "requirements", "acceptance", "architect", "decomposer",
+  "interface-review", "implement-plan", "g5-int", "test-execute",
+];
 
 /**
  * 读取断点状态：由代理1 执行只读检查。
@@ -56,6 +60,9 @@ async function readResumeState() {
 3. 若文件不存在：输出 "NO_STATE_FILE"，报告全新启动。
 禁止修改任何文件。`,
   });
+  if (r && r.__failed) {
+    throw new Error("断点检查阶段执行失败：" + (r.error || "未知错误") + "。" + (r.hint || ""));
+  }
   return r;
 }
 
@@ -86,10 +93,11 @@ function extractDefects(reportText) {
     for (const k of ["A", "B", "C", "D"]) found[k] = Number(j[k]) || 0;
     const sum = found.A + found.B + found.C + found.D;
     if (sum > 0) { found.unresolved = true; return found; }
-    // 计数全 0：核对散文（先剔除机读行，避免英文关键字干扰），若明确存在失败语义词则机读与散文矛盾 → 中断
+    // 计数全 0：核对散文（先剔除机读行），若明确存在失败语义词则机读与散文矛盾 → 中断
     const prose = text.replace(/DEFECTS:\s*\{[\s\S]*?\}\s*(?:\n|$)/g, "");
-    const failWord = /(未通过|未解决|存在失败|有失败|修复未果|FAIL(ED)?\b|defect\b)/i.test(prose) && !/失败项\s*[:：]?\s*(无|0)|FAILED\s*[:：]\s*0|回归未通过项已清零|无失败/.test(prose);
-    if (failWord) {
+    const hasFailWord = /(未通过|未解决|存在失败|有失败|修复未果|FAIL(ED)?\b|defect\b)/i.test(prose);
+    const negated = /(失败项|失败)\s*[:：]?\s*(无|0|零)\s*(项|个)?|\b(0|zero|no)\s+(failed|defects?)\b|FAILED\s*[:：]\s*0|回归未通过项已清零|无失败/i.test(prose);
+    if (hasFailWord && !negated) {
       throw new Error("测试报告机读计数全 0 但正文存在失败表述，二者矛盾：按格式缺陷中断，请人工核对报告。");
     }
     found.unresolved = j.unresolved === true;
@@ -177,7 +185,7 @@ const stages = [
     runKey: "ddd-interface-reviewer",
     label: "接口契约独立评审",
     agent: "ddd-interface-reviewer",
-    task: `只读评审 ${root}/docs/design/ 全部 DESIGN.md 的签名级接口契约：能力覆盖/模块间重复/缺口/依赖方向（对照 ARCHITECTURE.md 依赖约束）/契约质量。输出缺陷清单与结论（通过/有条件通过/不通过）。发现接口设计问题报告 B 级缺陷。`,
+    task: `只读评审 ${root}/docs/design/ 全部 DESIGN.md 的签名级接口契约：能力覆盖/模块间重复/缺口/依赖方向（对照 ARCHITECTURE.md 依赖约束）/契约质量。输出缺陷清单与结论。报告末尾必须含机读行 "VERDICT: pass|conditional|fail"（判据见你的提示词）。发现接口设计问题报告 B 级缺陷。`,
   },
 ];
 
@@ -210,6 +218,8 @@ const resumeReport = await readResumeState();
 const doneStages = parseDoneStages(resumeReport);
 
 // —— 前置串行阶段（断点续跑：已完成则跳过） ——
+// stateNote 仅注入有写工具的阶段（interface-reviewer 只读，不写状态）
+const READONLY_STAGES = ["interface-review"];
 for (const s of stages) {
   if (doneStages.includes(s.key)) {
     continue;
@@ -217,9 +227,25 @@ for (const s of stages) {
   const r = await runStage(s.runKey + "-" + s.key, {
     label: s.label,
     agent: s.agent,
-    task: s.task + stateNote(s.key),
+    task: s.task + (READONLY_STAGES.includes(s.key) ? "" : stateNote(s.key)),
   }, { stage: s.key });
   if (r && r.__failed) return r;
+
+  // G4.5 门控：接口评审非 pass 结论（fail/conditional 或无机读行）→ 中断返回根会话复核
+  if (s.key === "interface-review") {
+    const verdict = String(r || "").match(/VERDICT:\s*(pass|conditional|fail)\b/i);
+    if (!verdict || verdict[1].toLowerCase() !== "pass") {
+      return {
+        __failed: true,
+        status: "escalated",
+        failedStage: "interface-review",
+        reason: verdict ? `接口评审结论为 ${verdict[1]}，需根会话复核（有条件通过须确认必须修复项已处理）` : "接口评审报告缺少 VERDICT 机读行（格式缺陷）",
+        stateFile,
+        report: r,
+        hint: "根会话复核评审报告：pass 才冻结接口进入实现；conditional 需确认必须修复项已由代理3 修复后可重跑（断点跳过已完成的串行阶段）；fail 由代理3 修复后重跑。",
+      };
+    }
+  }
 }
 
 // —— 并行段：实现与测试规划（均为产出类，无进程执行） ——

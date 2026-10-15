@@ -1,5 +1,7 @@
 # 文档模板库
 
+> ⚠ **锚定保护**：DESIGN.md 的「模块级验收要点」、TEST_PLAN.md 的「用例清单」章节名被 scripts/trace-check.js 正则锚定（允许标题后缀），修改措辞将导致追溯校验降级/失效。
+
 ## REQUIREMENTS.md（代理1 产出）
 
 ```markdown

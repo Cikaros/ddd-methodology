@@ -1,6 +1,6 @@
 ---
 name: ddd-methodology
-description: 分治式设计驱动开发方法论。当用户要求按"ddd方法论""分治式设计驱动""DDD-Methodology"开发新项目或二次开发项目时使用。通过 7 个固定职责子代理（需求采集/验收标准/架构师/分解设计/实现/测试规划/测试执行）与目录同构的分布式小设计文档，降低子代理上下文负担，防止实现偏离设计。
+description: 分治式设计驱动开发方法论。当用户要求按"ddd方法论""分治式设计驱动""DDD-Methodology"开发新项目或二次开发项目时使用。通过 8 个固定职责子代理（需求采集/验收标准/架构师/分解设计/接口评审/实现/测试规划/测试执行）与目录同构的分布式小设计文档，降低子代理上下文负担，防止实现偏离设计。
 ---
 
 # 分治式设计驱动开发（DDD-Methodology）
@@ -37,9 +37,9 @@ subagent({ workflow: "<skill目录>/workflows/ddd-workflow.js", args: { root: "<
 
 安装后脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`；若本机未安装（仅在仓库内开发调试），则使用仓库内 `workflows/ddd-workflow.js` 相对路径。
 
-**前置条件**：7 个 `ddd-*` 代理必须已安装，否则运行时校验失败。脚本通过 `args.root` 接收项目根绝对路径（沙箱中无 process 全局，args 是唯一数据通道）。
+**前置条件**：8 个 `ddd-*` 代理必须已安装，否则运行时校验失败。脚本通过 `args.root` 接收项目根绝对路径（沙箱中无 process 全局，args 是唯一数据通道）。
 
-脚本会依次执行 需求采集→AC→架构→分解设计→（实现∥测试规划）→测试执行；C/D 级缺陷自动派发修复并重测（最多 2 轮），A/B 级缺陷中断脚本返回本会话仲裁。
+脚本会依次执行 需求采集→AC→架构→分解设计（含签名级接口契约）→接口契约独立评审（G4.5）→（实现∥测试规划）→G5-INT 集成收口→测试执行；C/D 级缺陷自动派发修复并重测（最多 2 轮），A/B 级缺陷中断脚本返回本会话仲裁。
 
 **限制**：A/B 级缺陷定级仲裁、超 2 轮未解的缺陷、以及需求变更受理必须回到本会话（根会话）处理，依据 `references/defect-routing.md` 调度。默认仍优先使用手工逐段调度。
 
@@ -68,7 +68,7 @@ subagent({ workflow: "<skill目录>/workflows/ddd-workflow.js", args: { root: "<
 
 ## Workflow 状态文件与断点续跑
 
-workflow 加速档每完成一个阶段即写入 `<项目根>/docs/.ddd-state.json`（阶段序号、状态、轮次、缺陷摘要、已过门记录）；再次启动时读取该文件，已完成阶段自动跳过，从断点续跑。中断返回时附带最近一道已过门记录。
+workflow 加速档每完成一个阶段即写入 `<项目根>/docs/.ddd-state.json`；再次启动时读取该文件，已完成阶段自动跳过，从断点续跑；中断返回时附带最近一道已过门记录。**状态文件字段 schema 唯一权威定义见 references/process-details.md 主题H**。
 
 ## 子代理调度要求
 

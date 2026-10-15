@@ -74,7 +74,7 @@
 2. **独立评审**：派发 ddd-interface-reviewer（只读）交叉审查：能力覆盖/模块间重复/缺口/依赖方向/契约质量，输出缺陷清单与结论。
 3. **根会话复核**：审查无"必须修复项"（或有条件通过且修复完成）后，根会话确认冻结。
 4. **冻结效力**：接口一经冻结即为硬约束——实现逐字匹配签名；测试规划者可直接基于冻结接口产出契约测试；修改接口 = B 级设计变更走正式路由（不可静默改）。
-5. 加速档 workflow 对应状态键 `interface-frozen`；接口评审发现的缺陷按严重度路由（接口设计问题 → B 级回代理3）。
+5. 加速档 workflow 对应状态键 `interface-review`（与脚本 stages 键一致）；接口评审发现的缺陷按严重度路由（接口设计问题 → B 级回代理3，已登记于 defect-routing.md 路由矩阵）。
 
 **并行实现的门禁特例（配合 B）**：各接缝 writer 需通过 G5 的各自子门（该接缝代码自测通过）才允许收口集成；集成门（G5-INT）要求集成后构建与全量单测通过，**workflow 加速档在并行段后同样插入 G5-INT 集成收口检查，两档标准一致**。
 
@@ -105,3 +105,27 @@
 
 ### G5 阶段门补充条件
 - TEST_PLAN.md 含"预估时长/风险级别"标注与"手动测试清单"，且高风险用例均已桩化或降级，方可过门。
+
+## H. Workflow 状态文件 schema（加速档断点续跑契约）
+
+状态文件路径：`<项目根>/docs/.ddd-state.json`（唯一权威定义在本节；SKILL.md/workflow 注释只留指针）。
+
+```json
+{
+  "doneStages": ["requirements", "acceptance", "architect", "decomposer", "interface-review", "implement-plan", "g5-int", "test-execute"],
+  "lastStage": "interface-review",
+  "status": "done",
+  "fixRounds": 0,
+  "lastGate": "G4.5"
+}
+```
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| doneStages | string[] | 已完成阶段键，取值必须来自阶段注册表：requirements / acceptance / architect / decomposer / interface-review / implement-plan / g5-int / test-execute |
+| lastStage | string | 最近完成的阶段键 |
+| status | string | "done" / "in-progress" / "escalated" |
+| fixRounds | number | 当前缺陷修复轮次（可选） |
+| lastGate | string | 最近一道已过门记录（可选，如 "G4.5"、"G5-INT"） |
+
+**写入规则**：每个阶段完成后由该阶段代理追加/合并（并行段仅实现者写，writer 唯一）；JSON 损坏时 resume-check 输出 `STATE_CORRUPT` 拦截，不得当全新启动。
