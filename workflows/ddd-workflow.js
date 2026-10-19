@@ -114,10 +114,23 @@ function stateNote(stageKey) {
   return `\n\n【状态记录】完成后更新 ${stateFile}：追加/合并 JSON 字段 {"lastStage":"${stageKey}","status":"done"}，并保留已有字段（如 doneStages 数组追加 "${stageKey}"）。文件不存在则创建并初始化。`;
 }
 
-// 统一的阶段执行包装：失败时返回结构化结果而非裸抛，保 Fictional 阶段名/轮次/状态文件路径供根会话断点接管。
+// 统一的阶段执行包装：失败时返回结构化结果而非裸抛，保留阶段名/轮次/状态文件路径供根会话断点接管。
+// 监管接入：每个子任务注入 control.needsAttentionAfterMs，同一任务停滞超过阈值即发出 needs_attention 控制事件，
+// 由根会话侧感知并可 steer/interrupt 干预，避免子代理在同一指令上重复执行等待。
+const STALL_TIMEOUT_MS = args && Number.isFinite(Number(args.stallTimeoutMs))
+  ? Math.max(30000, Number(args.stallTimeoutMs))
+  : 300000; // 默认 5 分钟无活动即上报需要关注
+
+function stallControl() {
+  return {
+    needsAttentionAfterMs: STALL_TIMEOUT_MS,
+    notifyOn: ["needs_attention"],
+  };
+}
+
 async function runStage(key, params, meta) {
   try {
-    return await runs.run(key, params);
+    return await runs.run(key, { ...params, control: stallControl() });
   } catch (e) {
     return {
       __failed: true,
@@ -131,13 +144,39 @@ async function runStage(key, params, meta) {
   }
 }
 
+// 演进上下文：从上轮修复输出中提取"已尝试方案"，从测试报告中提取缺陷条目，注入下轮任务防失忆打转
+function buildFixCtx(round, reportText, fixText) {
+  const text = String(reportText || "");
+  // 缺陷条目：优先取路由单缺陷清单行，备选整个报告尾部
+  const defectLines = text.split(/\n/).filter(l => /缺陷|BUG-|BUGPLAN|路由|失败/.test(l)).slice(0, 15).join("\n");
+  const defectSummary = defectLines || text.slice(-1500);
+  // 已尝试方案：来自上轮修复者的输出 fixText，而非测试报告
+  const fixOut = String(fixText || "");
+  const triedMatch = fixOut.match(/已尝试方案[：:]*([\s\S]{0,1200})(?=\n#|\z|$)/);
+  const triedNote = triedMatch
+    ? `上一轮已尝试且失败的方案（本轮禁止重复，必须换路径）：\n${triedMatch[1]}`
+    : `上一轮未提供已尝试方案记录（首轮或上轮未按格式输出），请自行分析后选择实现路径，并在输出中包含"已尝试方案"节。`;
+  return { round, defectSummary, triedNote };
+}
+
 function defectAction(level) {
   if (level === "C") {
     return {
       key: "ddd-fix-c",
       label: "修复实现级缺陷",
       agent: "ddd-implementer",
-      task: `在项目根 ${root} 修复实现级（C 级）缺陷：依据最新测试报告与缺陷路由单中列出的"代码与 DESIGN.md 不一致"条目，按就近设计文档逐条修复。只修代码，不改设计。修复后仅自测所负责接缝的相关用例，**禁止执行全量测试套件，全量重测由 ddd-tester 在下一轮负责**。输出修复清单与自测结果。`,
+      task: (ctx) => `在项目根 ${root} 修复实现级（C 级）缺陷。当前第 ${ctx.round} 轮，剩余自动修复机会 ${maxFixRounds - ctx.round + 1} 次，超限将升级用户。
+
+本轮必须修复的缺陷条目：
+${ctx.defectSummary}
+
+${ctx.triedNote}
+
+修复要求：
+1. 按就近 DESIGN.md 逐条修复上述条目，只修代码不改设计。
+2. 禁止重复已尝试且失败的方案，必须换实现路径或根因分析方法。
+3. 修复后仅自测所负责接缝的相关用例，禁止执行全量测试套件，全量重测由 ddd-tester 在下一轮负责。
+4. 输出必须包含两节：修复清单（条目→改动摘要）与已尝试方案（本轮尝试的路径及结果，供下一轮排除）。`,
     };
   }
   if (level === "D") {
@@ -145,7 +184,17 @@ function defectAction(level) {
       key: "ddd-fix-d",
       label: "修订测试计划",
       agent: "ddd-test-planner",
-      task: `在项目根 ${root} 修订测试级（D 级）缺陷：依据最新缺陷路由单中"计划漏场景/断言错/覆盖缺口"条目，修订 docs/test/ 对应 TEST_PLAN.md 并补充覆盖映射表。只修计划，不改代码与设计。`,
+      task: (ctx) => `在项目根 ${root} 修订测试级（D 级）缺陷。当前第 ${ctx.round} 轮，剩余自动修复机会 ${maxFixRounds - ctx.round + 1} 次。
+
+本轮必须修订的缺陷条目：
+${ctx.defectSummary}
+
+${ctx.triedNote}
+
+修订要求：
+1. 依据缺陷路由单中"计划漏场景/断言错/覆盖缺口"条目，修订 docs/test/ 对应 TEST_PLAN.md 并补充覆盖映射表。
+2. 禁止重复已尝试且无效的修订。
+3. 只修计划，不改代码与设计。输出修订清单与已尝试方案。`,
     };
   }
   return null; // A/B 不自动处理
@@ -274,6 +323,7 @@ if (!doneStages.includes("g5-int")) {
 // —— 测试执行（单独串行段） + C/D 缺陷自动修复轮次 ——
 let round = 0;
 let lastReport = null;
+let lastFixOutput = null;
 let escalated = null;
 
 while (round <= maxFixRounds) {
@@ -321,15 +371,16 @@ while (round <= maxFixRounds) {
     const r = await runStage(f.key + "-r" + round, {
       label: f.label + `（第${round}轮）`,
       agent: f.agent,
-      task: f.task,
+      task: f.task(buildFixCtx(round, lastReport, lastFixOutput)),
     }, { stage: f.key, round });
     if (r && r.__failed) return r;
+    lastFixOutput = typeof r === "string" ? r : JSON.stringify(r);
   } else if (fixes.length === 2) {
     await runs.all(fixes.map(f => ({
       key: f.key,
       label: f.label + `（第${round}轮）`,
       agent: f.agent,
-      task: f.task,
+      task: f.task(buildFixCtx(round, lastReport, lastFixOutput)),
     })));
   }
   // 循环继续 → 重测
