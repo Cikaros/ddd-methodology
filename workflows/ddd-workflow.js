@@ -137,7 +137,7 @@ function defectAction(level) {
       key: "ddd-fix-c",
       label: "修复实现级缺陷",
       agent: "ddd-implementer",
-      task: `在项目根 ${root} 修复实现级（C 级）缺陷：依据最新测试报告与缺陷路由单中列出的"代码与 DESIGN.md 不一致"条目，按就近设计文档逐条修复并自测。只修代码，不改设计。输出修复清单与自测结果。`,
+      task: `在项目根 ${root} 修复实现级（C 级）缺陷：依据最新测试报告与缺陷路由单中列出的"代码与 DESIGN.md 不一致"条目，按就近设计文档逐条修复。只修代码，不改设计。修复后仅自测所负责接缝的相关用例，**禁止执行全量测试套件，全量重测由 ddd-tester 在下一轮负责**。输出修复清单与自测结果。`,
     };
   }
   if (level === "D") {
@@ -260,12 +260,13 @@ if (!doneStages.includes("implement-plan")) {
 }
 
 // —— G5-INT 集成收口门（与手工档标准一致） ——
-// 并行实现多目录后，必须先做集成检查：构建通过 + 全量单测通过，才允许进入测试执行段
+// 职责纯净分离：门禁只做构建与集成问题修复，禁止执行全量测试套件——
+// 全量测试的唯一主体是 ddd-tester 首轮执行，其结果作为 G5-INT 的最终证据
 if (!doneStages.includes("g5-int")) {
   const r = await runStage("ddd-int-check", {
     label: "G5-INT 集成收口检查",
     agent: "ddd-implementer",
-    task: `在项目根 ${root} 执行集成收口检查（G5-INT 门）：1) 全项目构建通过；2) 全量单元测试（仅自动用例，按 TEST_PLAN 执行命令）通过；3) 修复因多接缝合并产生的集成问题（仅实现级修改）。完成后更新 ${stateFile} 追加 "g5-int"。若发现设计级矛盾（集成暴露接口不匹配），停止并报告 B 级缺陷。`,
+    task: `在项目根 ${root} 执行集成收口检查（G5-INT 门）：1) 全项目构建通过；2) 检查各接缝自测报告齐备且 TEST_PLAN 对齐说明完整，声明测试就绪；3) 修复因多接缝合并产生的集成问题，仅实现级修改。**禁止执行全量测试套件，全量测试由 ddd-tester 负责**。完成后更新 ${stateFile} 追加 "g5-int"。若发现设计级矛盾（集成暴露接口不匹配），停止并报告 B 级缺陷。`,
   }, { stage: "g5-int" });
   if (r && r.__failed) return r;
 }
