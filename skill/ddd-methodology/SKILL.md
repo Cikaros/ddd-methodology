@@ -1,6 +1,6 @@
 ---
 name: ddd-methodology
-description: 分治式设计驱动开发方法论。当用户要求按"ddd方法论""分治式设计驱动""DDD-Methodology"开发新项目或二次开发项目时使用。通过 10 个固定职责子代理（需求采集/验收标准/架构师/分解设计/接口评审/实现/测试规划/测试执行/仲裁/文档同步巡检）与目录同构的分布式小设计文档，降低子代理上下文负担，防止实现偏离设计。
+description: 分治式设计驱动开发方法论。当用户要求按"ddd方法论""分治式设计驱动""DDD-Methodology"开发新项目或二次开发项目时使用。通过 11 个固定职责子代理（需求采集/验收标准/架构师/分解设计/接口评审/实现/测试规划/测试执行/缺陷修复/仲裁/文档同步巡检）与目录同构的分布式小设计文档，降低子代理上下文负担，防止实现偏离设计。
 ---
 
 # 分治式设计驱动开发 DDD-Methodology
@@ -9,7 +9,7 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 
 硬规则：禁止整卷加载 references。知识通过**绑定到流程节点**自动注入，不依赖本文件的记忆：
 
-- **子代理侧，机制保证**：各代理提示词自包含其阶段必需知识；共享知识切片 `knowledge/defect-routing.md` 经代理 frontmatter `skills: ddd-defect-routing` 在派发时自动注入，test-planner/implementer/interface-reviewer/arbiter 已挂载。根会话派发时只需传递项目特异信息，即路径、接口清单、权限边界。
+- **子代理侧，机制保证**：各代理提示词自包含其阶段必需知识；共享知识切片 `knowledge/defect-routing.md` 经代理 frontmatter `skills: ddd-defect-routing` 在派发时自动注入，tester/implementer/interface-reviewer/arbiter/fixer 已挂载。根会话派发时只需传递项目特异信息，即路径、接口清单、权限边界。
 - **根会话侧，流程内联标注**：仅在下方核心流程各步骤标注的时机加载对应切片，禁止提前通读全部。
 
 ## 根会话常驻上下文
@@ -57,11 +57,11 @@ subagent({ workflow: "<skill目录>/workflows/ddd-workflow.js", args: { root: "<
 
 安装后脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`；若本机未安装，即仅在仓库内开发调试，则使用仓库内 `workflows/ddd-workflow.js` 相对路径。
 
-**前置条件**：10 个 `ddd-*` 代理必须已安装，否则运行时校验失败。脚本通过 `args.root` 接收项目根绝对路径，沙箱中无 process 全局，args 是唯一数据通道。
+**前置条件**：11 个 `ddd-*` 代理必须已安装，否则运行时校验失败。脚本通过 `args.root` 接收项目根绝对路径，沙箱中无 process 全局，args 是唯一数据通道。
 
 脚本会依次执行 需求采集→AC→架构→分解设计，含签名级接口契约，→接口契约独立评审，G4.5，VERDICT 非 pass 中断，→实现与测试规划并行→G5-INT 集成收口→测试执行；C/D 级缺陷自动派发修复并重测，最多 2 轮，A/B 级缺陷中断脚本返回本会话仲裁。
 
-**限制**：A/B 级缺陷定级仲裁需派 ddd-arbiter，超 2 轮未解的缺陷以及需求变更受理必须回到本会话处理。默认仍优先使用手工逐段调度。
+**限制**：A/B 级缺陷定级仲裁需派 ddd-arbiter，超 2 轮未解的缺陷以及需求变更受理必须回到本会话处理。默认仍优先使用手工逐段调度。手工档的 C/D 级修复可由根会话派发 ddd-fixer 统一承接，或由代理4/5 就地修复后交代理6 重跑；加速档一律由 ddd-fixer 承接。
 
 ## 质量门禁
 

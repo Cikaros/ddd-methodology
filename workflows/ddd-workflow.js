@@ -20,8 +20,8 @@
  * 本脚本启动时由 ddd-requirements 只读检查状态文件并按契约输出 DONE: <stageKey> 机读行，已完成阶段自动跳过。
  *
  * 缺陷路由策略：
- *   - C（实现级）：派发 ddd-implementer 修复 → 重测
- *   - D（测试级）：派发 ddd-test-planner 修计划 → 重测
+ * *   - C（实现级）：派发 ddd-fixer 修复 → 重测
+ * *   - D（测试级）：派发 ddd-fixer 修计划 → 重测
  *   - C+D 混合：同时派发两类修复，再统一重测
  *   - A（需求级）/ B（设计级）：不在脚本内自动处理，立即中断返回，
  *     由根会话依据 references/defect-routing.md 仲裁路由（A 须升级用户确认）
@@ -164,7 +164,7 @@ function defectAction(level) {
     return {
       key: "ddd-fix-c",
       label: "修复实现级缺陷",
-      agent: "ddd-implementer",
+      agent: "ddd-fixer",
       task: (ctx) => `在项目根 ${root} 修复实现级（C 级）缺陷。当前第 ${ctx.round} 轮，剩余自动修复机会 ${maxFixRounds - ctx.round + 1} 次，超限将升级用户。
 
 本轮必须修复的缺陷条目：
@@ -183,7 +183,7 @@ ${ctx.triedNote}
     return {
       key: "ddd-fix-d",
       label: "修订测试计划",
-      agent: "ddd-test-planner",
+      agent: "ddd-fixer",
       task: (ctx) => `在项目根 ${root} 修订测试级（D 级）缺陷。当前第 ${ctx.round} 轮，剩余自动修复机会 ${maxFixRounds - ctx.round + 1} 次。
 
 本轮必须修订的缺陷条目：
@@ -314,7 +314,7 @@ if (!doneStages.includes("implement-plan")) {
 if (!doneStages.includes("g5-int")) {
   const r = await runStage("ddd-int-check", {
     label: "G5-INT 集成收口检查",
-    agent: "ddd-implementer",
+    agent: "ddd-fixer",
     task: `在项目根 ${root} 执行集成收口检查（G5-INT 门）：1) 全项目构建通过；2) 检查各接缝自测报告齐备且 TEST_PLAN 对齐说明完整，声明测试就绪；3) 修复因多接缝合并产生的集成问题，仅实现级修改。**禁止执行全量测试套件，全量测试由 ddd-tester 负责**。完成后更新 ${stateFile} 追加 "g5-int"。若发现设计级矛盾（集成暴露接口不匹配），停止并报告 B 级缺陷。`,
   }, { stage: "g5-int" });
   if (r && r.__failed) return r;
