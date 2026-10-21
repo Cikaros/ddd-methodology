@@ -52,9 +52,19 @@ const totalACs = [...new Set(read(acFile).match(AC_RE) || [])];
 if (totalACs.length === 0) problems.push("AC.md 中未发现任何 AC-xxx 编号条目");
 
 // ---- 2. 模块级 AC（DESIGN.md）——锚定章节提取，避免变更记录等散文提及导致假通过 ----
-const designDir = path.join(root, "docs", "design");
+// 设计树根路径：优先读 ARCHITECTURE.md 的根路径声明，读不到回退 docs/design 并告警
+function resolveDesignRoot() {
+  const arch = read(path.join(root, "ARCHITECTURE.md"));
+  let m = arch.match(/设计文档树根路径为[：:]*\s*`([^`]+)`/);
+  if (!m) m = arch.match(/设计文档树根路径为[：:]*\s*([^\n\s。]+)/);
+  if (m) return { dir: m[1].trim(), declared: true };
+  return { dir: "docs/design", declared: false };
+}
+const designRoot = resolveDesignRoot();
+if (!designRoot.declared) warnings.push("ARCHITECTURE.md 未找到设计文档树根路径声明，已回退 docs/design；建议补声明以消除歧义");
+const designDir = path.isAbsolute(designRoot.dir) ? designRoot.dir : path.join(root, designRoot.dir);
 const designFiles = fs.existsSync(designDir) ? walk(designDir, ".md") : [];
-if (designFiles.length === 0) problems.push("docs/design/ 下未发现任何 DESIGN.md（G4 门禁前置）");
+if (designFiles.length === 0) problems.push(`设计树 ${designRoot.dir} 下未发现任何 DESIGN.md（G4 门禁前置）`);
 
 // 从 DESIGN.md 中仅提取"## 模块级验收要点"章节内的 AC 引用；若无该章节则告警并全文提取（降级）
 function extractSectionRefs(text, sectionRe) {
