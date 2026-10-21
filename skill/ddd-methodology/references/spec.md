@@ -96,5 +96,5 @@
 | F | 测试阻塞防护，含用例分级、桩化、超时、手动清单 | process-details.md 主题F |
 | G | 接口先行规划，含签名级契约、独立评审、冻结门 | process-details.md 主题E-G4.5 |
 | H | Workflow 状态文件 schema | process-details.md 主题H |
-| I | 设计粒度规则，同构场景拆解为分类文件或子目录并保持代码镜像 | process-details.md 主题I |
+| I | 设计粒度规则，文档粒度按同构场景拆解为分类文件或子目录并保持代码镜像，代码粒度按基础能力独立成文件并强制独立单元测试 | process-details.md 主题I |
 | J | 渐进式改造，L1文件级到L5项目级阶梯，规划期评估，低级能解决不升级 | process-details.md 主题J |
