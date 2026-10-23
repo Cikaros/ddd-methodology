@@ -46,6 +46,7 @@
 | 6.5 | ddd-arbiter | 缺陷定级争议独立仲裁，路由知识内嵌 | 仲裁裁决单 |
 | 6.6 | ddd-fixer | 按路由单修复 C 级代码缺陷或 D 级计划缺陷，与实现者规划者隔离 | 修复清单 + 已尝试方案 |
 | 7 | ddd-doc-sync | 方法论自身文档一致性巡检，只读 | 文档同步巡检报告 |
+| 8 | ddd-auditor | 声明面审计，全量核对接口导出能力切片规则配置模板依赖与死代码的消费情况，只读 | 可验证性审计报告与修剪清单 |
 
 ## 3. 缺陷四级路由
 
@@ -64,7 +65,6 @@
 ├── REQUIREMENTS.md
 ├── AC.md
 ├── ARCHITECTURE.md          # 含横切规范（日志/异常/命名），模块文档只写差异
-├── CONVENTIONS.md           # 可选
 ├── docs/design/<模块>/DESIGN.md   # 与目录同构
 └── docs/test/<模块>/TEST_PLAN.md  # 与设计树同构
 ```
@@ -98,3 +98,4 @@
 | H | Workflow 状态文件 schema | process-details.md 主题H |
 | I | 设计粒度规则，文档与代码双重粒度拆解，模块类函数变量相对独立，避免调用顺序影响结果 | process-details.md 主题I |
 | J | 渐进式改造，L1文件级到L5项目级阶梯，规划期评估，低级能解决不升级 | process-details.md 主题J |
+| K | 声明面可验证与无用代码修剪，含消费方与验证手段铁律、全面审计、修剪机制 | process-details.md 主题K |

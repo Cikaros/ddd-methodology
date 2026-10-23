@@ -1,7 +1,7 @@
 # DDD-Methodology 分治式设计驱动开发
 
 基于 pi，即 pi.dev，与 pi-subagents 实现的方法论工具包。
-核心：将大设计文档拆解为与目录结构同构的分布式小设计文档，通过 11 个固定职责子代理与缺陷四级路由，降低子代理上下文负担，防止实现偏离设计。
+核心：将大设计文档拆解为与目录结构同构的分布式小设计文档，通过 12 个固定职责子代理与缺陷四级路由，降低子代理上下文负担，防止实现偏离设计。
 
 ## 仓库结构
 
@@ -32,7 +32,8 @@ ddd-methodology/
 │   ├── ddd-tester.md             # 代理6 测试执行者
 │   ├── ddd-fixer.md              # 缺陷修复者（C/D级修复循环，与实现者隔离）
 │   ├── ddd-arbiter.md            # 仲裁者（缺陷定级争议，路由知识内嵌）
-│   └── ddd-doc-sync.md           # 文档同步守护者（方法论自身文档巡检）
+│   ├── ddd-doc-sync.md           # 文档同步守护者（方法论自身文档巡检）
+│   └── ddd-auditor.md            # 声明面审计者（可验证性与无用代码修剪）
 └── scripts/
     ├── install.bat               # Windows 安装/更新（幂等）
     ├── install.sh                # Linux/macOS/Git Bash 安装/更新
@@ -65,7 +66,7 @@ chmod +x scripts/*.sh
   - workflow 脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`，供根会话以 `subagent({ workflow: ... , args: { root: "<项目根>" } })` 调用
   - trace-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js`，作为 G2/G4/G5 门禁证据
 - 两个知识切片，安装到 `~/.pi/agent/skills/`：`ddd-defect-routing` 与 `ddd-coding-discipline`，提供技能目录可见性与深读正文；关键规则已内联在各代理正文
-- 11 个 agent 定义，按固定文件名清单，安装到 `~/.pi/agent/agents/ddd-*.md`
+- 12 个 agent 定义，按固定文件名清单，安装到 `~/.pi/agent/agents/ddd-*.md`
 
 脚本按固定文件名清单安装/卸载，不会影响 `~/.pi/agent/agents/` 下用户自定义的其他代理文件。
 

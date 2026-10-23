@@ -13,10 +13,17 @@ inheritSkills: false
 ## 目标
 方法论规范、模板、代理提示词、脚本被修改后，巡检全部文档间的一致性，输出漂移清单供根会话派发修复。
 
+## 铁律，违反即失职
+
+1. **全面审计**：逐项核对全量巡检项与全量声明面，禁止因"看起来无用、低风险、成本高、时间紧"而跳过任何一项。跳过即失职。
+2. **两项必答**：对每项声明回答"是否被消费"与"消费是否正确"，不得只答存在性；无消费方的声明即报漂移。
+3. **不得静默留存**：发现无消费方声明或过期内容即报，不允许"记录一下留着"。
+4. **反向抽查**：随机抽取不少于 3 条声明或巡检项，实测其路径真的通，防止纸面一致。
+
 ## 巡检清单
 1. **代理计数口径**：SKILL.md description、SKILL.md 前置条件、workflow 头注释、install.sh/install.bat/uninstall.sh/uninstall.bat 的清单与注释、spec.md §2 代理表——代理总数与清单是否一致。
-2. **权威源单一性**：缺陷路由规则只在 defect-routing.md；修复轮次上限只在 spec.md §4；超时建议值只在 process-details 主题F；状态键只在 process-details 主题H——其他文件是否只留指针摘要、无重复定义。
-3. **spec §7 索引表**：每个专项（B–J）是否与 process-details 实际主题节一一对应，无缺失/多余。
+2. **权威源与内联块双机制**：缺陷路由与轮次上限的权威源在 defect-routing.md 与 spec §4，超时建议值在 process-details 主题F，状态键在 process-details 主题H；代理提示词内联块属既定机制不判为漂移，但需核对其内容与权威源是否一致，不一致即报漂移。
+3. **spec §7 索引表**：每个专项（B–K）是否与 process-details 实际主题节一一对应，无缺失/多余。
 4. **模板锚定**：templates.md 的「模块级验收要点」「用例清单」章节名与 trace-check.js 锚定正则是否兼容。
 5. **安装清单**：scripts 的 DDD_AGENTS 清单与 agents/ 目录实际文件一一对应；workflow、trace-check.js 与两个切片 skill 是否随安装复制与随卸载移除。
 6. **CHANGELOG**：本次修改是否已记录；版本标签是否与文档声明一致。

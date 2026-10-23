@@ -1,6 +1,6 @@
 ---
 name: ddd-methodology
-description: 分治式设计驱动开发方法论。当用户要求按"ddd方法论""分治式设计驱动""DDD-Methodology"开发新项目或二次开发项目时使用。通过 11 个固定职责子代理（需求采集/验收标准/架构师/分解设计/接口评审/实现/测试规划/测试执行/缺陷修复/仲裁/文档同步巡检）与目录同构的分布式小设计文档，降低子代理上下文负担，防止实现偏离设计。
+description: 分治式设计驱动开发方法论。当用户要求按"ddd方法论""分治式设计驱动""DDD-Methodology"开发新项目或二次开发项目时使用。通过 12 个固定职责子代理（需求采集/验收标准/架构师/分解设计/接口评审/实现/测试规划/测试执行/缺陷修复/仲裁/文档同步巡检/声明面审计）与目录同构的分布式小设计文档，降低子代理上下文负担，防止实现偏离设计。
 ---
 
 # 分治式设计驱动开发 DDD-Methodology
@@ -14,7 +14,7 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 
 ## 根会话常驻上下文
 
-仅 `references/spec.md` 与本文件，前者约 90 行，是调度决策的最小完备集。其余 references/templates.md、process-details.md、defect-routing.md 按下方步骤标注切片加载。
+仅 `references/spec.md` 与本文件，前者约 100 行，是调度决策的最小完备集。其余 references/templates.md、process-details.md、defect-routing.md 按下方步骤标注切片加载。
 
 ## 核心流程
 
@@ -36,6 +36,8 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
    > 本步加载：无需切片；**仅当发生定级争议时**重读 `references/defect-routing.md` 全量权威源，或派发 ddd-arbiter，该代理正文已内联路由知识。
 8. **门禁复核**：G1–G6 各门，过门时按 templates 的门禁检查单节填检查单。
    > 本步加载：process-details **主题E**，仅此节，另加 trace-check.js 输出作为 G2/G4/G5 证据。
+9. **声明面审计与修剪（G6 前必做）**：派发 ddd-auditor 全量审计接口、导出、能力清单、切片、规则、配置、模板字段与死代码的消费情况；无消费方声明一律修剪，不得留存。
+   > 本步加载：process-details **主题K**，仅此节。
 
 ## 根会话职责
 
@@ -57,7 +59,7 @@ subagent({ workflow: "<skill目录>/workflows/ddd-workflow.js", args: { root: "<
 
 安装后脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`；若本机未安装，即仅在仓库内开发调试，则使用仓库内 `workflows/ddd-workflow.js` 相对路径。
 
-**前置条件**：11 个 `ddd-*` 代理必须已安装，否则运行时校验失败。脚本通过 `args.root` 接收项目根绝对路径，沙箱中无 process 全局，args 是唯一数据通道。
+**前置条件**：12 个 `ddd-*` 代理必须已安装，否则运行时校验失败。脚本通过 `args.root` 接收项目根绝对路径，沙箱中无 process 全局，args 是唯一数据通道；可选参数 `args.maxFixRounds` 默认 2，控制缺陷自动修复轮次上限，`args.stallTimeoutMs` 默认 300000 毫秒，控制子任务停滞多久触发需要关注事件。
 
 脚本会依次执行 需求采集→AC→架构→分解设计，含签名级接口契约，→接口契约独立评审，G4.5，VERDICT 非 pass 中断，→实现与测试规划并行→G5-INT 集成收口→测试执行；C/D 级缺陷自动派发修复并重测，最多 2 轮，A/B 级缺陷中断脚本返回本会话仲裁。
 

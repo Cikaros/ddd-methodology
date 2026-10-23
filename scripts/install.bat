@@ -22,8 +22,8 @@ set "PI_HOME=%USERPROFILE%\.pi\agent"
 set "SKILL_DST=%PI_HOME%\skills\ddd-methodology"
 set "AGENT_DST=%PI_HOME%\agents"
 
-rem 固定清单：与 agents\ 目录下 11 个文件一一对应（防止通配符覆盖用户自有 ddd- 前缀代理）
-set DDD_AGENTS=ddd-requirements ddd-acceptance ddd-architect ddd-decomposer ddd-interface-reviewer ddd-implementer ddd-test-planner ddd-tester ddd-arbiter ddd-doc-sync ddd-fixer
+rem 固定清单：与 agents\ 目录下 12 个文件一一对应（防止通配符覆盖用户自有 ddd- 前缀代理）
+set DDD_AGENTS=ddd-requirements ddd-acceptance ddd-architect ddd-decomposer ddd-interface-reviewer ddd-implementer ddd-test-planner ddd-tester ddd-arbiter ddd-doc-sync ddd-auditor ddd-fixer
 
 if "%~1"=="--check" goto :check
 
@@ -64,7 +64,7 @@ for %%S in (ddd-defect-routing ddd-coding-discipline) do (
     )
 )
 
-rem 2. 安装 11 个 agent 定义（按固定清单，仅覆盖本方法论文件）
+rem 2. 安装 12 个 agent 定义（按固定清单，仅覆盖本方法论文件）
 if not exist "%AGENT_DST%" mkdir "%AGENT_DST%"
 set N=0
 for %%A in (%DDD_AGENTS%) do (
@@ -88,7 +88,7 @@ set N=0
 for %%A in (%DDD_AGENTS%) do (
     if exist "%AGENT_DST%\%%A.md" set /a N+=1
 )
-echo   Agents   : !N! / 11 已安装
+echo   Agents   : !N! / 12 已安装
 if exist "%SKILL_DST%\workflows\ddd-workflow.js" ( echo   Workflow : 已安装 ) else ( echo   Workflow : 未安装 )
 if exist "%SKILL_DST%\scripts\trace-check.js" ( echo   trace-check : 已安装 ) else ( echo   trace-check : 未安装 )
 set S=0

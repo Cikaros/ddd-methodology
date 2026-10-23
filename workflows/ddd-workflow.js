@@ -6,7 +6,7 @@
  * 必须通过 args.root 传入项目根绝对路径——workflow 脚本运行在沙箱中，
  * 没有 process 全局，唯一合法的数据通道就是冻结的 args。
  *
- * 前置条件：11 个 ddd-* 代理必须已安装（~/.pi/agent/agents/），否则运行时校验失败。
+ * 前置条件：12 个 ddd-* 代理必须已安装（~/.pi/agent/agents/），否则运行时校验失败。
  *
  * 阶段流：代理1 需求采集 → 代理0 验收标准 → 代理2 架构师 → 代理3 分解设计（含签名级接口契约）
  *        → 接口契约独立评审（G4.5，ddd-interface-reviewer）
@@ -264,7 +264,17 @@ const finalStage = {
 
 // —— 断点检查 ——
 const resumeReport = await readResumeState();
-const doneStages = parseDoneStages(resumeReport);
+let doneStages = parseDoneStages(resumeReport);
+// 消费 stageRegistry：过滤非法阶段键，防止损坏的状态文件把无关键当作已完成阶段跳过
+const validDoneStages = doneStages.filter((k) => stageRegistry.includes(k));
+if (validDoneStages.length !== doneStages.length) {
+  throw new Error(
+    "状态文件 doneStages 含非法阶段键：" +
+      doneStages.filter((k) => !stageRegistry.includes(k)).join(", ") +
+      "。合法键见 references/process-details.md 主题H。",
+  );
+}
+doneStages = validDoneStages;
 
 // —— 前置串行阶段（断点续跑：已完成则跳过） ——
 // stateNote 仅注入有写工具的阶段（interface-reviewer 只读，不写状态）
