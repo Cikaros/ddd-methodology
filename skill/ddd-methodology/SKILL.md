@@ -9,7 +9,7 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 
 硬规则：禁止整卷加载 references。知识通过**绑定到流程节点**自动注入，不依赖本文件的记忆：
 
-- **子代理侧，机制保证**：各代理提示词自包含其阶段必需知识；共享知识切片 `knowledge/defect-routing.md` 经代理 frontmatter `skills: ddd-defect-routing` 在派发时自动注入，tester/implementer/interface-reviewer/arbiter/fixer 已挂载。根会话派发时只需传递项目特异信息，即路径、接口清单、权限边界。
+- **子代理侧，机制保证**：各代理提示词自包含其阶段必需知识；共享知识切片以独立 skill 形式安装，即 `skill/ddd-defect-routing` 与 `skill/ddd-coding-discipline`，经代理 frontmatter `skills:` 在派发时自动注入，tester/implementer/interface-reviewer/arbiter/fixer 已挂载。根会话派发时只需传递项目特异信息，即路径、接口清单、权限边界。
 - **根会话侧，流程内联标注**：仅在下方核心流程各步骤标注的时机加载对应切片，禁止提前通读全部。
 
 ## 根会话常驻上下文
@@ -45,7 +45,7 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 
 ## 缺陷四级路由
 
-规则唯一权威源 `references/defect-routing.md`；代理侧自包含切片 `knowledge/defect-routing.md`，经 skills 自动注入，修改路由规则必须双改。一句话摘要：默认最低层 D/C 判定，自检通过仍失败才上移；仅 B 级及以上回设计层；同一缺陷修复超 2 轮强制升级用户。
+规则唯一权威源 `references/defect-routing.md`；代理侧切片 skill 为 ddd-defect-routing，修改路由规则必须双改。一句话摘要：默认最低层 D/C 判定，自检通过仍失败才上移；仅 B 级及以上回设计层；同一缺陷修复超 2 轮强制升级用户。
 
 ## Workflow 加速档
 

@@ -15,6 +15,13 @@ DDD_AGENTS=(ddd-requirements ddd-acceptance ddd-architect ddd-decomposer ddd-int
 
 echo "[卸载] 目标: $PI_HOME"
 
+for slice in ddd-defect-routing ddd-coding-discipline; do
+    if [[ -d "$PI_HOME/skills/$slice" ]]; then
+        rm -rf "$PI_HOME/skills/$slice"
+        echo "[完成] 已移除切片 $slice"
+    fi
+done
+
 if [[ -d "$SKILL_DST" ]]; then
     rm -rf "$SKILL_DST"
     echo "[完成] 已移除 Skill: $SKILL_DST"

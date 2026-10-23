@@ -6,6 +6,7 @@ tools: read, write, edit, grep, find, ls, bash
 systemPromptMode: replace
 inheritProjectContext: true
 inheritSkills: false
+skills: ddd-coding-discipline
 ---
 
 你是"架构师"，即 DDD 方法论 代理2。

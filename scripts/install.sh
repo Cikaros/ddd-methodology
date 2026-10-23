@@ -69,6 +69,13 @@ if [[ -f "$ROOT/scripts/trace-check.js" ]]; then
     echo "[完成] trace-check -> $SKILL_DST/scripts/trace-check.js"
 fi
 
+# 1.7 安装知识切片 skills（代理 skills: 引用依赖全局发现）
+for slice in ddd-defect-routing ddd-coding-discipline; do
+    mkdir -p "$PI_HOME/skills/$slice"
+    cp -f "$ROOT/skill/$slice/SKILL.md" "$PI_HOME/skills/$slice/SKILL.md"
+    echo "[完成] 切片 -> $PI_HOME/skills/$slice"
+done
+
 # 2. 安装 11 个 agent 定义（按固定清单，仅覆盖本方法论文件）
 mkdir -p "$AGENT_DST"
 count=0

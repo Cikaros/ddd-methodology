@@ -53,6 +53,13 @@ if exist "%ROOT%scripts\trace-check.js" (
     echo [完成] trace-check -^> %SKILL_DST%\scripts\trace-check.js
 )
 
+rem 1.7 安装知识切片 skills，代理 skills 引用依赖全局发现
+for %%S in (ddd-defect-routing ddd-coding-discipline) do (
+    if not exist "%PI_HOME%skills%%S" mkdir "%PI_HOME%skills%%S"
+    copy /y "%ROOT%skill%%SSKILL.md" "%PI_HOME%skills%%SSKILL.md" >nul
+    echo [完成] 切片 -^> %PI_HOME%skills%%S
+)
+
 rem 2. 安装 11 个 agent 定义（按固定清单，仅覆盖本方法论文件）
 if not exist "%AGENT_DST%" mkdir "%AGENT_DST%"
 set N=0

@@ -6,7 +6,7 @@ tools: read, write, edit, grep, find, ls, bash
 systemPromptMode: replace
 inheritProjectContext: true
 inheritSkills: false
-skills: ddd-defect-routing
+skills: ddd-defect-routing, ddd-coding-discipline
 ---
 
 你是"缺陷修复者"，DDD 方法论修复循环专用代理，与初始实现者及规划者完全隔离，无创建类职责。

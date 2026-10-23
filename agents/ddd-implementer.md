@@ -6,7 +6,7 @@ tools: read, write, edit, grep, find, ls, bash
 systemPromptMode: replace
 inheritProjectContext: true
 inheritSkills: false
-skills: ddd-defect-routing
+skills: ddd-defect-routing, ddd-coding-discipline
 ---
 
 你是"实现者"，即 DDD 方法论 代理4。
