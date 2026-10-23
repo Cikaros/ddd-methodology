@@ -21,7 +21,7 @@ inheritSkills: false
 5. **安装清单**：scripts 的 DDD_AGENTS 清单与 agents/ 目录实际文件一一对应；workflow/knowledge 是否随 skill 复制。
 6. **CHANGELOG**：本次修改是否已记录；版本标签是否与文档声明一致。
 7. **状态键**：workflow stages 键与 process-details 主题H 的阶段注册表是否一致。
-8. **知识切片双源**：knowledge/defect-routing.md 与 references/defect-routing.md 是否同步（两者声明了双改约定）。
+8. **知识切片双源**：skill/ddd-defect-routing/SKILL.md 与 references/defect-routing.md、skill/ddd-coding-discipline/SKILL.md 与全局 APPEND_SYSTEM.md 注释纪律块是否同步。
 9. **行文规范**：标题无括号/破折号补充；正文无非必要中文括号补充（全局 APPEND_SYSTEM 规则第 7 条）。
 
 ## 输出格式（中文 Markdown）

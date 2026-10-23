@@ -2,6 +2,11 @@
 
 ---
 
+## v1.12.4（2026-10-15）
+- 实测修正知识注入机制误解：pi 的 skill 机制只向子代理广告技能名称与描述，正文需代理按需读取，`skills:` 不会自动注入正文。此前 v1.9.2 声明为自动注入，实际 ddd-fixer 与 ddd-implementer 从未拿到路由正文。
+- 关键规则改为内联进代理提示词正文，系统提示词 replace 模式派发即完整送达：ddd-fixer 与 ddd-implementer 内联缺陷四级与注释纪律，ddd-interface-reviewer 内联缺陷四级，ddd-architect 内联注释与文件纪律；skill 切片降级为深读参考。
+- SKILL.md 加载规则描述修正为内联保证，并明确不得把关键规则仅放在切片里。
+
 ## v1.12.3（2026-10-15）
 - 修复知识切片挂载失效的隐藏缺陷：v1.9.2 起 agents 的 skills: ddd-defect-routing 引用了一个不存在的 skill 名，切片从未被实际注入。
 - 知识切片重构为独立 mini-skill，即 skill/ddd-defect-routing 与 skill/ddd-coding-discipline，安装到全局 skills 目录使引用可达。
