@@ -15,9 +15,10 @@ ddd-methodology/
 │   ├── references/
 │   │   ├── spec.md               # 规范唯一权威源
 │   │   ├── templates.md          # 文档模板库
+│   │   ├── process-details.md    # 专项细则 B 至 J
 │   │   └── defect-routing.md     # 缺陷四级路由细则
-├── skill/ddd-defect-routing/     # 知识切片 skill：缺陷路由，派发时经 skills 注入
-├── skill/ddd-coding-discipline/  # 知识切片 skill：注释与文件纪律
+├── skill/ddd-defect-routing/     # 知识切片 skill：缺陷路由深读正文
+├── skill/ddd-coding-discipline/  # 知识切片 skill：注释与文件纪律深读正文
 ├── workflows/
 │   └── ddd-workflow.js           # 可选加速档：固定阶段自动编排脚本（args.root 传项目根）
 ├── agents/                       # 子代理定义（pi-subagents 格式）
@@ -36,7 +37,8 @@ ddd-methodology/
     ├── install.bat               # Windows 安装/更新（幂等）
     ├── install.sh                # Linux/macOS/Git Bash 安装/更新
     ├── uninstall.bat             # Windows 卸载（固定文件清单，防误删）
-    └── uninstall.sh              # Linux/macOS/Git Bash 卸载
+    ├── uninstall.sh              # Linux/macOS/Git Bash 卸载
+    └── trace-check.js            # 追溯一致性校验脚本，G2/G4/G5 门禁证据
 ```
 
 ## 安装与卸载
@@ -59,8 +61,10 @@ chmod +x scripts/*.sh
 ```
 
 安装内容：
-- Skill，含 workflows 加速档脚本，安装到 `~/.pi/agent/skills/ddd-methodology/`
-  - 其中 workflow 脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`，供根会话以 `subagent({ workflow: ... , args: { root: "<项目根>" } })` 调用
+- Skill，含 workflows 加速档脚本与 trace-check 校验脚本，安装到 `~/.pi/agent/skills/ddd-methodology/`
+  - workflow 脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`，供根会话以 `subagent({ workflow: ... , args: { root: "<项目根>" } })` 调用
+  - trace-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js`，作为 G2/G4/G5 门禁证据
+- 两个知识切片，安装到 `~/.pi/agent/skills/`：`ddd-defect-routing` 与 `ddd-coding-discipline`，提供技能目录可见性与深读正文；关键规则已内联在各代理正文
 - 11 个 agent 定义，按固定文件名清单，安装到 `~/.pi/agent/agents/ddd-*.md`
 
 脚本按固定文件名清单安装/卸载，不会影响 `~/.pi/agent/agents/` 下用户自定义的其他代理文件。

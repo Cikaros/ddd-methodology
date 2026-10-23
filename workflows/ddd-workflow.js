@@ -37,7 +37,7 @@ const maxFixRounds = args && Number.isFinite(Number(args.maxFixRounds))
   : 2; // 方法论约定：轮回修复超过 2 轮强制升级用户
 const stateFile = `${root}/docs/.ddd-state.json`;
 
-// 阶段注册表（唯一权威源）：所有可断点的阶段键都在此声明；
+// 阶段注册表：键清单必须与 references/process-details.md 主题H 的阶段注册表一致；
 // 串行段/接口评审/G5-INT/首轮测试执行均用 stateNote 写入对应键。
 const stageRegistry = [
   "requirements", "acceptance", "architect", "decomposer",

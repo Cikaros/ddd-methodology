@@ -2,6 +2,14 @@
 
 ---
 
+## v1.12.5（2026-10-15）doc-sync 巡检 21 项漂移修复
+- 阻断：install.bat 与 uninstall.bat 切片段路径缺分隔符，切片实际装不上且卸载残留，已补 `` 并加 errorlevel 判定与缺失警告；install.sh 切片段补存在性容错。
+- 机制口径统一：两个切片 skill 的 description 与 spec、SKILL 描述由"自动注入"改为"提供深读正文、关键规则内联"，消除与实测结论的矛盾。
+- ddd-arbiter 补齐内联路由块；ddd-tester 内联的 D 与 C 路修复者补 ddd-fixer；SKILL 同步面改为清单式点名，不再写硬编码处数。
+- --check 增补 trace-check 与切片 skills 状态行；workflow 阶段注册表注释改为指向主题H；process-details 头部补 G 主题；spec §7 的 E 与 G 行归属去重。
+- README 结构树补 process-details.md 与 trace-check.js，安装内容补切片与校验脚本；doc-sync 巡检口径更新为切片与 trace-check。
+- 行文：11 处标题去除括号补充，模板内标题同步，trace-check 锚定章节未受影响。
+
 ## v1.12.4（2026-10-15）
 - 实测修正知识注入机制误解：pi 的 skill 机制只向子代理广告技能名称与描述，正文需代理按需读取，`skills:` 不会自动注入正文。此前 v1.9.2 声明为自动注入，实际 ddd-fixer 与 ddd-implementer 从未拿到路由正文。
 - 关键规则改为内联进代理提示词正文，系统提示词 replace 模式派发即完整送达：ddd-fixer 与 ddd-implementer 内联缺陷四级与注释纪律，ddd-interface-reviewer 内联缺陷四级，ddd-architect 内联注释与文件纪律；skill 切片降级为深读参考。

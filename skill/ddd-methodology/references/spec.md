@@ -3,7 +3,7 @@
 标题补充说明：本规范即 DDD-Methodology，为随 Skill 分发版。
 
 > 本文件为方法论规范的唯一权威源，Skill 运行时加载版。变更历史见仓库 CHANGELOG.md。
-> 知识加载模式：根会话常驻仅本文件；其余知识绑定到流程节点/代理提示词/代理 skills 附件自动注入，详见 SKILL.md 加载规则。
+> 知识加载模式：根会话常驻仅本文件；其余知识按流程节点标注加载、代理提示词内联、切片深读三层送达（详见 SKILL.md 加载规则）。
 > 状态文件 schema 唯一权威：process-details.md 主题H。
 
 ## 1. 核心理念
@@ -92,9 +92,9 @@
 | B | 多模块并行实现，含互斥接缝、一接缝一writer、集成收口 | process-details.md 主题B |
 | C | 需求变更流程，含变更单、版本化、影响圈定 | process-details.md 主题C |
 | D | 二次开发现状分析格式与检查清单 | process-details.md 主题D |
-| E | 质量门禁 G1–G6，含 G4.5 接口冻结门与 G5 子门、G5-INT | process-details.md 主题E |
+| E | 质量门禁 G1–G6，含 G5 子门与 G5-INT；G4.5 接口冻结门归属 G 行 | process-details.md 主题E |
 | F | 测试阻塞防护，含用例分级、桩化、超时、手动清单 | process-details.md 主题F |
-| G | 接口先行规划，含签名级契约、独立评审、冻结门 | process-details.md 主题E-G4.5 |
+| G | 接口先行规划，含签名级契约、独立评审、冻结门 | process-details.md 的 G4.5 顶层节 |
 | H | Workflow 状态文件 schema | process-details.md 主题H |
 | I | 设计粒度规则，文档与代码双重粒度拆解，模块类函数变量相对独立，避免调用顺序影响结果 | process-details.md 主题I |
 | J | 渐进式改造，L1文件级到L5项目级阶梯，规划期评估，低级能解决不升级 | process-details.md 主题J |

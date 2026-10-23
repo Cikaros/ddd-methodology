@@ -41,6 +41,16 @@ if [[ "${1:-}" == "--check" ]]; then
     else
         echo "  Workflow : 未安装"
     fi
+    if [[ -f "$SKILL_DST/scripts/trace-check.js" ]]; then
+        echo "  trace-check : 已安装 ($SKILL_DST/scripts/trace-check.js)"
+    else
+        echo "  trace-check : 未安装"
+    fi
+    s_ok=0
+    for slice in ddd-defect-routing ddd-coding-discipline; do
+        [[ -f "$PI_HOME/skills/$slice/SKILL.md" ]] && s_ok=$((s_ok+1))
+    done
+    echo "  切片 skills : $s_ok / 2 已安装"
     exit 0
 fi
 
@@ -62,7 +72,7 @@ if [[ -d "$ROOT/workflows" ]]; then
     echo "[完成] Workflow -> $SKILL_DST/workflows/"
 fi
 
-# 1.6 安装追溯校验脚本与知识切片
+# 1.6 安装追溯校验脚本
 if [[ -f "$ROOT/scripts/trace-check.js" ]]; then
     mkdir -p "$SKILL_DST/scripts"
     cp -f "$ROOT/scripts/trace-check.js" "$SKILL_DST/scripts/"
@@ -71,9 +81,13 @@ fi
 
 # 1.7 安装知识切片 skills（代理 skills: 引用依赖全局发现）
 for slice in ddd-defect-routing ddd-coding-discipline; do
-    mkdir -p "$PI_HOME/skills/$slice"
-    cp -f "$ROOT/skill/$slice/SKILL.md" "$PI_HOME/skills/$slice/SKILL.md"
-    echo "[完成] 切片 -> $PI_HOME/skills/$slice"
+    if [[ -f "$ROOT/skill/$slice/SKILL.md" ]]; then
+        mkdir -p "$PI_HOME/skills/$slice"
+        cp -f "$ROOT/skill/$slice/SKILL.md" "$PI_HOME/skills/$slice/SKILL.md"
+        echo "[完成] 切片 -> $PI_HOME/skills/$slice"
+    else
+        echo "[警告] 缺少 $ROOT/skill/$slice/SKILL.md" >&2
+    fi
 done
 
 # 2. 安装 11 个 agent 定义（按固定清单，仅覆盖本方法论文件）

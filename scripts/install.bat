@@ -55,9 +55,13 @@ if exist "%ROOT%scripts\trace-check.js" (
 
 rem 1.7 安装知识切片 skills，代理 skills 引用依赖全局发现
 for %%S in (ddd-defect-routing ddd-coding-discipline) do (
-    if not exist "%PI_HOME%skills%%S" mkdir "%PI_HOME%skills%%S"
-    copy /y "%ROOT%skill%%SSKILL.md" "%PI_HOME%skills%%SSKILL.md" >nul
-    echo [完成] 切片 -^> %PI_HOME%skills%%S
+    if not exist "%PI_HOME%\skills\%%S" mkdir "%PI_HOME%\skills\%%S"
+    if exist "%ROOT%skill\%%S\SKILL.md" (
+        copy /y "%ROOT%skill\%%S\SKILL.md" "%PI_HOME%\skills\%%S\SKILL.md" >nul
+        if errorlevel 1 ( echo [警告] 切片 %%S 复制失败 ) else ( echo [完成] 切片 -^> %PI_HOME%\skills\%%S )
+    ) else (
+        echo [警告] 缺少 %ROOT%skill\%%S\SKILL.md
+    )
 )
 
 rem 2. 安装 11 个 agent 定义（按固定清单，仅覆盖本方法论文件）
@@ -86,4 +90,10 @@ for %%A in (%DDD_AGENTS%) do (
 )
 echo   Agents   : !N! / 11 已安装
 if exist "%SKILL_DST%\workflows\ddd-workflow.js" ( echo   Workflow : 已安装 ) else ( echo   Workflow : 未安装 )
+if exist "%SKILL_DST%\scripts\trace-check.js" ( echo   trace-check : 已安装 ) else ( echo   trace-check : 未安装 )
+set S=0
+for %%S in (ddd-defect-routing ddd-coding-discipline) do (
+    if exist "%PI_HOME%\skills\%%S\SKILL.md" set /a S+=1
+)
+echo   切片 skills : !S! / 2 已安装
 exit /b 0

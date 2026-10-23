@@ -1,9 +1,9 @@
 ---
 name: ddd-coding-discipline
-description: DDD 方法论注释与文件纪律知识切片。派发给 ddd-implementer、ddd-fixer、ddd-architect 时经 skills: 自动注入；一般不独立调用。
+description: DDD 方法论注释与文件纪律知识切片。提供资源路径与深读正文，代理需按需读取；关键规则已内联在各代理正文中。
 ---
 
-# 注释与文件纪律（代理自包含知识切片）
+# 注释与文件纪律知识切片
 
 ## 注释纪律
 1. 注释只解释"为什么"，即意图、坑位依据、约束来源；不复述代码做了什么。

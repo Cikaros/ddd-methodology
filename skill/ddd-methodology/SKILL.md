@@ -33,19 +33,19 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 6. **代理4 实现者 ∥ 代理5 测试规划**：实现者逐字匹配冻结接口；测试规划者基于总 AC+模块 AC+冻结接口产出测试计划树，含契约测试。
    > 本步加载：process-details **主题B** 的互斥接缝与 **主题F** 的测试分级，仅此两节；templates 的 TEST_PLAN 节。
 7. **代理6 测试执行，ddd-tester**：按计划执行测试。路由知识已内嵌该代理，可自动定级，争议才升级。
-   > 本步加载：无需切片；**仅当发生定级争议时**重读 `references/defect-routing.md` 全量权威源，或派发 ddd-arbiter，路由知识经 skills 挂载自动注入。
+   > 本步加载：无需切片；**仅当发生定级争议时**重读 `references/defect-routing.md` 全量权威源，或派发 ddd-arbiter，该代理正文已内联路由知识。
 8. **门禁复核**：G1–G6 各门，过门时按 templates 的门禁检查单节填检查单。
    > 本步加载：process-details **主题E**，仅此节，另加 trace-check.js 输出作为 G2/G4/G5 证据。
 
 ## 根会话职责
 
 - 仅调度与验证，不直接实现代码；依据总 `AC.md` 验证交付。
-- 缺陷定级争议：优先派发 ddd-arbiter，路由知识自动注入，零上下文成本；你仅做最终裁决/升级用户，裁决前重读 `references/defect-routing.md`。
+- 缺陷定级争议：优先派发 ddd-arbiter，其正文已内联路由知识，零上下文成本；你仅做最终裁决/升级用户，裁决前重读 `references/defect-routing.md`。
 - 同一缺陷轮回修复超过 2 轮仍未解决 → 强制升级用户，禁止继续循环。
 
 ## 缺陷四级路由
 
-规则唯一权威源 `references/defect-routing.md`；代理提示词内联摘要，切片 skill ddd-defect-routing 提供深读正文，三处修改必须同步。一句话摘要：默认最低层 D/C 判定，自检通过仍失败才上移；仅 B 级及以上回设计层；同一缺陷修复超 2 轮强制升级用户。
+规则唯一权威源 `references/defect-routing.md`。同步面清单：references/defect-routing.md、skill/ddd-defect-routing/SKILL.md、tester 与 arbiter 的独立内联块、fixer 与 implementer 与 interface-reviewer 的内联块；注释纪律同步面：全局 APPEND_SYSTEM.md 注释纪律块、skill/ddd-coding-discipline/SKILL.md、architect 与 implementer 与 fixer 的内联块。修改任一处必须同步全部。
 
 ## Workflow 加速档
 

@@ -1,9 +1,9 @@
 ---
 name: ddd-defect-routing
-description: DDD 方法论缺陷四级路由知识切片。派发给 ddd-tester、ddd-fixer、ddd-implementer、ddd-interface-reviewer、ddd-arbiter 时经 skills: 自动注入；一般不独立调用。
+description: DDD 方法论缺陷四级路由知识切片。提供资源路径与深读正文，代理需按需读取；关键规则已内联在各代理正文中。
 ---
 
-# 缺陷四级路由（代理自包含知识切片）
+# 缺陷四级路由知识切片
 
 ## 四级定义与处理
 | 级别 | 定义 | 处理 |
