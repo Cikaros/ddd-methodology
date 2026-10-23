@@ -25,10 +25,10 @@ inheritSkills: false
 2. **权威源与内联块双机制**：缺陷路由与轮次上限的权威源在 defect-routing.md 与 spec §4，超时建议值在 process-details 主题F，状态键在 process-details 主题H；代理提示词内联块属既定机制不判为漂移，但需核对其内容与权威源是否一致，不一致即报漂移。
 3. **spec §7 索引表**：每个专项（B–K）是否与 process-details 实际主题节一一对应，无缺失/多余。
 4. **模板锚定**：templates.md 的「模块级验收要点」「用例清单」章节名与 trace-check.js 锚定正则是否兼容。
-5. **安装清单**：scripts 的 DDD_AGENTS 清单与 agents/ 目录实际文件一一对应；workflow、trace-check.js 与两个切片 skill 是否随安装复制与随卸载移除。
+5. **安装清单**：scripts 的 DDD_AGENTS 清单与 agents/ 目录实际文件一一对应；workflow、trace-check.js、两个切片 skill 与全局规则区块是否随安装复制与随卸载移除，全局块见 global/APPEND_SYSTEM.md。
 6. **CHANGELOG**：本次修改是否已记录；版本标签是否与文档声明一致。
 7. **状态键**：workflow stages 键与 process-details 主题H 的阶段注册表是否一致。
-8. **知识切片双源**：skill/ddd-defect-routing/SKILL.md 与 references/defect-routing.md、skill/ddd-coding-discipline/SKILL.md 与全局 APPEND_SYSTEM.md 注释纪律块是否同步。
+8. **知识切片双源**：skill/ddd-defect-routing/SKILL.md 与 ~/.pi/agent/skills/ddd-methodology/references/defect-routing.md、skill/ddd-coding-discipline/SKILL.md 与 global/APPEND_SYSTEM.md 注释纪律块是否同步。
 9. **行文规范**：标题无括号与破折号补充；正文无非必要中文括号补充，全局 APPEND_SYSTEM 规则第 7 条。
 10. **全局规则同步**：仓库权威版 global/APPEND_SYSTEM.md 与已部署的 ~/.pi/agent/APPEND_SYSTEM.md 标记区块内容是否一致。
 

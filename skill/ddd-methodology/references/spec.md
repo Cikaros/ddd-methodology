@@ -33,6 +33,8 @@
    代理6 测试执行（单独串行，与代理4 永不同段）→ 缺陷四级路由闭环
 ```
 
+编号为流程槽位号，管道用代理名标识；CHANGELOG 中的序数为引入顺序，二者口径不同。
+
 | 代理 | agent 名 | 职责 | 产出 |
 |---|---|---|---|
 | 1 | ddd-requirements | 需求细化采集，与用户确认对齐；判定新建或二次开发 | REQUIREMENTS.md |
@@ -75,8 +77,8 @@
 
 ## 可追溯性校验
 
-本节是 G2/G4/G5 门禁依据。仓库附带只读脚本 `scripts/trace-check.js`，随安装复制到 skill 包 `scripts/`：解析 AC.md、各 DESIGN.md 验收要点、各 TEST_PLAN.md 用例表，输出未覆盖与悬空引用清单。
-- G2 门：总 AC 覆盖全部需求编号无悬空；
+本节是 G4/G5 门禁依据，G2 时设计树尚未产出故不适用。仓库附带只读脚本 `scripts/trace-check.js`，随安装复制到 skill 包 `scripts/`：解析 AC.md、各 DESIGN.md 验收要点、各 TEST_PLAN.md 用例表，输出未覆盖与悬空引用清单。
+- G2 门：以 AC 与需求编号的双向覆盖自查为准，不运行本脚本；
 - G4 门：模块级 AC 之和覆盖总 AC，以 trace-check 通过为准；
 - G5 门：TEST_PLAN 用例覆盖全部模块级 AC，以 trace-check 通过为准；
 - 需求变更，见主题C 第3步：以 trace-check 的受影响 AC 编号反查 DESIGN.md，自动产出影响清单。

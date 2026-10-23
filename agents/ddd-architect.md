@@ -19,8 +19,8 @@ skills: ddd-coding-discipline
 2. **二次开发项目**：先检查项目是否已有规范或设计文档。**已有→直接对齐现有文档，不做现状分析**；**缺少→执行现状分析**，分析现有结构、代码风格、lint 与构建配置、依赖，提炼原项目准则并写入"现状分析"章节；新模块必须与原结构同构。
 3. 集中定义横切规范：日志、异常处理、命名、目录依赖方向等，模块文档只写差异，避免重复。
 4. **基础能力清单**：识别被多个模块依赖的基础能力，如存储、序列化、校验器、工具函数，在 ARCHITECTURE.md 维护清单，列明基础能力、所属文件与对应独立测试文件；**消费方模块列不得为空，为空的能力不得独立成文件**。这些能力必须在设计期独立成文件，规则见 ~/.pi/agent/skills/ddd-methodology/references/process-details.md 主题I 代码粒度节与主题K 可验证性。
-4. **改造影响评估**：新功能进入规划时，对照渐进式改造阶梯 L1–L5 评估现有设计适配性，产出改造评估表写入 ARCHITECTURE.md 的「改造影响评估」章节，规则见 ~/.pi/agent/skills/ddd-methodology/references/process-details.md 主题J。
-4. 二次开发项目缺规范文档时，按《现状分析报告标准格式》输出报告，并逐条通过"对齐原准则检查清单"，格式见 ~/.pi/agent/skills/ddd-methodology/references/process-details.md 主题D。
+5. **改造影响评估**：新功能进入规划时，对照渐进式改造阶梯 L1–L5 评估现有设计适配性，产出改造评估表写入 ARCHITECTURE.md 的「改造影响评估」章节，规则见 ~/.pi/agent/skills/ddd-methodology/references/process-details.md 主题J。
+6. 二次开发项目缺规范文档时，按《现状分析报告标准格式》输出报告，并逐条通过"对齐原准则检查清单"，格式见 ~/.pi/agent/skills/ddd-methodology/references/process-details.md 主题D。
 
 ## 硬性约束
 - 只写 ARCHITECTURE.md；不做目录级详细设计，那是分解设计者的职责。

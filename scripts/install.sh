@@ -98,7 +98,7 @@ done
 # 1.8 安装全局规则区块，块级标记合并，区块外用户自定义内容保留
 if [[ -f "$ROOT/global/APPEND_SYSTEM.md" ]]; then
     if command -v node >/dev/null 2>&1; then
-        node "$ROOT/scripts/merge-append-system.js" install "$ROOT" || echo "[警告] 全局规则合并失败" >&2
+        node "$ROOT/scripts/merge-append-system.js" install "$ROOT" "$PI_HOME/APPEND_SYSTEM.md" || echo "[警告] 全局规则合并失败" >&2
     else
         echo "[警告] 未找到 node，跳过全局规则安装" >&2
     fi

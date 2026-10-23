@@ -4,8 +4,8 @@
  * 范围：只替换标记区块；区块之外的用户自定义内容原样保留；卸载时移除该区块。跨平台单一实现，供 install.sh 与 install.bat 共用。
  *
  * 用法：
- *   node merge-append-system.js install <仓库根>
- *   node merge-append-system.js remove
+ *   node merge-append-system.js install <仓库根> [目标文件]
+ *   node merge-append-system.js remove [目标文件]
  */
 
 const fs = require("fs");
@@ -15,9 +15,12 @@ const os = require("os");
 const BEGIN = "<!-- ddd-methodology:begin -->";
 const END = "<!-- ddd-methodology:end -->";
 
-const target = path.join(os.homedir(), ".pi", "agent", "APPEND_SYSTEM.md");
 const mode = process.argv[2];
 const repoRoot = process.argv[3] || process.cwd();
+// 目标文件优先取入参，保证与安装脚本的 PI_HOME 口径一致；未传时回退家目录推导
+const explicitTarget = mode === "remove" ? process.argv[3] : process.argv[4];
+const target = explicitTarget || path.join(os.homedir(), ".pi", "agent", "APPEND_SYSTEM.md");
+const backup = target + ".ddd-bak";
 
 function readIfExists(p) {
   try {
@@ -54,6 +57,14 @@ if (mode === "remove") {
   if (rest.trim()) {
     fs.writeFileSync(target, rest + "\n");
     console.log("[完成] 已移除标记区块，保留其余自定义内容");
+    process.exit(0);
+  }
+  // 仅剩标记区块：优先恢复安装前的备份，避免用户原有内容丢失
+  const bak = readIfExists(backup);
+  if (bak !== null) {
+    fs.writeFileSync(target, bak);
+    fs.rmSync(backup);
+    console.log("[完成] 已恢复安装前备份 -> " + target);
   } else {
     fs.rmSync(target);
     console.log("[完成] 已移除全部内容并删除文件");
@@ -62,7 +73,7 @@ if (mode === "remove") {
 }
 
 if (mode !== "install") {
-  console.error("用法：node merge-append-system.js install|remove [仓库根]");
+  console.error("用法：node merge-append-system.js install <仓库根> [目标文件] | remove [目标文件]");
   process.exit(1);
 }
 
@@ -77,10 +88,9 @@ if (!block.includes(BEGIN) || !block.includes(END)) {
 }
 
 if (existing !== null) {
-  const bak = target + ".ddd-bak";
-  if (!fs.existsSync(bak)) {
-    fs.writeFileSync(bak, existing);
-    console.log("[完成] 已备份原文件 -> " + bak);
+  if (!fs.existsSync(backup)) {
+    fs.writeFileSync(backup, existing);
+    console.log("[完成] 已备份原文件 -> " + backup);
   }
   const rest = stripBlock(existing);
   const merged = rest.trim() ? rest + "\n\n" + block.replace(/\s+$/, "") + "\n" : block.replace(/\s+$/, "") + "\n";

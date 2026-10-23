@@ -55,7 +55,7 @@ async function readResumeState() {
     agent: "ddd-requirements",
     task: `只读检查 ${stateFile}（断点状态文件，字段 schema：doneStages 数组 / lastStage / status）。
 规则：
-1. 若文件存在且 JSON 有效：对 doneStages 数组中每个阶段键，输出一行机读行 "DONE: <阶段键>"（格式严格为 DONE: 空格 阶段键，如 "DONE: architect"）；并简要报告缺陷摘要与最近已过门记录。然后停止，不写 REQUIREMENTS.md。
+1. 若文件存在且 JSON 有效：对 doneStages 数组中每个阶段键，输出一行机读行 "DONE: <阶段键>"（格式严格为 DONE: 空格 阶段键，如 "DONE: architect"）；并报告 lastStage 与 status 字段值、缺陷摘要。然后停止，不写 REQUIREMENTS.md。
 2. 若文件存在但 JSON 损坏/不可解析：输出 "STATE_CORRUPT" 并停止，不得当全新启动处理。
 3. 若文件不存在：输出 "NO_STATE_FILE"，报告全新启动。
 禁止修改任何文件。`,
@@ -110,8 +110,10 @@ function extractDefects(reportText) {
 
 // 状态更新指令：注入到阶段任务末尾。
 // 并行段竞写防护：仅实现者写状态（writer 唯一），测试规划者不写。
-function stateNote(stageKey) {
-  return `\n\n【状态记录】完成后更新 ${stateFile}：追加/合并 JSON 字段 {"lastStage":"${stageKey}","status":"done"}，并保留已有字段（如 doneStages 数组追加 "${stageKey}"）。文件不存在则创建并初始化。`;
+function stateNote(stageKey, alsoDone) {
+  const keys = [stageKey].concat(alsoDone || []);
+  const list = keys.map((k) => `"${k}"`).join(", ");
+  return `\n\n【状态记录】完成后更新 ${stateFile}：追加/合并 JSON 字段 {"lastStage":"${stageKey}","status":"done"}，doneStages 数组补齐 ${list}，并保留已有字段。文件不存在则据此初始化。`;
 }
 
 // 统一的阶段执行包装：失败时返回结构化结果而非裸抛，保留阶段名/轮次/状态文件路径供根会话断点接管。
@@ -152,7 +154,7 @@ function buildFixCtx(round, reportText, fixText) {
   const defectSummary = defectLines || text.slice(-1500);
   // 已尝试方案：来自上轮修复者的输出 fixText，而非测试报告
   const fixOut = String(fixText || "");
-  const triedMatch = fixOut.match(/已尝试方案[：:]*([\s\S]{0,1200})(?=\n#|\z|$)/);
+  const triedMatch = fixOut.match(/已尝试方案[：:]*([\s\S]{0,1200}?)(?=\n#{1,6} |$)/);
   const triedNote = triedMatch
     ? `上一轮已尝试且失败的方案（本轮禁止重复，必须换路径）：\n${triedMatch[1]}`
     : `上一轮未提供已尝试方案记录（首轮或上轮未按格式输出），请自行分析后选择实现路径，并在输出中包含"已尝试方案"节。`;
@@ -314,7 +316,7 @@ if (!doneStages.includes("implement-plan")) {
     key: p.key,
     label: p.label,
     agent: p.agent,
-    task: p.key === "ddd-implement" ? p.task + stateNote("implement-plan") : p.task,
+    task: p.key === "ddd-implement" ? p.task + stateNote("implement-plan", ["interface-review"]) : p.task,
   })));
 }
 
@@ -325,7 +327,7 @@ if (!doneStages.includes("g5-int")) {
   const r = await runStage("ddd-int-check", {
     label: "G5-INT 集成收口检查",
     agent: "ddd-fixer",
-    task: `在项目根 ${root} 执行集成收口检查（G5-INT 门）：1) 全项目构建通过；2) 检查各接缝自测报告齐备且 TEST_PLAN 对齐说明完整，声明测试就绪；3) 核对实现文件粒度与 DESIGN 预判一致，应拆未拆报告 C 级；4) 修复因多接缝合并产生的集成问题，仅实现级修改。**禁止执行全量测试套件，全量测试由 ddd-tester 负责**。完成后更新 ${stateFile} 追加 "g5-int"。若发现设计级矛盾（集成暴露接口不匹配），停止并报告 B 级缺陷。`,
+    task: `在项目根 ${root} 执行集成收口检查（G5-INT 门）：1) 全项目构建通过；2) 检查各接缝自测报告齐备且 TEST_PLAN 对齐说明完整，声明测试就绪；3) 核对实现文件粒度与 DESIGN 预判一致，应拆未拆报告 C 级；4) 修复因多接缝合并产生的集成问题，仅实现级修改。**禁止执行全量测试套件，全量测试由 ddd-tester 负责**。若发现设计级矛盾（集成暴露接口不匹配），停止并报告 B 级缺陷。` + stateNote("g5-int"),
   }, { stage: "g5-int" });
   if (r && r.__failed) return r;
 }
@@ -341,7 +343,7 @@ while (round <= maxFixRounds) {
   lastReport = await runStage(finalStage.runKey + "-r" + round, {
     label: `${finalStage.label}（第${round}轮）`,
     agent: finalStage.agent,
-    task: finalStage.task(round) + (round === 1 ? `\n完成后更新 ${stateFile} 追加 "test-execute"。` : ""),
+    task: finalStage.task(round) + (round === 1 ? stateNote("test-execute") : ""),
   }, { stage: finalStage.key, round });
   if (lastReport && lastReport.__failed) return lastReport;
 

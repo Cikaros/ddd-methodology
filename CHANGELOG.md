@@ -2,6 +2,12 @@
 
 ---
 
+## v1.13.2（2026-10-15）审计复审 21 项残留修剪
+- 阻断级：P1 接口评审阶段键补生产者（实现段 stateNote 同时写入 interface-review）；P2 主题K 修剪触发点补齐执行者；P12 合并脚本增目标路径参数，与安装脚本 PI_HOME 口径统一；P13 卸载优先从备份恢复并删除备份，README 声明备份路径与清理方式；P14 CHANGELOG 如实修正首轮修剪完成度。
+- 高优先：P3 status 字段补读者（断点检查报告该字段）；P4 状态写入统一走 stateNote，消除 g5-int 与 test-execute 的内联双实现；P5 buildFixCtx 死正则分支修正；P6 注释纪律切片补齐密度基准与审查视角两条；P7 代理内不可解析路径统一为绝对形式；P8 README 专项细则范围改 B 至 K；P9 README 流程补 G4.5 与声明面审计两步；P11 doc-sync 巡检项 5 与 8 补全局规则区块；P16 trace-check 证据时点限定为 G4/G5，G2 改 AC 双向覆盖自查；P17 spec §2 编号口径说明；P18 三个代理职责编号顺序化；P19 stallTimeoutMs 下界文档化；P21 trace-check 文件过滤精确到 DESIGN 与 TEST_PLAN 并修正文案；P22 代理存在性校验改为如实口径。
+- P20 运行时特性验证口径写入主题K。
+- P10 已在 v1.13.1 完成（README 结构树与安装内容）。
+
 ## v1.13.1（2026-10-15）
 - 全局规则纳入仓库并随安装部署：新增 global/APPEND_SYSTEM.md 为权威版本，采用块级标记合并，只替换标记区块，区块外用户自定义内容原样保留，首次安装前自动备份，卸载时移除区块。
 - 新增 scripts/merge-append-system.js 作为跨平台单一合并实现，供 install.sh 与 install.bat 共用，避免双实现漂移。
@@ -13,7 +19,7 @@
 - 新增第 12 个代理 ddd-auditor 声明面审计者，只读，审计八类声明面与死代码，输出逐项审计表与修剪清单。
 - 强化 ddd-doc-sync 与 ddd-interface-reviewer 审计铁律；decomposer 契约须标消费方模块；architect 能力清单消费方列不得为空；implementer 禁止无用声明；templates 契约表增消费方模块列；G6 门增审计通过退出条件；SKILL 流程新增第 9 步声明面审计。
 - 全局 APPEND_SYSTEM.md 代码注释纪律块补注释不牵连过程一条与单一权威声明可验证一条。
-- 首次自审产出 16 项待修剪并全部处理：workflow 计数与阶段注册表消费方化、process-details 重复声明合并、tester 内联修复者对齐权威源、无消费方的 CONVENTIONS 与 schema 字段修剪、路径形式可解析化、stallTimeoutMs 文档化、doc-sync 巡检口径修正。
+- 首次自审产出 16 项待修剪，第一轮修剪 14 项完全清零，T12 与 T13 部分清零，详见 v1.13.2 复验结论：workflow 计数与阶段注册表消费方化、process-details 重复声明合并、tester 内联修复者对齐权威源、无消费方的 CONVENTIONS 与 schema 字段修剪、路径形式可解析化、stallTimeoutMs 文档化、doc-sync 巡检口径修正。
 
 ## v1.12.5（2026-10-15）doc-sync 巡检 21 项漂移修复
 - 阻断：install.bat 与 uninstall.bat 切片段路径缺分隔符，切片实际装不上且卸载残留，已补 `` 并加 errorlevel 判定与缺失警告；install.sh 切片段补存在性容错。

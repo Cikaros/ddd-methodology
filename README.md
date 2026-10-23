@@ -15,7 +15,7 @@ ddd-methodology/
 │   ├── references/
 │   │   ├── spec.md               # 规范唯一权威源
 │   │   ├── templates.md          # 文档模板库
-│   │   ├── process-details.md    # 专项细则 B 至 J
+│   │   ├── process-details.md    # 专项细则 B 至 K
 │   │   └── defect-routing.md     # 缺陷四级路由细则
 ├── skill/ddd-defect-routing/     # 知识切片 skill：缺陷路由深读正文
 ├── skill/ddd-coding-discipline/  # 知识切片 skill：注释与文件纪律深读正文
@@ -41,7 +41,7 @@ ddd-methodology/
     ├── install.sh                # Linux/macOS/Git Bash 安装/更新
     ├── uninstall.bat             # Windows 卸载（固定文件清单，防误删）
     ├── uninstall.sh              # Linux/macOS/Git Bash 卸载
-    └── trace-check.js            # 追溯一致性校验脚本，G2/G4/G5 门禁证据
+    └── trace-check.js            # 追溯一致性校验脚本，G4/G5 门禁证据
 ```
 
 ## 安装与卸载
@@ -66,9 +66,9 @@ chmod +x scripts/*.sh
 安装内容：
 - Skill，含 workflows 加速档脚本与 trace-check 校验脚本，安装到 `~/.pi/agent/skills/ddd-methodology/`
   - workflow 脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`，供根会话以 `subagent({ workflow: ... , args: { root: "<项目根>" } })` 调用
-  - trace-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js`，作为 G2/G4/G5 门禁证据
+  - trace-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js`，作为 G4/G5 门禁证据
 - 两个知识切片，安装到 `~/.pi/agent/skills/`：`ddd-defect-routing` 与 `ddd-coding-discipline`，提供技能目录可见性与深读正文；关键规则已内联在各代理正文
-- 全局规则区块，按标记合并入 `~/.pi/agent/APPEND_SYSTEM.md`：只替换标记区块，区块外用户自定义内容原样保留，卸载时移除该区块；首次安装前自动备份为 `APPEND_SYSTEM.md.ddd-bak`
+- 全局规则区块，按标记合并入 `~/.pi/agent/APPEND_SYSTEM.md`：只替换标记区块，区块外用户自定义内容原样保留，卸载时移除该区块；首次安装前自动备份为 `APPEND_SYSTEM.md.ddd-bak`，卸载时若仅剩标记区块则优先从该备份恢复并删除备份文件
 - 12 个 agent 定义，按固定文件名清单，安装到 `~/.pi/agent/agents/ddd-*.md`
 
 脚本按固定文件名清单安装/卸载，不会影响 `~/.pi/agent/agents/` 下用户自定义的其他代理文件。
@@ -81,7 +81,7 @@ chmod +x scripts/*.sh
 /skill:ddd-methodology 按此方法论开发一个 <项目描述>
 ```
 
-或直接说"**按 ddd 方法论开发……**"触发。根会话将按流程依次派发：需求采集，即代理1，→ 验收标准，即代理0，→ 架构设计，即代理2，→ 分解设计，即代理3，→ 实现代理4 与测试规划代理5 并行，→ 测试执行与缺陷路由，即代理6。
+或直接说"**按 ddd 方法论开发……**"触发。根会话将按流程依次派发：需求采集，即代理1，→ 验收标准，即代理0，→ 架构设计，即代理2，→ 分解设计，即代理3，→ 接口冻结门 G4.5，即接口评审代理，→ 实现代理4 与测试规划代理5 并行，→ 集成收口 G5-INT，→ 测试执行与缺陷路由，即代理6，→ 声明面审计，即审计代理。
 
 ## 版本管理
 

@@ -3,9 +3,9 @@
  * DDD-Methodology 追溯一致性校验脚本（只读）
  *
  * 用法：node trace-check.js <项目根>
- * 校验链：AC.md 总验收 ↔ 各 DESIGN.md 模块级验收要点 ↔ 各 TEST_PLAN.md 用例表
+ * 校验链：AC.md 总验收 ↔ 各 DESIGN.md 模块级验收要点 ↔ 各 TEST_PLAN.md 用例表；作为 G4 与 G5 门禁证据
  * 输出：未覆盖（总 AC 无模块承接 / 模块 AC 无用例覆盖）与悬空引用（引用了不存在的 AC 编号）清单
- * 退出码：0=通过（可作为 G2/G4/G5 门禁证据）；1=存在缺口
+ * 退出码：0=通过，可作为 G4/G5 门禁证据；1=存在缺口
  *
  * 约定格式（与 templates.md 模板一致）：
  *   AC.md 中条目形如 "AC-001"、"AC-002"…
@@ -63,8 +63,8 @@ function resolveDesignRoot() {
 const designRoot = resolveDesignRoot();
 if (!designRoot.declared) warnings.push("ARCHITECTURE.md 未找到设计文档树根路径声明，已回退 docs/design；建议补声明以消除歧义");
 const designDir = path.isAbsolute(designRoot.dir) ? designRoot.dir : path.join(root, designRoot.dir);
-const designFiles = fs.existsSync(designDir) ? walk(designDir, ".md") : [];
-if (designFiles.length === 0) problems.push(`设计树 ${designRoot.dir} 下未发现任何 DESIGN.md（G4 门禁前置）`);
+const designFiles = (fs.existsSync(designDir) ? walk(designDir, ".md") : []).filter((f) => /DESIGN.*\.md$/i.test(path.basename(f)));
+if (designFiles.length === 0) problems.push(`设计树 ${designRoot.dir} 下未发现任何 DESIGN 文档（G4 门禁前置）`);
 
 // 从 DESIGN.md 中仅提取"## 模块级验收要点"章节内的 AC 引用；若无该章节则告警并全文提取（降级）
 function extractSectionRefs(text, sectionRe) {
@@ -90,8 +90,8 @@ for (const f of designFiles) {
 
 // ---- 3. 测试用例覆盖（TEST_PLAN.md）——锚定用例表 ----
 const testDir = path.join(root, "docs", "test");
-const testFiles = fs.existsSync(testDir) ? walk(testDir, ".md") : [];
-if (testFiles.length === 0) problems.push("docs/test/ 下未发现任何 TEST_PLAN.md（G5 门禁前置）");
+const testFiles = (fs.existsSync(testDir) ? walk(testDir, ".md") : []).filter((f) => /TEST_PLAN.*\.md$/i.test(path.basename(f)));
+if (testFiles.length === 0) problems.push(`测试树 ${path.relative(root, testDir) || "docs/test"} 下未发现任何 TEST_PLAN 文档（G5 门禁前置）`);
 
 const coveredByTests = new Set();
 for (const f of testFiles) {
@@ -150,4 +150,4 @@ if (problems.length) {
   console.log(`\n结果：未通过（${problems.length} 项缺口，${warnings.length} 项警告）`);
   process.exit(1);
 }
-console.log("\n结果：通过 ✓（可作为 G2/G4/G5 门禁证据）");
+console.log("\n结果：通过 ✓（可作为 G4/G5 门禁证据）");

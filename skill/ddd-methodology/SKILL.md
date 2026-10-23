@@ -59,7 +59,7 @@ subagent({ workflow: "<skill目录>/workflows/ddd-workflow.js", args: { root: "<
 
 安装后脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`；若本机未安装，即仅在仓库内开发调试，则使用仓库内 `workflows/ddd-workflow.js` 相对路径。
 
-**前置条件**：12 个 `ddd-*` 代理必须已安装，否则运行时校验失败。脚本通过 `args.root` 接收项目根绝对路径，沙箱中无 process 全局，args 是唯一数据通道；可选参数 `args.maxFixRounds` 默认 2，控制缺陷自动修复轮次上限，`args.stallTimeoutMs` 默认 300000 毫秒，控制子任务停滞多久触发需要关注事件。
+**前置条件**：12 个 `ddd-*` 代理须已安装，未安装将导致派发失败，脚本不自建存在性校验。脚本通过 `args.root` 接收项目根绝对路径，沙箱中无 process 全局，args 是唯一数据通道；可选参数 `args.maxFixRounds` 默认 2，控制缺陷自动修复轮次上限，`args.stallTimeoutMs` 控制子任务停滞多久触发需要关注事件，默认 300000 毫秒，下界 30000 毫秒。
 
 脚本会依次执行 需求采集→AC→架构→分解设计，含签名级接口契约，→接口契约独立评审，G4.5，VERDICT 非 pass 中断，→实现与测试规划并行→G5-INT 集成收口→测试执行；C/D 级缺陷自动派发修复并重测，最多 2 轮，A/B 级缺陷中断脚本返回本会话仲裁。
 
@@ -71,7 +71,7 @@ subagent({ workflow: "<skill目录>/workflows/ddd-workflow.js", args: { root: "<
 
 ## 需求变更
 
-开发中途用户变更需求 → 登记变更单 → 代理1/0 版本化修订 → 代理3 圈定受影响 DESIGN.md → 仅对受影响接缝重设计/重实现/回归。
+开发中途用户变更需求 → 登记变更单 → 代理1/0 版本化修订 → 代理3 圈定受影响 DESIGN.md → 仅对受影响接缝重设计/重实现/回归 → 变更完成后派 ddd-auditor 做声明面审计。
 > 本步加载：process-details **主题C**，仅此节；涉及冻结接口时 = B 级变更走正式路由。
 
 ## 实现与测试严格分离

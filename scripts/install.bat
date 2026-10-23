@@ -70,7 +70,7 @@ if exist "%ROOT%global\APPEND_SYSTEM.md" (
     if errorlevel 1 (
         echo [警告] 未找到 node，跳过全局规则安装
     ) else (
-        node "%ROOT%scripts\merge-append-system.js" install "%ROOT%"
+        node "%ROOT%scripts\merge-append-system.js" install "%ROOT%" "%PI_HOME%\APPEND_SYSTEM.md"
     )
 ) else (
     echo [警告] 缺少 %ROOT%global\APPEND_SYSTEM.md
