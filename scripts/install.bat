@@ -64,6 +64,18 @@ for %%S in (ddd-defect-routing ddd-coding-discipline) do (
     )
 )
 
+rem 1.8 安装全局规则区块，块级标记合并，区块外用户自定义内容保留
+if exist "%ROOT%global\APPEND_SYSTEM.md" (
+    where node >nul 2>nul
+    if errorlevel 1 (
+        echo [警告] 未找到 node，跳过全局规则安装
+    ) else (
+        node "%ROOT%scripts\merge-append-system.js" install "%ROOT%"
+    )
+) else (
+    echo [警告] 缺少 %ROOT%global\APPEND_SYSTEM.md
+)
+
 rem 2. 安装 12 个 agent 定义（按固定清单，仅覆盖本方法论文件）
 if not exist "%AGENT_DST%" mkdir "%AGENT_DST%"
 set N=0
@@ -96,4 +108,6 @@ for %%S in (ddd-defect-routing ddd-coding-discipline) do (
     if exist "%PI_HOME%\skills\%%S\SKILL.md" set /a S+=1
 )
 echo   切片 skills : !S! / 2 已安装
+findstr /c:"ddd-methodology:begin" "%PI_HOME%\APPEND_SYSTEM.md" >nul 2>nul
+if errorlevel 1 ( echo   全局规则 : 未部署 ) else ( echo   全局规则 : 标记区块已部署 )
 exit /b 0

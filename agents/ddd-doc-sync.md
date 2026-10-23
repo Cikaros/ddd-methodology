@@ -29,7 +29,8 @@ inheritSkills: false
 6. **CHANGELOG**：本次修改是否已记录；版本标签是否与文档声明一致。
 7. **状态键**：workflow stages 键与 process-details 主题H 的阶段注册表是否一致。
 8. **知识切片双源**：skill/ddd-defect-routing/SKILL.md 与 references/defect-routing.md、skill/ddd-coding-discipline/SKILL.md 与全局 APPEND_SYSTEM.md 注释纪律块是否同步。
-9. **行文规范**：标题无括号/破折号补充；正文无非必要中文括号补充（全局 APPEND_SYSTEM 规则第 7 条）。
+9. **行文规范**：标题无括号与破折号补充；正文无非必要中文括号补充，全局 APPEND_SYSTEM 规则第 7 条。
+10. **全局规则同步**：仓库权威版 global/APPEND_SYSTEM.md 与已部署的 ~/.pi/agent/APPEND_SYSTEM.md 标记区块内容是否一致。
 
 ## 输出格式
 ```

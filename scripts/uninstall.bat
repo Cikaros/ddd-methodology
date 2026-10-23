@@ -7,6 +7,9 @@ rem ============================================================
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
+set "SRC=%~dp0"
+set "ROOT=%SRC%..\"
+
 set "PI_HOME=%USERPROFILE%\.pi\agent"
 set "SKILL_DST=%PI_HOME%\skills\ddd-methodology"
 set "AGENT_DST=%PI_HOME%\agents"
@@ -15,6 +18,13 @@ rem 固定清单：与 agents\ 目录下 12 个文件一一对应（防止通配
 set DDD_AGENTS=ddd-requirements ddd-acceptance ddd-architect ddd-decomposer ddd-interface-reviewer ddd-implementer ddd-test-planner ddd-tester ddd-arbiter ddd-doc-sync ddd-auditor ddd-fixer
 
 echo [卸载] 目标: %PI_HOME%
+
+where node >nul 2>nul
+if errorlevel 1 (
+    echo [警告] 未找到 node，跳过全局规则移除
+) else (
+    node "%ROOT%scripts\merge-append-system.js" remove
+)
 
 for %%S in (ddd-defect-routing ddd-coding-discipline) do (
     if exist "%PI_HOME%\skills\%%S" (

@@ -19,6 +19,8 @@ ddd-methodology/
 │   │   └── defect-routing.md     # 缺陷四级路由细则
 ├── skill/ddd-defect-routing/     # 知识切片 skill：缺陷路由深读正文
 ├── skill/ddd-coding-discipline/  # 知识切片 skill：注释与文件纪律深读正文
+├── global/
+│   └── APPEND_SYSTEM.md         # 全局规则权威版本，安装时按标记区块合并入用户全局文件
 ├── workflows/
 │   └── ddd-workflow.js           # 可选加速档：固定阶段自动编排脚本（args.root 传项目根）
 ├── agents/                       # 子代理定义（pi-subagents 格式）
@@ -66,6 +68,7 @@ chmod +x scripts/*.sh
   - workflow 脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`，供根会话以 `subagent({ workflow: ... , args: { root: "<项目根>" } })` 调用
   - trace-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js`，作为 G2/G4/G5 门禁证据
 - 两个知识切片，安装到 `~/.pi/agent/skills/`：`ddd-defect-routing` 与 `ddd-coding-discipline`，提供技能目录可见性与深读正文；关键规则已内联在各代理正文
+- 全局规则区块，按标记合并入 `~/.pi/agent/APPEND_SYSTEM.md`：只替换标记区块，区块外用户自定义内容原样保留，卸载时移除该区块；首次安装前自动备份为 `APPEND_SYSTEM.md.ddd-bak`
 - 12 个 agent 定义，按固定文件名清单，安装到 `~/.pi/agent/agents/ddd-*.md`
 
 脚本按固定文件名清单安装/卸载，不会影响 `~/.pi/agent/agents/` 下用户自定义的其他代理文件。

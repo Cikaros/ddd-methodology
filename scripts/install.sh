@@ -51,6 +51,11 @@ if [[ "${1:-}" == "--check" ]]; then
         [[ -f "$PI_HOME/skills/$slice/SKILL.md" ]] && s_ok=$((s_ok+1))
     done
     echo "  切片 skills : $s_ok / 2 已安装"
+    if grep -q "ddd-methodology:begin" "$PI_HOME/APPEND_SYSTEM.md" 2>/dev/null; then
+        echo "  全局规则 : 标记区块已部署 ($PI_HOME/APPEND_SYSTEM.md)"
+    else
+        echo "  全局规则 : 未部署"
+    fi
     exit 0
 fi
 
@@ -89,6 +94,17 @@ for slice in ddd-defect-routing ddd-coding-discipline; do
         echo "[警告] 缺少 $ROOT/skill/$slice/SKILL.md" >&2
     fi
 done
+
+# 1.8 安装全局规则区块，块级标记合并，区块外用户自定义内容保留
+if [[ -f "$ROOT/global/APPEND_SYSTEM.md" ]]; then
+    if command -v node >/dev/null 2>&1; then
+        node "$ROOT/scripts/merge-append-system.js" install "$ROOT" || echo "[警告] 全局规则合并失败" >&2
+    else
+        echo "[警告] 未找到 node，跳过全局规则安装" >&2
+    fi
+else
+    echo "[警告] 缺少 $ROOT/global/APPEND_SYSTEM.md" >&2
+fi
 
 # 2. 安装 12 个 agent 定义（按固定清单，仅覆盖本方法论文件）
 mkdir -p "$AGENT_DST"
