@@ -46,11 +46,6 @@ if [[ "${1:-}" == "--check" ]]; then
     else
         echo "  trace-check : 未安装"
     fi
-    s_ok=0
-    for slice in ddd-defect-routing ddd-coding-discipline; do
-        [[ -f "$PI_HOME/skills/$slice/SKILL.md" ]] && s_ok=$((s_ok+1))
-    done
-    echo "  切片 skills : $s_ok / 2 已安装"
     if grep -q "ddd-methodology:begin" "$PI_HOME/APPEND_SYSTEM.md" 2>/dev/null; then
         echo "  全局规则 : 标记区块已部署 ($PI_HOME/APPEND_SYSTEM.md)"
     else
@@ -83,17 +78,6 @@ if [[ -f "$ROOT/scripts/trace-check.js" ]]; then
     cp -f "$ROOT/scripts/trace-check.js" "$SKILL_DST/scripts/"
     echo "[完成] trace-check -> $SKILL_DST/scripts/trace-check.js"
 fi
-
-# 1.7 安装知识切片 skills（代理 skills: 引用依赖全局发现）
-for slice in ddd-defect-routing ddd-coding-discipline; do
-    if [[ -f "$ROOT/skill/$slice/SKILL.md" ]]; then
-        mkdir -p "$PI_HOME/skills/$slice"
-        cp -f "$ROOT/skill/$slice/SKILL.md" "$PI_HOME/skills/$slice/SKILL.md"
-        echo "[完成] 切片 -> $PI_HOME/skills/$slice"
-    else
-        echo "[警告] 缺少 $ROOT/skill/$slice/SKILL.md" >&2
-    fi
-done
 
 # 1.8 安装全局规则区块，块级标记合并，区块外用户自定义内容保留
 if [[ -f "$ROOT/global/APPEND_SYSTEM.md" ]]; then

@@ -46,22 +46,11 @@ if exist "%ROOT%workflows" (
     echo [完成] Workflow -^> %SKILL_DST%\workflows\
 )
 
-rem 1.6 安装追溯校验脚本（G2/G4/G5 门禁证据工具）
+rem 1.6 安装追溯校验脚本（G4/G5 门禁证据工具）
 if exist "%ROOT%scripts\trace-check.js" (
     if not exist "%SKILL_DST%\scripts" mkdir "%SKILL_DST%\scripts"
     copy /y "%ROOT%scripts\trace-check.js" "%SKILL_DST%\scripts\" >nul
     echo [完成] trace-check -^> %SKILL_DST%\scripts\trace-check.js
-)
-
-rem 1.7 安装知识切片 skills，代理 skills 引用依赖全局发现
-for %%S in (ddd-defect-routing ddd-coding-discipline) do (
-    if not exist "%PI_HOME%\skills\%%S" mkdir "%PI_HOME%\skills\%%S"
-    if exist "%ROOT%skill\%%S\SKILL.md" (
-        copy /y "%ROOT%skill\%%S\SKILL.md" "%PI_HOME%\skills\%%S\SKILL.md" >nul
-        if errorlevel 1 ( echo [警告] 切片 %%S 复制失败 ) else ( echo [完成] 切片 -^> %PI_HOME%\skills\%%S )
-    ) else (
-        echo [警告] 缺少 %ROOT%skill\%%S\SKILL.md
-    )
 )
 
 rem 1.8 安装全局规则区块，块级标记合并，区块外用户自定义内容保留
@@ -103,11 +92,6 @@ for %%A in (%DDD_AGENTS%) do (
 echo   Agents   : !N! / 12 已安装
 if exist "%SKILL_DST%\workflows\ddd-workflow.js" ( echo   Workflow : 已安装 ) else ( echo   Workflow : 未安装 )
 if exist "%SKILL_DST%\scripts\trace-check.js" ( echo   trace-check : 已安装 ) else ( echo   trace-check : 未安装 )
-set S=0
-for %%S in (ddd-defect-routing ddd-coding-discipline) do (
-    if exist "%PI_HOME%\skills\%%S\SKILL.md" set /a S+=1
-)
-echo   切片 skills : !S! / 2 已安装
 findstr /c:"ddd-methodology:begin" "%PI_HOME%\APPEND_SYSTEM.md" >nul 2>nul
 if errorlevel 1 ( echo   全局规则 : 未部署 ) else ( echo   全局规则 : 标记区块已部署 )
 exit /b 0

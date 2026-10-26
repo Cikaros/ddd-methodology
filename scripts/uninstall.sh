@@ -24,13 +24,6 @@ else
     echo "[警告] 未找到 node，跳过全局规则移除" >&2
 fi
 
-for slice in ddd-defect-routing ddd-coding-discipline; do
-    if [[ -d "$PI_HOME/skills/$slice" ]]; then
-        rm -rf "$PI_HOME/skills/$slice"
-        echo "[完成] 已移除切片 $slice"
-    fi
-done
-
 if [[ -d "$SKILL_DST" ]]; then
     rm -rf "$SKILL_DST"
     echo "[完成] 已移除 Skill: $SKILL_DST"

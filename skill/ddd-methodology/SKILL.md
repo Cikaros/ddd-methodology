@@ -1,95 +1,61 @@
 ---
 name: ddd-methodology
-description: 分治式设计驱动开发方法论。当用户要求按"ddd方法论""分治式设计驱动""DDD-Methodology"开发新项目或二次开发项目时使用。通过 12 个固定职责子代理（需求采集/验收标准/架构师/分解设计/接口评审/实现/测试规划/测试执行/缺陷修复/仲裁/文档同步巡检/声明面审计）与目录同构的分布式小设计文档，降低子代理上下文负担，防止实现偏离设计。
+description: 分治式设计驱动开发方法论。当用户要求按"ddd方法论""分治式设计驱动""DDD-Methodology"开发新项目或二次开发项目时使用。通过 12 个职责子代理与目录同构的分布式设计文档，降低子代理上下文负担，防止实现偏离设计。
 ---
 
-# 分治式设计驱动开发 DDD-Methodology
+# 分治式设计驱动开发
+
+规范唯一权威源为 `references/spec.md`，产物模板见 `references/templates.md`。
 
 ## 知识加载规则
 
-硬规则：禁止整卷加载 references。知识通过**绑定到流程节点**自动注入，不依赖本文件的记忆：
+禁止整卷加载 references。知识按三层送达：
 
-- **子代理侧，内联机制保证**：关键规则直接内联在各代理提示词正文中；系统提示词为 replace 模式，派发即完整送达，不受上下文压缩影响。`skill/ddd-defect-routing` 与 `skill/ddd-coding-discipline` 提供 skill 目录可见性与可加载的深读正文，但 pi 的 skill 机制只广告名称与描述，正文需代理按需读取，因此**不得把关键规则仅放在切片里**。根会话派发时只需传递项目特异信息，即路径、接口清单、权限边界。
-- **根会话侧，流程内联标注**：仅在下方核心流程各步骤标注的时机加载对应切片，禁止提前通读全部。
+1. **代理侧内联**：关键规则已内联在各代理提示词正文，派发即完整送达，不受上下文压缩影响。
+2. **流程内联标注**：根会话只在下文各步标注的时机加载对应章节。
+3. **规范深读**：完整规则在 `references/spec.md`，由本 skill 广告与按需读取。
 
-## 根会话常驻上下文
+根会话常驻上下文为 `references/spec.md` 与本文件，其余按步骤加载。
 
-仅 `references/spec.md` 与本文件，前者约 100 行，是调度决策的最小完备集。其余 references/templates.md、process-details.md、defect-routing.md 按下方步骤标注切片加载。
+## 流程
 
-## 核心流程
+1. **需求采集**（ddd-requirements）：细化需求，与用户确认对齐，判定新建或二次开发，产出 REQUIREMENTS.md。
+   > 加载：templates 的 REQUIREMENTS 节。
+2. **验收标准**（ddd-acceptance）：需求转可执行 AC，产出 AC.md。过 G2。
+   > 加载：templates 的 AC 节。
+3. **架构设计**（ddd-architect）：产出 ARCHITECTURE.md，含技术环境、目录规划、横切规范、基础能力清单、改造影响评估、设计文档树根路径声明。过 G3。
+   > 加载：templates 的 ARCHITECTURE 节；二次开发加读 spec §10；改造评估读 spec §11。
+4. **分解设计**（ddd-decomposer）：产出目录同构文档树与签名级接口契约。过 G4。
+   > 加载：templates 的 DESIGN 节；粒度与独立性读 spec §4。
+5. **接口冻结**（ddd-interface-reviewer）：独立交叉评审，结论非 pass 则退回分解设计。过 G4.5。
+   > 加载：spec §5。
+6. **实现与测试规划并行**（ddd-implementer ∥ ddd-test-planner）：实现按就近 DESIGN，测试规划产出计划树。
+   > 加载：templates 的 TEST_PLAN 节；并行接缝读 spec §6；测试分级读 spec §8。
+7. **集成收口**（ddd-fixer）：构建与接缝核对，声明测试就绪，修集成问题。过 G5-INT。
+   > 加载：spec §7。
+8. **测试执行**（ddd-tester）：按计划执行，缺陷定级路由。
+   > 加载：spec §3。路由知识已内联于该代理；仅争议时派 ddd-arbiter。
+9. **声明面审计**（ddd-auditor）：全量核对消费方与验证手段，输出修剪清单。过 G6。
+   > 加载：spec §12。
 
-各步骤内联标注本步加载时机。
-
-1. **代理1 需求采集，ddd-requirements**：派发采集细化需求并与用户确认对齐，产出含项目类型判定的 `REQUIREMENTS.md`。未对齐前禁止进入下一步。
-   > 本步加载：无需切片，代理自包含。产出后校验参考 `references/templates.md` 的 REQUIREMENTS 节，仅此节。
-2. **代理0 验收标准，ddd-acceptance**：将需求转为可执行 AC（G/W/T），产出项目根 `AC.md`。
-   > 本步加载：`references/templates.md` 的 AC 节，仅此节。
-3. **代理2 架构师，ddd-architect**：新建项目→定技术环境与目录规划；二次开发且缺规范文档→先现状分析，格式见 `references/process-details.md` 主题D，仅此节。产出 `ARCHITECTURE.md`，含改造影响评估表。
-   > 本步加载：templates 的 ARCHITECTURE 节；改造评估规则见主题J 仅此节；二次开发时加读主题D。
-4. **代理3 分解设计，ddd-decomposer**：为每个有实现内容的目录产出含签名级接口契约的同构 `DESIGN.md`，分发模块级 AC。
-   > 本步加载：templates 的 DESIGN 节；派发前过 G4 门参考 `references/process-details.md` 主题E，仅 G4 行。
-5. **接口冻结门 G4.5**：派发 ddd-interface-reviewer 独立交叉审查，输出 VERDICT 机读结论，复核后冻结接口。
-   > 本步加载：process-details 主题E-G4.5 段，仅此段；评审缺陷路由知识已内嵌于该代理。
-6. **代理4 实现者 ∥ 代理5 测试规划**：实现者逐字匹配冻结接口；测试规划者基于总 AC+模块 AC+冻结接口产出测试计划树，含契约测试。
-   > 本步加载：process-details **主题B** 的互斥接缝与 **主题F** 的测试分级，仅此两节；templates 的 TEST_PLAN 节。
-7. **代理6 测试执行，ddd-tester**：按计划执行测试。路由知识已内嵌该代理，可自动定级，争议才升级。
-   > 本步加载：无需切片；**仅当发生定级争议时**重读 `references/defect-routing.md` 全量权威源，或派发 ddd-arbiter，该代理正文已内联路由知识。
-8. **门禁复核**：G1–G6 各门，过门时按 templates 的门禁检查单节填检查单。
-   > 本步加载：process-details **主题E**，仅此节，另加 trace-check.js 输出作为 G2/G4/G5 证据。
-9. **声明面审计与修剪（G6 前必做）**：派发 ddd-auditor 全量审计接口、导出、能力清单、切片、规则、配置、模板字段与死代码的消费情况；无消费方声明一律修剪，不得留存。
-   > 本步加载：process-details **主题K**，仅此节。
+过门时按 templates 的门禁检查单填写，写入 `<项目根>/docs/gates/`。
 
 ## 根会话职责
 
-- 仅调度与验证，不直接实现代码；依据总 `AC.md` 验证交付。
-- 缺陷定级争议：优先派发 ddd-arbiter，其正文已内联路由知识，零上下文成本；你仅做最终裁决/升级用户，裁决前重读 `references/defect-routing.md`。
-- 同一缺陷轮回修复超过 2 轮仍未解决 → 强制升级用户，禁止继续循环。
-
-## 缺陷四级路由
-
-规则唯一权威源 `references/defect-routing.md`。同步面清单：references/defect-routing.md、skill/ddd-defect-routing/SKILL.md、tester 与 arbiter 的独立内联块、fixer 与 implementer 与 interface-reviewer 的内联块；注释纪律同步面：全局 APPEND_SYSTEM.md 注释纪律块、skill/ddd-coding-discipline/SKILL.md、architect 与 implementer 与 fixer 的内联块。修改任一处必须同步全部。
+只调度、仲裁与验收，不承担实现类工作。派 ddd-arbiter 处理定级争议，仅最终裁决与升级用户由你决定。同一缺陷超 2 轮强制升级用户。
 
 ## Workflow 加速档
 
-加速档为可选能力。当用户明确要求"一键跑完全链"且需求已充分明确时，可使用 workflow 脚本自动推进固定阶段：
+需求明确且要求一键跑完全链时使用：
 
 ```
 subagent({ workflow: "<skill目录>/workflows/ddd-workflow.js", args: { root: "<项目根绝对路径>" } })
 ```
 
-安装后脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`；若本机未安装，即仅在仓库内开发调试，则使用仓库内 `workflows/ddd-workflow.js` 相对路径。
+前置条件为 12 个 `ddd-*` 代理已安装，未安装将导致派发失败。可选参数：`maxFixRounds` 默认 2，`stallTimeoutMs` 默认 300000 毫秒、下界 30000 毫秒。
 
-**前置条件**：12 个 `ddd-*` 代理须已安装，未安装将导致派发失败，脚本不自建存在性校验。脚本通过 `args.root` 接收项目根绝对路径，沙箱中无 process 全局，args 是唯一数据通道；可选参数 `args.maxFixRounds` 默认 2，控制缺陷自动修复轮次上限，`args.stallTimeoutMs` 控制子任务停滞多久触发需要关注事件，默认 300000 毫秒，下界 30000 毫秒。
+脚本按上述流程推进并在 C/D 级缺陷上自动修复重测，A/B 级中断返回本会话。状态写入 `docs/.ddd-state.json`，schema 见 spec §13。
 
-脚本会依次执行 需求采集→AC→架构→分解设计，含签名级接口契约，→接口契约独立评审，G4.5，VERDICT 非 pass 中断，→实现与测试规划并行→G5-INT 集成收口→测试执行；C/D 级缺陷自动派发修复并重测，最多 2 轮，A/B 级缺陷中断脚本返回本会话仲裁。
+## 派发要求
 
-**限制**：A/B 级缺陷定级仲裁需派 ddd-arbiter，超 2 轮未解的缺陷以及需求变更受理必须回到本会话处理。默认仍优先使用手工逐段调度。手工档的 C/D 级修复可由根会话派发 ddd-fixer 统一承接，或由代理4/5 就地修复后交代理6 重跑；加速档一律由 ddd-fixer 承接。
-
-## 质量门禁
-
-质量门禁按阶段设置。G1需求→G2验收→G3架构→G4分解设计→G4.5接口冻结→G5实现/测试规划→G5-INT集成→G6交付，详见 process-details 主题E，过门时按步骤8加载。未过门禁一律退回上一代理；并行实现时各接缝需过子门才可集成收口。
-
-## 需求变更
-
-开发中途用户变更需求 → 登记变更单 → 代理1/0 版本化修订 → 代理3 圈定受影响 DESIGN.md → 仅对受影响接缝重设计/重实现/回归 → 变更完成后派 ddd-auditor 做声明面审计。
-> 本步加载：process-details **主题C**，仅此节；涉及冻结接口时 = B 级变更走正式路由。
-
-## 实现与测试严格分离
-
-**硬规则：规划可并行，执行必隔离，测试执行唯一主体是代理6。**
-- 代理5 测试**规划**为纯文档产出，可与代理4 实现**并行**；
-- 代理6 测试**执行**必须在实现并行段全部完成、过 G5 收口门之后**单独串行启动**；执行期间禁止任何实现类 writer 运行；
-- **代理6 与代理4 永不同段**，严禁二者共用同一 writer 进程/会话；
-- **G5-INT 门禁任务禁止包含全量测试执行**。门禁只做构建与集成问题修复并声明测试就绪，全量测试的唯一主体是代理6 首轮执行，其结果作为 G5-INT 的最终证据；
-- C 级缺陷修复时实现者仅自测所负责接缝的相关用例，禁止执行全量测试套件，全量重测由代理6 负责；
-- 高风险用例必须桩化或移入手动测试清单，禁止直接自动执行；规则权威为 process-details 主题F，代理侧已内嵌于 test-planner 与 tester 提示词。
-
-## Workflow 状态文件与断点续跑
-
-workflow 加速档每完成一个阶段即写入 `<项目根>/docs/.ddd-state.json`；已完成阶段自动跳过，从断点续跑。**字段 schema 唯一权威定义见 references/process-details.md 主题H**。
-
-## 子代理调度要求
-
-- 每次派发必须在任务描述中给出：目标、仓库/cwd、权限边界，需注明可改哪些文件，相关文档的**具体路径**供就近加载，以及验收标准、期望输出报告格式、停止条件。
-- 实现者任务必须列明其负责目录的 `DESIGN.md` 路径，禁止要求整卷加载所有设计文档。
-- 多模块实现可并行派发，按互斥接缝划分，一个接缝一个 writer，通过冻结接口耦合；集成由根会话统一收口后触发集成测试，规则见 process-details 主题B。
+每次派发须给出目标、cwd、权限边界、相关文档路径、验收标准、期望输出格式与停止条件。实现者任务须列明其负责目录的 DESIGN 路径，禁止要求整卷加载。多模块按互斥接缝并行，一个接缝一个 writer。

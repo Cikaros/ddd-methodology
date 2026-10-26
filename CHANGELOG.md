@@ -2,6 +2,14 @@
 
 ---
 
+## v2.0（2026-10-15）方法论重构，非追加
+- **规范三文件合一**：references 由 spec、templates、process-details、defect-routing 四份收敛为 spec 与 templates 两份。process-details 的 B 至 K 主题全部折入 spec 并按问题域重排为 14 节，defect-routing 折入 spec §3。主从契约协议随之取消，同步面减少一半。
+- **删除冗余知识切片**：ddd-defect-routing 与 ddd-coding-discipline 两个切片 skill 被移除。实测确认 pi 的 skill 机制只广告名称与描述、正文需按需读取，切片并不构成送达；其内容已分别由 spec §3 与全局规则块承载，代理侧改为正文内联。由此同时移除六处 skills 引用、两段安装与卸载逻辑、两段检查输出。
+- **12 个代理提示词按统一骨架重写**：角色、输入、输出契约、职责、硬约束、内联规则、停止条件七节。每份收窄到单一职责，删除跨代理重复叙述，代理文件职责边界更明确，单文件均收在 55 行以内。
+- **模板精简**：templates 由 165 行降至 145 行，保留七个产物模板与锚定保护说明，删除叙述性文字。
+- **SKILL 精简**：由 95 行降至 61 行，改为流程九步且每步内联标注所加载的规范章节。
+- 代理对模板与规范的引用统一为可解析绝对路径；workflow 内对已删文件的引用改指 spec。
+
 ## v1.13.2（2026-10-15）审计复审 21 项残留修剪
 - 阻断级：P1 接口评审阶段键补生产者（实现段 stateNote 同时写入 interface-review）；P2 主题K 修剪触发点补齐执行者；P12 合并脚本增目标路径参数，与安装脚本 PI_HOME 口径统一；P13 卸载优先从备份恢复并删除备份，README 声明备份路径与清理方式；P14 CHANGELOG 如实修正首轮修剪完成度。
 - 高优先：P3 status 字段补读者（断点检查报告该字段）；P4 状态写入统一走 stateNote，消除 g5-int 与 test-execute 的内联双实现；P5 buildFixCtx 死正则分支修正；P6 注释纪律切片补齐密度基准与审查视角两条；P7 代理内不可解析路径统一为绝对形式；P8 README 专项细则范围改 B 至 K；P9 README 流程补 G4.5 与声明面审计两步；P11 doc-sync 巡检项 5 与 8 补全局规则区块；P16 trace-check 证据时点限定为 G4/G5，G2 改 AC 双向覆盖自查；P17 spec §2 编号口径说明；P18 三个代理职责编号顺序化；P19 stallTimeoutMs 下界文档化；P21 trace-check 文件过滤精确到 DESIGN 与 TEST_PLAN 并修正文案；P22 代理存在性校验改为如实口径。

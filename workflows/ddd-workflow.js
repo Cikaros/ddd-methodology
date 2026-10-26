@@ -8,23 +8,23 @@
  *
  * 前置条件：12 个 ddd-* 代理必须已安装（~/.pi/agent/agents/），否则运行时校验失败。
  *
- * 阶段流：代理1 需求采集 → 代理0 验收标准 → 代理2 架构师 → 代理3 分解设计（含签名级接口契约）
- *        → 接口契约独立评审（G4.5，ddd-interface-reviewer）
- *        → [代理4 实现 ∥ 代理5 测试规划]（均为产出类，无进程执行）
- *        → [G5-INT 集成收口门] → 代理6 测试执行（单独串行，与代理4 永不同段）
+ * 阶段流：ddd-requirements 需求采集 → ddd-acceptance 验收标准 → ddd-architect 架构设计 → ddd-decomposer 分解设计
+ *        → ddd-interface-reviewer 接口契约独立评审，G4.5
+ *        → [ddd-implementer 实现 ∥ ddd-test-planner 测试规划]，均为产出类，无进程执行
+ *        → [ddd-fixer 集成收口 G5-INT] → ddd-tester 测试执行，单独串行，与实现者永不同段
  *        → C/D 级缺陷自动修复并重测（最多 maxFixRounds 轮，默认 2）
  *
- * 实现/测试硬分离：代理6 与代理4 永不同段；并行段仅为实现∥测试规划。
+ * 实现/测试硬分离：ddd-tester 与 ddd-implementer 永不同段；并行段仅为实现与测试规划。
  *
- * 断点续跑：状态文件由各阶段代理在任务中负责写入/更新 <root>/docs/.ddd-state.json（schema 见 references/process-details.md）；
+ * 断点续跑：状态文件由各阶段代理在任务中负责写入/更新 <root>/docs/.ddd-state.json（schema 见 references/spec.md §13）；
  * 本脚本启动时由 ddd-requirements 只读检查状态文件并按契约输出 DONE: <stageKey> 机读行，已完成阶段自动跳过。
  *
  * 缺陷路由策略：
- * *   - C（实现级）：派发 ddd-fixer 修复 → 重测
- * *   - D（测试级）：派发 ddd-fixer 修计划 → 重测
+ *   - C（实现级）：派发 ddd-fixer 修复 → 重测
+ *   - D（测试级）：派发 ddd-fixer 修计划 → 重测
  *   - C+D 混合：同时派发两类修复，再统一重测
  *   - A（需求级）/ B（设计级）：不在脚本内自动处理，立即中断返回，
- *     由根会话依据 references/defect-routing.md 仲裁路由（A 须升级用户确认）
+ *     由根会话依据 references/spec.md §3 仲裁路由（A 须升级用户确认）
  *   - 同一问题累计修复轮次超过 maxFixRounds 仍失败 → 中断返回根会话升级用户
  */
 
@@ -37,7 +37,7 @@ const maxFixRounds = args && Number.isFinite(Number(args.maxFixRounds))
   : 2; // 方法论约定：轮回修复超过 2 轮强制升级用户
 const stateFile = `${root}/docs/.ddd-state.json`;
 
-// 阶段注册表：键清单必须与 references/process-details.md 主题H 的阶段注册表一致；
+// 阶段注册表：键清单必须与 references/spec.md §13 的阶段注册表一致；
 // 串行段/接口评审/G5-INT/首轮测试执行均用 stateNote 写入对应键。
 const stageRegistry = [
   "requirements", "acceptance", "architect", "decomposer",
@@ -45,7 +45,7 @@ const stageRegistry = [
 ];
 
 /**
- * 读取断点状态：由代理1 执行只读检查。
+ * 读取断点状态：由 ddd-requirements 执行只读检查。
  * 契约：报告必须逐行输出机读行 "DONE: <stageKey>"（每个已完成阶段一行），
  * 便于 parseDoneStages 可靠解析；JSON 损坏时输出 "STATE_CORRUPT" 并停止。
  */
@@ -104,8 +104,7 @@ function extractDefects(reportText) {
     return found;
   }
   // 无机读行：不猜测，按格式缺陷中断
-  throw new Error("测试报告缺少机读行 DEFECTS:{...}：按格式缺陷中断，请重新派发 ddd-tester 产出合规报告（含机读行）。",
-  );
+  throw new Error("测试报告缺少机读行 DEFECTS:{...}：按格式缺陷中断，请重新派发 ddd-tester 产出合规报告（含机读行）。");
 }
 
 // 状态更新指令：注入到阶段任务末尾。
@@ -273,7 +272,7 @@ if (validDoneStages.length !== doneStages.length) {
   throw new Error(
     "状态文件 doneStages 含非法阶段键：" +
       doneStages.filter((k) => !stageRegistry.includes(k)).join(", ") +
-      "。合法键见 references/process-details.md 主题H。",
+      "。合法键见 references/spec.md §13。",
   );
 }
 doneStages = validDoneStages;
@@ -303,7 +302,7 @@ for (const s of stages) {
         reason: verdict ? `接口评审结论为 ${verdict[1]}，需根会话复核（有条件通过须确认必须修复项已处理）` : "接口评审报告缺少 VERDICT 机读行（格式缺陷）",
         stateFile,
         report: r,
-        hint: "根会话复核评审报告：pass 才冻结接口进入实现；conditional 需确认必须修复项已由代理3 修复后可重跑（断点跳过已完成的串行阶段）；fail 由代理3 修复后重跑。",
+        hint: "根会话复核评审报告：pass 才冻结接口进入实现；conditional 需确认必须修复项已由 ddd-decomposer 修复后可重跑（断点跳过已完成的串行阶段）；fail 由 ddd-decomposer 修复后重跑。",
       };
     }
   }
@@ -358,7 +357,7 @@ while (round <= maxFixRounds) {
   if (defects.A > 0 || defects.B > 0) {
     escalated = {
       reason: defects.A > 0 ? "A级缺陷（需求级）" : "B级缺陷（设计级）",
-      detail: "A/B 级缺陷不适用自动修复，需根会话依据 references/defect-routing.md 仲裁路由；A级必须升级用户确认。",
+      detail: "A/B 级缺陷不适用自动修复，需根会话依据 references/spec.md §3 仲裁路由；A级必须升级用户确认。",
       round,
     };
     break;
@@ -405,5 +404,5 @@ return {
   stateFile,
   escalated,
   lastReport,
-  note: "escalated 非空时，根会话须依据 defect-routing.md 处理对应级别缺陷或升级用户；状态文件支持断点续跑。",
+  note: "escalated 非空时，根会话须依据 references/spec.md §3 处理对应级别缺陷或升级用户；状态文件支持断点续跑。",
 };

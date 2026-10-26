@@ -14,24 +14,20 @@ ddd-methodology/
 │   ├── SKILL.md                  # 调度流程入口
 │   ├── references/
 │   │   ├── spec.md               # 规范唯一权威源
-│   │   ├── templates.md          # 文档模板库
-│   │   ├── process-details.md    # 专项细则 B 至 K
-│   │   └── defect-routing.md     # 缺陷四级路由细则
-├── skill/ddd-defect-routing/     # 知识切片 skill：缺陷路由深读正文
-├── skill/ddd-coding-discipline/  # 知识切片 skill：注释与文件纪律深读正文
+│   │   └── templates.md          # 产物模板库
 ├── global/
 │   └── APPEND_SYSTEM.md         # 全局规则权威版本，安装时按标记区块合并入用户全局文件
 ├── workflows/
 │   └── ddd-workflow.js           # 可选加速档：固定阶段自动编排脚本（args.root 传项目根）
 ├── agents/                       # 子代理定义（pi-subagents 格式）
-│   ├── ddd-requirements.md       # 代理1 需求采集者
-│   ├── ddd-acceptance.md         # 代理0 验收标准制定者
-│   ├── ddd-architect.md          # 代理2 架构师
-│   ├── ddd-decomposer.md         # 代理3 分解设计者
+│   ├── ddd-requirements.md       # 需求采集者
+│   ├── ddd-acceptance.md         # 验收标准制定者
+│   ├── ddd-architect.md          # 架构师
+│   ├── ddd-decomposer.md         # 分解设计者
 │   ├── ddd-interface-reviewer.md # 接口契约评审者（G4.5 接口冻结门）
-│   ├── ddd-implementer.md        # 代理4 实现者
-│   ├── ddd-test-planner.md       # 代理5 测试规划者
-│   ├── ddd-tester.md             # 代理6 测试执行者
+│   ├── ddd-implementer.md        # 实现者
+│   ├── ddd-test-planner.md       # 测试规划者
+│   ├── ddd-tester.md             # 测试执行者
 │   ├── ddd-fixer.md              # 缺陷修复者（C/D级修复循环，与实现者隔离）
 │   ├── ddd-arbiter.md            # 仲裁者（缺陷定级争议，路由知识内嵌）
 │   ├── ddd-doc-sync.md           # 文档同步守护者（方法论自身文档巡检）
@@ -41,7 +37,8 @@ ddd-methodology/
     ├── install.sh                # Linux/macOS/Git Bash 安装/更新
     ├── uninstall.bat             # Windows 卸载（固定文件清单，防误删）
     ├── uninstall.sh              # Linux/macOS/Git Bash 卸载
-    └── trace-check.js            # 追溯一致性校验脚本，G4/G5 门禁证据
+    ├── trace-check.js            # 追溯一致性校验脚本，G4/G5 门禁证据
+    └── merge-append-system.js    # 全局规则区块合并，供安装与卸载脚本调用
 ```
 
 ## 安装与卸载
@@ -67,7 +64,6 @@ chmod +x scripts/*.sh
 - Skill，含 workflows 加速档脚本与 trace-check 校验脚本，安装到 `~/.pi/agent/skills/ddd-methodology/`
   - workflow 脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`，供根会话以 `subagent({ workflow: ... , args: { root: "<项目根>" } })` 调用
   - trace-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js`，作为 G4/G5 门禁证据
-- 两个知识切片，安装到 `~/.pi/agent/skills/`：`ddd-defect-routing` 与 `ddd-coding-discipline`，提供技能目录可见性与深读正文；关键规则已内联在各代理正文
 - 全局规则区块，按标记合并入 `~/.pi/agent/APPEND_SYSTEM.md`：只替换标记区块，区块外用户自定义内容原样保留，卸载时移除该区块；首次安装前自动备份为 `APPEND_SYSTEM.md.ddd-bak`，卸载时若仅剩标记区块则优先从该备份恢复并删除备份文件
 - 12 个 agent 定义，按固定文件名清单，安装到 `~/.pi/agent/agents/ddd-*.md`
 
@@ -81,7 +77,7 @@ chmod +x scripts/*.sh
 /skill:ddd-methodology 按此方法论开发一个 <项目描述>
 ```
 
-或直接说"**按 ddd 方法论开发……**"触发。根会话将按流程依次派发：需求采集，即代理1，→ 验收标准，即代理0，→ 架构设计，即代理2，→ 分解设计，即代理3，→ 接口冻结门 G4.5，即接口评审代理，→ 实现代理4 与测试规划代理5 并行，→ 集成收口 G5-INT，→ 测试执行与缺陷路由，即代理6，→ 声明面审计，即审计代理。
+或直接说"**按 ddd 方法论开发……**"触发。根会话将按流程依次派发：需求采集，ddd-requirements，→ 验收标准，ddd-acceptance，→ 架构设计，ddd-architect，→ 分解设计，ddd-decomposer，→ 接口冻结门 G4.5，ddd-interface-reviewer，→ 实现 ddd-implementer 与测试规划 ddd-test-planner 并行，→ 集成收口 G5-INT，ddd-fixer，→ 测试执行与缺陷路由，ddd-tester，→ 声明面审计，ddd-auditor。
 
 ## 版本管理
 

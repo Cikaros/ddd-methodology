@@ -26,12 +26,6 @@ if errorlevel 1 (
     node "%ROOT%scripts\merge-append-system.js" remove "%PI_HOME%\APPEND_SYSTEM.md"
 )
 
-for %%S in (ddd-defect-routing ddd-coding-discipline) do (
-    if exist "%PI_HOME%\skills\%%S" (
-        rmdir /s /q "%PI_HOME%\skills\%%S"
-        echo [完成] 已移除切片 %%S
-    )
-)
 if exist "%SKILL_DST%" (
     rmdir /s /q "%SKILL_DST%"
     echo [完成] 已移除 Skill: %SKILL_DST%
