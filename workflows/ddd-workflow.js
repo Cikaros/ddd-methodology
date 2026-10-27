@@ -6,7 +6,7 @@
  * 必须通过 args.root 传入项目根绝对路径——workflow 脚本运行在沙箱中，
  * 没有 process 全局，唯一合法的数据通道就是冻结的 args。
  *
- * 前置条件：12 个 ddd-* 代理必须已安装（~/.pi/agent/agents/），否则运行时校验失败。
+ * 前置条件：12 个 ddd-* 代理须已安装于 ~/.pi/agent/agents/，未安装将导致派发失败，脚本不自建存在性校验。
  *
  * 阶段流：ddd-requirements 需求采集 → ddd-acceptance 验收标准 → ddd-architect 架构设计 → ddd-decomposer 分解设计
  *        → ddd-interface-reviewer 接口契约独立评审，G4.5
@@ -16,7 +16,7 @@
  *
  * 实现/测试硬分离：ddd-tester 与 ddd-implementer 永不同段；并行段仅为实现与测试规划。
  *
- * 断点续跑：状态文件由各阶段代理在任务中负责写入/更新 <root>/docs/.ddd-state.json（schema 见 references/spec.md §13）；
+ * 断点续跑：状态文件由各阶段代理在任务中负责写入/更新 <root>/docs/.ddd-state.json（schema 见 references/spec.md §14）；
  * 本脚本启动时由 ddd-requirements 只读检查状态文件并按契约输出 DONE: <stageKey> 机读行，已完成阶段自动跳过。
  *
  * 缺陷路由策略：
@@ -37,7 +37,7 @@ const maxFixRounds = args && Number.isFinite(Number(args.maxFixRounds))
   : 2; // 方法论约定：轮回修复超过 2 轮强制升级用户
 const stateFile = `${root}/docs/.ddd-state.json`;
 
-// 阶段注册表：键清单必须与 references/spec.md §13 的阶段注册表一致；
+// 阶段注册表：键清单必须与 references/spec.md §14 的阶段注册表一致；
 // 串行段/接口评审/G5-INT/首轮测试执行均用 stateNote 写入对应键。
 const stageRegistry = [
   "requirements", "acceptance", "architect", "decomposer",
@@ -198,7 +198,8 @@ ${ctx.triedNote}
 3. 只修计划，不改代码与设计。输出修订清单与已尝试方案。`,
     };
   }
-  return null; // A/B 不自动处理
+  // A/B 由调用方在本函数之前拦截，不经此处
+  throw new Error("defectAction 仅接受 C 或 D 级，收到：" + level);
 }
 
 const stages = [
@@ -272,7 +273,7 @@ if (validDoneStages.length !== doneStages.length) {
   throw new Error(
     "状态文件 doneStages 含非法阶段键：" +
       doneStages.filter((k) => !stageRegistry.includes(k)).join(", ") +
-      "。合法键见 references/spec.md §13。",
+      "。合法键见 references/spec.md §14。",
   );
 }
 doneStages = validDoneStages;
@@ -326,7 +327,7 @@ if (!doneStages.includes("g5-int")) {
   const r = await runStage("ddd-int-check", {
     label: "G5-INT 集成收口检查",
     agent: "ddd-fixer",
-    task: `在项目根 ${root} 执行集成收口检查（G5-INT 门）：1) 全项目构建通过；2) 检查各接缝自测报告齐备且 TEST_PLAN 对齐说明完整，声明测试就绪；3) 核对实现文件粒度与 DESIGN 预判一致，应拆未拆报告 C 级；4) 修复因多接缝合并产生的集成问题，仅实现级修改。**禁止执行全量测试套件，全量测试由 ddd-tester 负责**。若发现设计级矛盾（集成暴露接口不匹配），停止并报告 B 级缺陷。` + stateNote("g5-int"),
+    task: `在项目根 ${root} 执行集成收口检查（G5-INT 门）：1) 全项目构建通过；2) 检查各接缝自测报告齐备且 TEST_PLAN 对齐说明完整，声明测试就绪；3) 运行 node ~/.pi/agent/skills/ddd-methodology/scripts/code-health.js <项目根> 并将输出附入门禁记录；4) 核对实现文件粒度与 DESIGN 预判一致，应拆未拆报告 C 级，同时核对各接缝实现者的约定遵循自检齐备；5) 修复因多接缝合并产生的集成问题，仅实现级修改。**禁止执行全量测试套件，全量测试由 ddd-tester 负责**。若发现设计级矛盾（集成暴露接口不匹配），停止并报告 B 级缺陷。` + stateNote("g5-int"),
   }, { stage: "g5-int" });
   if (r && r.__failed) return r;
 }

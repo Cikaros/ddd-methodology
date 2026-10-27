@@ -38,6 +38,7 @@ ddd-methodology/
     ├── uninstall.bat             # Windows 卸载（固定文件清单，防误删）
     ├── uninstall.sh              # Linux/macOS/Git Bash 卸载
     ├── trace-check.js            # 追溯一致性校验脚本，G4/G5 门禁证据
+    ├── code-health.js            # 代码结构健康检查脚本，G5-INT 与 G6 门禁证据
     └── merge-append-system.js    # 全局规则区块合并，供安装与卸载脚本调用
 ```
 
@@ -64,6 +65,7 @@ chmod +x scripts/*.sh
 - Skill，含 workflows 加速档脚本与 trace-check 校验脚本，安装到 `~/.pi/agent/skills/ddd-methodology/`
   - workflow 脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`，供根会话以 `subagent({ workflow: ... , args: { root: "<项目根>" } })` 调用
   - trace-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js`，作为 G4/G5 门禁证据
+  - code-health 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/code-health.js`，作为 G5-INT/G6 门禁证据，度量写入项目内 docs/health.json
 - 全局规则区块，按标记合并入 `~/.pi/agent/APPEND_SYSTEM.md`：只替换标记区块，区块外用户自定义内容原样保留，卸载时移除该区块；首次安装前自动备份为 `APPEND_SYSTEM.md.ddd-bak`，卸载时若仅剩标记区块则优先从该备份恢复并删除备份文件
 - 12 个 agent 定义，按固定文件名清单，安装到 `~/.pi/agent/agents/ddd-*.md`
 
