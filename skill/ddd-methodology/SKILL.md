@@ -19,7 +19,7 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 
 ## 流程
 
-1. **需求采集**（ddd-requirements）：细化需求，与用户确认对齐，判定新建或二次开发，产出 REQUIREMENTS.md。
+1. **需求采集**（ddd-requirements）：细化需求，与用户确认对齐，判定新建或二次开发，产出 REQUIREMENTS.md。过 G1。
    > 加载：templates 的 REQUIREMENTS 节。
 2. **验收标准**（ddd-acceptance）：需求转可执行 AC，产出 AC.md。过 G2。
    > 加载：templates 的 AC 节。
@@ -29,14 +29,14 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
    > 加载：templates 的 DESIGN 节；粒度与独立性读 spec §4。
 5. **接口冻结**（ddd-interface-reviewer）：独立交叉评审，结论非 pass 则退回分解设计。过 G4.5。
    > 加载：spec §5。
-6. **实现与测试规划并行**（ddd-implementer ∥ ddd-test-planner）：实现按就近 DESIGN，测试规划产出计划树。
+6. **实现与测试规划并行**（ddd-implementer ∥ ddd-test-planner）：实现按就近 DESIGN，测试规划产出计划树。过 G5。
    > 加载：templates 的 TEST_PLAN 节；并行接缝读 spec §6；测试分级读 spec §8。
 7. **集成收口**（ddd-fixer）：构建与接缝核对，声明测试就绪，修集成问题。过 G5-INT。
-   > 加载：spec §7。
+   > 加载：spec §7；证据源为 `node scripts/code-health.js <项目根>`，见 spec §13。
 8. **测试执行**（ddd-tester）：按计划执行，缺陷定级路由。
    > 加载：spec §3。路由知识已内联于该代理；仅争议时派 ddd-arbiter。
-9. **声明面审计**（ddd-auditor）：全量核对消费方与验证手段，输出修剪清单。过 G6。
-   > 加载：spec §12。
+9. **声明面审计**（ddd-auditor）：全量核对消费方与验证手段，回验上次修剪清单，输出恶化项与修剪清单。过 G6。
+   > 加载：spec §12 与 §13；证据源含 docs/health.json 的相对恶化项。
 
 过门时按 templates 的门禁检查单填写，写入 `<项目根>/docs/gates/`。
 
@@ -54,7 +54,7 @@ subagent({ workflow: "<skill目录>/workflows/ddd-workflow.js", args: { root: "<
 
 前置条件为 12 个 `ddd-*` 代理已安装，未安装将导致派发失败。可选参数：`maxFixRounds` 默认 2，`stallTimeoutMs` 默认 300000 毫秒、下界 30000 毫秒。
 
-脚本按上述流程推进并在 C/D 级缺陷上自动修复重测，A/B 级中断返回本会话。状态写入 `docs/.ddd-state.json`，schema 见 spec §13。
+脚本按上述流程推进并在 C/D 级缺陷上自动修复重测，A/B 级中断返回本会话。状态写入 `docs/.ddd-state.json`，schema 见 spec §14。
 
 ## 派发要求
 

@@ -41,11 +41,13 @@ if [[ "${1:-}" == "--check" ]]; then
     else
         echo "  Workflow : 未安装"
     fi
-    if [[ -f "$SKILL_DST/scripts/trace-check.js" ]]; then
-        echo "  trace-check : 已安装 ($SKILL_DST/scripts/trace-check.js)"
-    else
-        echo "  trace-check : 未安装"
-    fi
+    for s in trace-check code-health; do
+        if [[ -f "$SKILL_DST/scripts/$s.js" ]]; then
+            echo "  $s : 已安装"
+        else
+            echo "  $s : 未安装"
+        fi
+    done
     if grep -q "ddd-methodology:begin" "$PI_HOME/APPEND_SYSTEM.md" 2>/dev/null; then
         echo "  全局规则 : 标记区块已部署 ($PI_HOME/APPEND_SYSTEM.md)"
     else
@@ -72,12 +74,16 @@ if [[ -d "$ROOT/workflows" ]]; then
     echo "[完成] Workflow -> $SKILL_DST/workflows/"
 fi
 
-# 1.6 安装追溯校验脚本
-if [[ -f "$ROOT/scripts/trace-check.js" ]]; then
-    mkdir -p "$SKILL_DST/scripts"
-    cp -f "$ROOT/scripts/trace-check.js" "$SKILL_DST/scripts/"
-    echo "[完成] trace-check -> $SKILL_DST/scripts/trace-check.js"
-fi
+# 1.6 安装门禁证据脚本
+mkdir -p "$SKILL_DST/scripts"
+for s in trace-check code-health; do
+    if [[ -f "$ROOT/scripts/$s.js" ]]; then
+        cp -f "$ROOT/scripts/$s.js" "$SKILL_DST/scripts/"
+        echo "[完成] $s -> $SKILL_DST/scripts/$s.js"
+    else
+        echo "[警告] 缺少 $ROOT/scripts/$s.js" >&2
+    fi
+done
 
 # 1.8 安装全局规则区块，块级标记合并，区块外用户自定义内容保留
 if [[ -f "$ROOT/global/APPEND_SYSTEM.md" ]]; then
