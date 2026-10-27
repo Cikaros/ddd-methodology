@@ -65,6 +65,7 @@ chmod +x scripts/*.sh
 ./scripts/install.sh                              # 安装或覆盖更新，不触碰模型设置
 ./scripts/install.sh --models balanced            # 安装并按配比配置各代理模型
 ./scripts/install.sh --models balanced --set ddd-arbiter=GLM-5.3-Flash
+./scripts/install.sh --models balanced --skip-verify      # 跳过冒烟，仅在确认模型可用时使用
 ./scripts/install.sh --models none                # 显式跳过模型配比
 ./scripts/install.sh --check                     # 检查安装状态
 ./scripts/uninstall.sh                           # 卸载，并移除本方法论写入的模型配置
@@ -75,6 +76,7 @@ chmod +x scripts/*.sh
   - workflow 脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`，供根会话以 `subagent({ workflow: ... , args: { root: "<项目根>" } })` 调用
   - trace-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js`，作为 G4/G5 门禁证据
   - code-health 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/code-health.js`，作为 G5-INT/G6 门禁证据，度量写入项目内 docs/health.json
+- 模型配比记录文件 `~/.pi/agent/.ddd-model-overrides.json`，记录本方法论写入的代理、配比名与写入前原值，供精确回退
 - 全局规则区块，按标记合并入 `~/.pi/agent/APPEND_SYSTEM.md`：只替换标记区块，区块外用户自定义内容原样保留，卸载时移除该区块；首次安装前自动备份为 `APPEND_SYSTEM.md.ddd-bak`，卸载时若仅剩标记区块则优先从该备份恢复并删除备份文件
 - 12 个 agent 定义，按固定文件名清单，安装到 `~/.pi/agent/agents/ddd-*.md`
 
@@ -104,7 +106,7 @@ chmod +x scripts/*.sh
 | quality | 质量优先，少量高风险角色换异构模型以降低同族共同盲区 |
 | economy | 成本优先，仅取消输出上限升档 |
 
-应用流程有两道校验，任一不通过的模型会被跳过并告警，不写入无法验证的声明：
+应用流程默认有两道校验，任一不通过的模型会被跳过并告警，不写入无法验证的声明。第二道可用 `--skip-verify` 跳过，仅在已确认模型可用时使用，跳过即等于放弃该道验证：
 
 1. **注册表校验**：模型须已在 pi 中注册。
 2. **可用性冒烟**：以最小请求实测首字延迟与推理开销，空内容即视为不可用。
@@ -117,5 +119,9 @@ node scripts/apply-models.js verify balanced                        # 仅冒烟
 node scripts/apply-models.js status                                 # 查看当前已应用的配置
 node scripts/apply-models.js clear                                  # 移除本方法论写入的配置
 ```
+
+前置条件：`node` 必须可用，配比应用与全局规则合并均依赖它；未安装 node 时脚本降级为警告并跳过这两项。
+
+**配比应用与卸载都依赖仓库在场**：`profiles/`、`scripts/apply-models.js` 与 `scripts/merge-append-system.js` 均不随安装复制到 skill 目录，故更换配比与执行卸载需在仓库内运行，或用 `--repo` 指向仓库根。
 
 `profiles/models.json` 内记录了配比的实测证据与理由，含可用性、延迟、审计召回、编码契约忠实度与成本结构。证据为单轮对照，样本量有限，使用中出现反例应更新该表。

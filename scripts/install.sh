@@ -7,6 +7,8 @@
 #   ./install.sh --models <配比>                 应用模型配比，配比见 profiles/models.json
 #   ./install.sh --models <配比> --set 代理=模型  在配比基础上改单个代理，可重复
 #   ./install.sh --models none                   显式跳过模型配比
+#   ./install.sh --models <配比> --skip-verify    跳过可用性冒烟
+#   ./install.sh --models <配比> --provider <p>   指定 provider，默认取配比文件值
 # 卸载请使用 uninstall.sh。
 # ============================================================
 set -euo pipefail
@@ -31,13 +33,23 @@ DDD_AGENTS=(ddd-requirements ddd-acceptance ddd-architect ddd-decomposer ddd-int
 CHECK_ONLY=0
 MODELS_PROFILE=""
 MODEL_SETS=()
+SKIP_VERIFY=0
+PROVIDER=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --check) CHECK_ONLY=1; shift ;;
-        --models) MODELS_PROFILE="${2:-}"; shift 2 ;;
+        --models)
+            [[ -z "${2:-}" ]] && { echo "[错误] --models 需要配比名，可用：balanced、quality、economy" >&2; exit 1; }
+            MODELS_PROFILE="$2"; shift 2 ;;
         --models=*) MODELS_PROFILE="${1#*=}"; shift ;;
-        --set) MODEL_SETS+=("${2:-}"); shift 2 ;;
+        --set)
+            [[ -z "${2:-}" ]] && { echo "[错误] --set 需要 代理=模型 形式" >&2; exit 1; }
+            MODEL_SETS+=("$2"); shift 2 ;;
         --set=*) MODEL_SETS+=("${1#*=}"); shift ;;
+        --skip-verify) SKIP_VERIFY=1; shift ;;
+        --provider)
+            [[ -z "${2:-}" ]] && { echo "[错误] --provider 需要取值" >&2; exit 1; }
+            PROVIDER="$2"; shift 2 ;;
         *) shift ;;
     esac
 done
@@ -142,6 +154,8 @@ echo "[完成] Agents -> $AGENT_DST （${count} 个）"
 if [[ -n "$MODELS_PROFILE" && "$MODELS_PROFILE" != "none" ]]; then
     if command -v node >/dev/null 2>&1; then
         APPLY_ARGS=(apply "$MODELS_PROFILE" --repo "$ROOT")
+        [[ "$SKIP_VERIFY" == "1" ]] && APPLY_ARGS+=(--skip-verify)
+        [[ -n "$PROVIDER" ]] && APPLY_ARGS+=(--provider "$PROVIDER")
         for s in "${MODEL_SETS[@]:-}"; do
             [[ -n "$s" ]] && APPLY_ARGS+=(--set "$s")
         done
