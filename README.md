@@ -20,6 +20,8 @@ ddd-methodology/
 │   │   └── templates.md          # 产物模板库
 ├── global/
 │   └── APPEND_SYSTEM.md         # 全局规则权威版本，安装时按标记区块合并入用户全局文件
+├── profiles/
+│   └── models.json              # 按代理的模型配比，含实测证据与理由，不写入 agent 定义
 ├── workflows/
 │   └── ddd-workflow.js           # 可选加速档：固定阶段自动编排脚本（args.root 传项目根）
 ├── agents/                       # 子代理定义（pi-subagents 格式）
@@ -41,6 +43,7 @@ ddd-methodology/
     ├── uninstall.bat             # Windows 卸载（固定文件清单，防误删）
     ├── uninstall.sh              # Linux/macOS/Git Bash 卸载
     ├── trace-check.js            # 追溯一致性校验脚本，G4/G5 门禁证据
+    ├── apply-models.js           # 按代理模型配比的应用与可用性冒烟
     ├── code-health.js            # 代码结构健康检查脚本，G5-INT 与 G6 门禁证据
     └── merge-append-system.js    # 全局规则区块合并，供安装与卸载脚本调用
 ```
@@ -59,9 +62,12 @@ scripts\uninstall.bat           rem 卸载
 **Linux、macOS 与 Git Bash**
 ```bash
 chmod +x scripts/*.sh
-./scripts/install.sh             # 安装/覆盖更新
-./scripts/install.sh --check     # 检查安装状态
-./scripts/uninstall.sh           # 卸载
+./scripts/install.sh                              # 安装或覆盖更新，不触碰模型设置
+./scripts/install.sh --models balanced            # 安装并按配比配置各代理模型
+./scripts/install.sh --models balanced --set ddd-arbiter=GLM-5.3-Flash
+./scripts/install.sh --models none                # 显式跳过模型配比
+./scripts/install.sh --check                     # 检查安装状态
+./scripts/uninstall.sh                           # 卸载，并移除本方法论写入的模型配置
 ```
 
 安装内容：
@@ -87,3 +93,29 @@ chmod +x scripts/*.sh
 ## 版本管理
 
 本仓库使用 git tag 管理版本。规范修订流程：修改文档 → commit → 打递增版本 tag，例如 `v1.2`、`v1.3`。
+
+## 按代理的模型配比
+
+模型名属部署政策，不写入 agent 定义，只由 `profiles/models.json` 经 `scripts/apply-models.js` 应用到用户设置，因此可随时更换配比而不改动代理。
+
+| 配比 | 定位 |
+|---|---|
+| balanced | 推荐。契约与编码角色用契约忠实度满分的一档，其余用同族更大输出上限的一档 |
+| quality | 质量优先，少量高风险角色换异构模型以降低同族共同盲区 |
+| economy | 成本优先，仅取消输出上限升档 |
+
+应用流程有两道校验，任一不通过的模型会被跳过并告警，不写入无法验证的声明：
+
+1. **注册表校验**：模型须已在 pi 中注册。
+2. **可用性冒烟**：以最小请求实测首字延迟与推理开销，空内容即视为不可用。
+
+单独执行冒烟与查看状态的命令：
+
+```bash
+node scripts/apply-models.js list                                    # 列出全部配比与注册表比对
+node scripts/apply-models.js verify balanced                        # 仅冒烟
+node scripts/apply-models.js status                                 # 查看当前已应用的配置
+node scripts/apply-models.js clear                                  # 移除本方法论写入的配置
+```
+
+`profiles/models.json` 内记录了配比的实测证据与理由，含可用性、延迟、审计召回、编码契约忠实度与成本结构。证据为单轮对照，样本量有限，使用中出现反例应更新该表。

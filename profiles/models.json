@@ -1,0 +1,102 @@
+{
+  "_说明": "按代理配置模型的部署策略。模型名属部署政策，不写入 agent 定义，只由此文件经 apply-models.js 应用到用户设置。provider 默认 scnet。",
+  "_证据": {
+    "采集时间": "2026-10-15",
+    "采集方式": "同一夹具上的对照探测。审计任务以八项植入缺陷测召回，编码任务以对抗性用例测契约忠实度，可用性与延迟以同题最小请求实测",
+    "可用性实测": {
+      "结论": "六个注册模型全部可用",
+      "修正记录": "首次冒烟用极小 max_tokens，推理模型把预算耗尽在推理上而返回空内容，据此误判 GLM-5.3 不可用。放宽预算后六个模型全部正常。教训：验证手段必须与判定对象匹配，推理模型的冒烟须给出足够预算"
+    },
+    "延迟实测": {
+      "两百字生成": "DeepSeek-V4.1-Flash 3.5 秒，DeepSeek-V4.1-Flash-1017 3.1 秒，GLM-5.3-Flash 7.2 秒，GLM-5.3 5.4 秒，Kimi-K3 4.6 秒，GLM-5.2 18.9 秒",
+      "首字延迟": "DeepSeek 两个模型约 1.1 秒，其余 2.5 至 15.8 秒"
+    },
+    "推理开销": "最小请求的补全 token 数在不同轮次波动较大，单次测量不足以定论，仅作参考；GLM-5.2 在同题生成中为 214 字消耗 967 token，开销显著高于同侪",
+    "审计召回": {
+      "DeepSeek-V4.1-Flash": "8/8，报告 98 行",
+      "GLM-5.2": "8/8，报告 125 行",
+      "GLM-5.3-Flash": "7/8，漏违禁注释项"
+    },
+    "编码契约忠实度": {
+      "DeepSeek-V4.1-Flash": "5/5，严格按 done 恒等 true 实现，唯一满分",
+      "DeepSeek-V4.1-Flash-1017": "4/5，真值判定并用注释为偏离辩解",
+      "GLM-5.3-Flash": "4/5，真值判定",
+      "GLM-5.2": "4/5，真值判定"
+    },
+    "成本结构": "输出价是成本主因，审计实现修复均为输出密集型。GLM-5.2 输出价 7.0 且推理开销高，Kimi-K3 输出价 20 且首字最慢，二者均不宜作主力",
+    "结论": "默认在 DeepSeek 同族两档间分配：契约与编码相关角色用 Flash 档，因其契约忠实度唯一满分；其余角色用 1017 档，其单次输出上限 393K 为同族更高者。样本量有限，使用中出现反例应更新本表"
+  },
+  "provider": "scnet",
+  "profiles": {
+    "balanced": {
+      "_说明": "推荐配比，依据实测证据。默认档承担全部输出密集型工作，长文档角色用大输出上限档。",
+      "roles": {
+        "ddd-requirements": "DeepSeek-V4.1-Flash-1017",
+        "ddd-acceptance": "DeepSeek-V4.1-Flash-1017",
+        "ddd-architect": "DeepSeek-V4.1-Flash-1017",
+        "ddd-decomposer": "DeepSeek-V4.1-Flash",
+        "ddd-interface-reviewer": "DeepSeek-V4.1-Flash",
+        "ddd-implementer": "DeepSeek-V4.1-Flash",
+        "ddd-test-planner": "DeepSeek-V4.1-Flash-1017",
+        "ddd-tester": "DeepSeek-V4.1-Flash-1017",
+        "ddd-fixer": "DeepSeek-V4.1-Flash",
+        "ddd-arbiter": "DeepSeek-V4.1-Flash-1017",
+        "ddd-doc-sync": "DeepSeek-V4.1-Flash-1017",
+        "ddd-auditor": "DeepSeek-V4.1-Flash-1017"
+      },
+      "rationale": {
+        "ddd-requirements": "输出上限更大，交互轮次多不涉契约忠实度",
+        "ddd-architect": "产出长文档，需更大单次输出上限",
+        "ddd-decomposer": "写签名级契约，契约忠实度优先故用 Flash 档",
+        "ddd-interface-reviewer": "审查契约本身，契约忠实度优先",
+        "ddd-implementer": "实测契约忠实度唯一满分",
+        "ddd-fixer": "同实现者，修改代码须严格对齐契约",
+        "ddd-auditor": "需实测消费路径，审计召回实测 8/8",
+        "ddd-doc-sync": "全量检索比对量最大，取同族更快档"
+      }
+    },
+    "quality": {
+      "_说明": "质量优先。以异构模型降低同族共同盲区，代价是延迟与成本上升，仅用于少量高风险角色。",
+      "roles": {
+        "ddd-requirements": "DeepSeek-V4.1-Flash-1017",
+        "ddd-acceptance": "DeepSeek-V4.1-Flash",
+        "ddd-architect": "DeepSeek-V4.1-Flash-1017",
+        "ddd-decomposer": "DeepSeek-V4.1-Flash-1017",
+        "ddd-interface-reviewer": "DeepSeek-V4.1-Flash-1017",
+        "ddd-implementer": "DeepSeek-V4.1-Flash-1017",
+        "ddd-test-planner": "DeepSeek-V4.1-Flash",
+        "ddd-tester": "DeepSeek-V4.1-Flash",
+        "ddd-fixer": "DeepSeek-V4.1-Flash-1017",
+        "ddd-arbiter": "GLM-5.3-Flash",
+        "ddd-doc-sync": "DeepSeek-V4.1-Flash",
+        "ddd-auditor": "GLM-5.3-Flash"
+      },
+      "rationale": {
+        "ddd-architect": "架构决策影响全局，保留 1017 档的大输出上限",
+        "ddd-interface-reviewer": "冻结前高风险，换异构模型做独立视角",
+        "ddd-arbiter": "争议裁决需独立视角，接受 GLM 档的延迟与成本",
+        "ddd-auditor": "换异构模型减少与实现者同族的共同盲区"
+      }
+    },
+    "economy": {
+      "_说明": "成本优先。本部署可用模型中最省的一档已是 DeepSeek 系列，故不再降档，仅取消输出上限升档。",
+      "roles": {
+        "ddd-requirements": "DeepSeek-V4.1-Flash",
+        "ddd-acceptance": "DeepSeek-V4.1-Flash",
+        "ddd-architect": "DeepSeek-V4.1-Flash",
+        "ddd-decomposer": "DeepSeek-V4.1-Flash",
+        "ddd-interface-reviewer": "DeepSeek-V4.1-Flash",
+        "ddd-implementer": "DeepSeek-V4.1-Flash",
+        "ddd-test-planner": "DeepSeek-V4.1-Flash",
+        "ddd-tester": "DeepSeek-V4.1-Flash",
+        "ddd-fixer": "DeepSeek-V4.1-Flash",
+        "ddd-arbiter": "DeepSeek-V4.1-Flash",
+        "ddd-doc-sync": "GLM-5.3-Flash",
+        "ddd-auditor": "DeepSeek-V4.1-Flash"
+      },
+      "rationale": {
+        "ddd-doc-sync": "与默认档输入价相同，输出价略高，此处保留备选以便在 DeepSeek 限流时切换"
+      }
+    }
+  }
+}
