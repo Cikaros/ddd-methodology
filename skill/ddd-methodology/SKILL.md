@@ -32,7 +32,7 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 6. **实现与测试规划并行**（ddd-implementer ∥ ddd-test-planner）：实现按就近 DESIGN，测试规划产出计划树。过 G5。
    > 加载：templates 的 TEST_PLAN 节；并行接缝读 spec §6；测试分级读 spec §8。
 7. **集成收口**（ddd-fixer）：构建与接缝核对，声明测试就绪，修集成问题。过 G5-INT。
-   > 加载：spec §7；证据源为 `node scripts/code-health.js <项目根>`，见 spec §13。
+   > 加载：spec §7；证据源为 `node ~/.pi/agent/skills/ddd-methodology/scripts/code-health.js <项目根>`，见 spec §13。
 8. **测试执行**（ddd-tester）：按计划执行，缺陷定级路由。
    > 加载：spec §3。路由知识已内联于该代理；仅争议时派 ddd-arbiter。
 9. **声明面审计**（ddd-auditor）：全量核对消费方与验证手段，回验上次修剪清单，输出恶化项与修剪清单。过 G6。
@@ -54,7 +54,7 @@ subagent({ workflow: "<skill目录>/workflows/ddd-workflow.js", args: { root: "<
 
 前置条件为 12 个 `ddd-*` 代理已安装，未安装将导致派发失败。可选参数：`maxFixRounds` 默认 2，`stallTimeoutMs` 默认 300000 毫秒、下界 30000 毫秒。
 
-脚本按上述流程推进并在 C/D 级缺陷上自动修复重测，A/B 级中断返回本会话。状态写入 `docs/.ddd-state.json`，schema 见 spec §14。
+脚本按上述流程推进并在 C/D 级缺陷上自动修复重测，A/B 级中断返回本会话。状态写入 `docs/.ddd-state.json`，schema 见 spec §15。
 
 ## 派发要求
 

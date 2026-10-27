@@ -1,6 +1,9 @@
 /**
  * DDD-Methodology 固定阶段编排脚本（可选加速档）
  *
+ * 运行时例外：本文件受 pi workflow 沙箱约束，无 require 与 fs，只能单文件，故不适用规范 §4 的文件拆分要求；
+ * 为保持在单一能力域内，此处只做流程编排与状态推进，缺陷定级、任务文本构造、状态注入等紧密相关的辅助函数内聚于本文件。
+ *
  * 用法：根会话中调用
  *   subagent({ workflow: "<skill目录>/workflows/ddd-workflow.js", args: { root: "<项目根绝对路径>" } })
  * 必须通过 args.root 传入项目根绝对路径——workflow 脚本运行在沙箱中，
@@ -16,7 +19,7 @@
  *
  * 实现/测试硬分离：ddd-tester 与 ddd-implementer 永不同段；并行段仅为实现与测试规划。
  *
- * 断点续跑：状态文件由各阶段代理在任务中负责写入/更新 <root>/docs/.ddd-state.json（schema 见 references/spec.md §14）；
+ * 断点续跑：状态文件由各阶段代理在任务中负责写入/更新 <root>/docs/.ddd-state.json（schema 见 references/spec.md §15）；
  * 本脚本启动时由 ddd-requirements 只读检查状态文件并按契约输出 DONE: <stageKey> 机读行，已完成阶段自动跳过。
  *
  * 缺陷路由策略：
@@ -37,7 +40,7 @@ const maxFixRounds = args && Number.isFinite(Number(args.maxFixRounds))
   : 2; // 方法论约定：轮回修复超过 2 轮强制升级用户
 const stateFile = `${root}/docs/.ddd-state.json`;
 
-// 阶段注册表：键清单必须与 references/spec.md §14 的阶段注册表一致；
+// 阶段注册表：键清单必须与 references/spec.md §15 的阶段注册表一致；
 // 串行段/接口评审/G5-INT/首轮测试执行均用 stateNote 写入对应键。
 const stageRegistry = [
   "requirements", "acceptance", "architect", "decomposer",
@@ -273,7 +276,7 @@ if (validDoneStages.length !== doneStages.length) {
   throw new Error(
     "状态文件 doneStages 含非法阶段键：" +
       doneStages.filter((k) => !stageRegistry.includes(k)).join(", ") +
-      "。合法键见 references/spec.md §14。",
+      "。合法键见 references/spec.md §15。",
   );
 }
 doneStages = validDoneStages;

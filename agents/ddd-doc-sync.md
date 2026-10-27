@@ -34,7 +34,7 @@ inheritSkills: false
 4. **模板锚定**：templates 的锚定章节名与 trace-check 正则可兼容。
 5. **安装清单**：脚本清单与 agents 目录、workflow 与脚本是否随装随卸。
 6. **变更记录**：本次改动是否已登记，版本标签与声明是否一致。
-7. **状态键**：workflow 阶段注册表与规范 §14 的阶段清单一致。
+7. **状态键**：workflow 阶段注册表与规范 §15 的阶段清单一致。
 8. **全局规则同步**：仓库 `global/APPEND_SYSTEM.md` 与已部署的 `~/.pi/agent/APPEND_SYSTEM.md` 标记区块内容一致。
 9. **行文规范**：标题无括号或破折号补充，正文无非必要中文括号补充。
 
