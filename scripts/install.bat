@@ -1,20 +1,26 @@
 @echo off
 rem ============================================================
-rem DDD-Methodology 安装脚本（Windows）
-rem 用法:
-rem   install.bat           全新安装 / 覆盖更新（幂等）
-rem   install.bat --check   检查安装状态
-rem 卸载请使用 uninstall.bat。
+rem DDD-Methodology installer for Windows
+rem   install.bat                              install or update
+rem   install.bat --check                      show install status
+rem   install.bat --models balanced            apply model profile
+rem   install.bat --models balanced --set ddd-arbiter=GLM-5.3-Flash
+rem   install.bat --models balanced --skip-verify
+rem Uninstall with uninstall.bat.
+rem
+rem Encoding note: this file is ASCII only on purpose. cmd parses batch
+rem files under the active code page, so non-ASCII bytes break line
+rem markers and percent expansion. Chinese output lives in install.sh,
+rem which also works from Git Bash on Windows.
 rem ============================================================
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
-rem 定位仓库根目录（本脚本所在目录的上一级）
 set "SRC=%~dp0"
 set "ROOT=%SRC%..\"
 
 if not exist "%ROOT%skill\ddd-methodology\SKILL.md" (
-    echo [错误] 未找到 skill\ddd-methodology\SKILL.md，请在仓库目录内运行。
+    echo [ERROR] skill\ddd-methodology\SKILL.md not found, run from the repository.
     exit /b 1
 )
 
@@ -22,54 +28,69 @@ set "PI_HOME=%USERPROFILE%\.pi\agent"
 set "SKILL_DST=%PI_HOME%\skills\ddd-methodology"
 set "AGENT_DST=%PI_HOME%\agents"
 
-rem 固定清单：与 agents\ 目录下 12 个文件一一对应（防止通配符覆盖用户自有 ddd- 前缀代理）
+rem Fixed list: one entry per file under agents\
 set DDD_AGENTS=ddd-requirements ddd-acceptance ddd-architect ddd-decomposer ddd-interface-reviewer ddd-implementer ddd-test-planner ddd-tester ddd-arbiter ddd-doc-sync ddd-auditor ddd-fixer
 
-if "%~1"=="--check" goto :check
+set "CHECK_ONLY=0"
+set "MODELS_PROFILE="
+set "MODEL_SETS="
+set "SKIP_VERIFY="
+set "PROVIDER="
+
+:parse
+if "%~1"=="" goto :parsed
+if /i "%~1"=="--check" ( set "CHECK_ONLY=1" & shift & goto :parse )
+if /i "%~1"=="--models" (
+    if "%~2"=="" ( echo [ERROR] --models needs a profile name: balanced, quality, economy & exit /b 1 )
+    set "MODELS_PROFILE=%~2" & shift & shift & goto :parse
+)
+if /i "%~1"=="--set" (
+    if "%~2"=="" ( echo [ERROR] --set needs AGENT=MODEL & exit /b 1 )
+    set "MODEL_SETS=%MODEL_SETS% --set %~2" & shift & shift & goto :parse
+)
+if /i "%~1"=="--skip-verify" ( set "SKIP_VERIFY=1" & shift & goto :parse )
+if /i "%~1"=="--provider" (
+    if "%~2"=="" ( echo [ERROR] --provider needs a value & exit /b 1 )
+    set "PROVIDER=%~2" & shift & shift & goto :parse
+)
+shift
+goto :parse
+:parsed
+
+if "%CHECK_ONLY%"=="1" goto :check
 
 :install
-echo [安装] 目标: %PI_HOME%（已存在旧版将自动覆盖更新）
+echo [INSTALL] target: %PI_HOME%
 
-rem 1. 安装 Skill（整个目录替换，幂等；workflow 随目录一并安装）
 if exist "%SKILL_DST%" (
-    echo [提示] 检测到旧版，覆盖更新。
+    echo [INFO] previous version found, replacing.
     rmdir /s /q "%SKILL_DST%"
 )
 xcopy "%ROOT%skill\ddd-methodology" "%SKILL_DST%\" /e /i /q >nul
-if errorlevel 1 ( echo [错误] Skill 安装失败 & exit /b 1 )
-echo [完成] Skill  -^> %SKILL_DST%
+if errorlevel 1 ( echo [ERROR] skill install failed & exit /b 1 )
+echo [OK] Skill -> %SKILL_DST%
 
-rem 1.5 安装 Workflow 加速档脚本（仓库根 workflows\ → skill 包内 workflows\）
-if exist "%ROOT%workflows" (
-    if not exist "%SKILL_DST%\workflows" mkdir "%SKILL_DST%\workflows"
-    xcopy "%ROOT%workflows" "%SKILL_DST%\workflows\" /e /i /q >nul
-    echo [完成] Workflow -^> %SKILL_DST%\workflows\
-)
-
-rem 1.6 安装门禁证据脚本
 if not exist "%SKILL_DST%\scripts" mkdir "%SKILL_DST%\scripts"
 for %%S in (trace-check code-health) do (
     if exist "%ROOT%scripts\%%S.js" (
         copy /y "%ROOT%scripts\%%S.js" "%SKILL_DST%\scripts\%%S.js" >nul
-        echo [完成] %%S -^> %SKILL_DST%\scripts\%%S.js
+        if errorlevel 1 ( echo [WARN] %%S copy failed ) else ( echo [OK] %%S )
     ) else (
-        echo [警告] 缺少 %ROOT%scripts\%%S.js
+        echo [WARN] missing %ROOT%scripts\%%S.js
     )
 )
 
-rem 1.8 安装全局规则区块，块级标记合并，区块外用户自定义内容保留
 if exist "%ROOT%global\APPEND_SYSTEM.md" (
     where node >nul 2>nul
     if errorlevel 1 (
-        echo [警告] 未找到 node，跳过全局规则安装
+        echo [WARN] node not found, skipping global rules
     ) else (
         node "%ROOT%scripts\merge-append-system.js" install "%ROOT%" "%PI_HOME%\APPEND_SYSTEM.md"
     )
 ) else (
-    echo [警告] 缺少 %ROOT%global\APPEND_SYSTEM.md
+    echo [WARN] missing %ROOT%global\APPEND_SYSTEM.md
 )
 
-rem 2. 安装 12 个 agent 定义（按固定清单，仅覆盖本方法论文件）
 if not exist "%AGENT_DST%" mkdir "%AGENT_DST%"
 set N=0
 for %%A in (%DDD_AGENTS%) do (
@@ -77,27 +98,49 @@ for %%A in (%DDD_AGENTS%) do (
         copy /y "%ROOT%agents\%%A.md" "%AGENT_DST%\%%A.md" >nul
         set /a N+=1
     ) else (
-        echo [警告] 缺少 %ROOT%agents\%%A.md
+        echo [WARN] missing %ROOT%agents\%%A.md
     )
 )
-echo [完成] Agents -^> %AGENT_DST% （!N! 个）
+echo [OK] Agents -> %AGENT_DST% (!N! files)
+
+if not "%MODELS_PROFILE%"=="" (
+    if /i "%MODELS_PROFILE%"=="none" (
+        echo [INFO] model profile skipped, all agents keep the default model
+    ) else (
+        where node >nul 2>nul
+        if errorlevel 1 (
+            echo [WARN] node not found, skipping model profile
+        ) else (
+            set "APPLY_ARGS=apply %MODELS_PROFILE% --repo "%ROOT%""
+            if not "%SKIP_VERIFY%"=="" set "APPLY_ARGS=!APPLY_ARGS! --skip-verify"
+            if not "%PROVIDER%"=="" set "APPLY_ARGS=!APPLY_ARGS! --provider %PROVIDER%"
+            call node "%ROOT%scripts\apply-models.js" !APPLY_ARGS!
+        )
+    )
+)
 
 echo.
-echo [成功] 安装完成。卸载请运行 scripts\uninstall.bat
+echo [DONE] installed. Use /skill:ddd-methodology in any pi session.
+echo        Uninstall with scripts\uninstall.bat
 exit /b 0
 
 :check
-echo [检查] 安装状态：
-if exist "%SKILL_DST%\SKILL.md" ( echo   Skill    : 已安装 ) else ( echo   Skill    : 未安装 )
+echo [CHECK] install status:
+if exist "%SKILL_DST%\SKILL.md" ( echo   Skill    : installed ) else ( echo   Skill    : missing )
 set N=0
 for %%A in (%DDD_AGENTS%) do (
     if exist "%AGENT_DST%\%%A.md" set /a N+=1
 )
-echo   Agents   : !N! / 12 已安装
-if exist "%SKILL_DST%\workflows\ddd-workflow.js" ( echo   Workflow : 已安装 ) else ( echo   Workflow : 未安装 )
+echo   Agents   : !N! / 12 installed
+if exist "%SKILL_DST%\workflows\ddd-workflow.js" ( echo   Workflow : installed ) else ( echo   Workflow : missing )
 for %%S in (trace-check code-health) do (
-    if exist "%SKILL_DST%\scripts\%%S.js" ( echo   %%S : 已安装 ) else ( echo   %%S : 未安装 )
+    if exist "%SKILL_DST%\scripts\%%S.js" ( echo   %%S : installed ) else ( echo   %%S : missing )
+)
+if exist "%PI_HOME%\.ddd-model-overrides.json" (
+    echo   Models   : profile applied
+) else (
+    echo   Models   : not configured, agents use the default model
 )
 findstr /c:"ddd-methodology:begin" "%PI_HOME%\APPEND_SYSTEM.md" >nul 2>nul
-if errorlevel 1 ( echo   全局规则 : 未部署 ) else ( echo   全局规则 : 标记区块已部署 )
+if errorlevel 1 ( echo   Global   : not deployed ) else ( echo   Global   : block deployed )
 exit /b 0

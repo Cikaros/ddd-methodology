@@ -1,0 +1,4 @@
+# Windows 批处理必须以 CRLF 存储，LF 会导致 cmd 解析连锁错误
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.sh  text eol=lf

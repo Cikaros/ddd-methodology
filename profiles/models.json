@@ -24,62 +24,22 @@
       "GLM-5.2": "4/5，真值判定"
     },
     "成本结构": "输出价是成本主因，审计实现修复均为输出密集型。GLM-5.2 输出价 7.0 且推理开销高，Kimi-K3 输出价 20 且首字最慢，二者均不宜作主力",
-    "结论": "默认在 DeepSeek 同族两档间分配：契约与编码相关角色用 Flash 档，因其契约忠实度唯一满分；其余角色用 1017 档，其单次输出上限 393K 为同族更高者。样本量有限，使用中出现反例应更新本表"
+    "结论": "本部署默认档为 DeepSeek-V4.1-Flash：审计召回 8/8、编码契约忠实度唯一满分、上下文与最大输出均为可用模型中最高、单价最低、延迟最低。异构模型仅在质量档用于降低同族共同盲区。",
+    "注册表实测": {
+      "说明": "数值取自本部署注册表 models.json，非第三方目录。第三方目录的数值与本地注册表可能不一致，配比依据一律以本地注册表为准",
+      "DeepSeek-V4.1-Flash": "上下文 1000000，最大输出 384000，输入 0.14，输出 0.42",
+      "DeepSeek-V4.1-Flash-1017": "上下文 262144，最大输出 262144，输入 0.15，输出 0.60",
+      "GLM-5.3-Flash": "上下文 1000000，最大输出 131072，输入 0.15，输出 0.50",
+      "GLM-5.3": "上下文 1000000，最大输出 131072，输入 0.07，输出 1.40",
+      "GLM-5.2": "上下文 1000000，最大输出 131072，输入 0.034，输出 7.00",
+      "Kimi-K3": "上下文 1048576，最大输出 131072，输入 0.179，输出 20.00",
+      "支配关系": "DeepSeek-V4.1-Flash 在上下文、最大输出、单价与实测契约忠实度四项上均不劣于 1017，且三项占优，故本部署不分配 1017"
+    }
   },
   "provider": "scnet",
   "profiles": {
     "balanced": {
-      "_说明": "推荐配比，依据实测证据。默认档承担全部输出密集型工作，长文档角色用大输出上限档。",
-      "roles": {
-        "ddd-requirements": "DeepSeek-V4.1-Flash-1017",
-        "ddd-acceptance": "DeepSeek-V4.1-Flash-1017",
-        "ddd-architect": "DeepSeek-V4.1-Flash-1017",
-        "ddd-decomposer": "DeepSeek-V4.1-Flash",
-        "ddd-interface-reviewer": "DeepSeek-V4.1-Flash",
-        "ddd-implementer": "DeepSeek-V4.1-Flash",
-        "ddd-test-planner": "DeepSeek-V4.1-Flash-1017",
-        "ddd-tester": "DeepSeek-V4.1-Flash-1017",
-        "ddd-fixer": "DeepSeek-V4.1-Flash",
-        "ddd-arbiter": "DeepSeek-V4.1-Flash-1017",
-        "ddd-doc-sync": "DeepSeek-V4.1-Flash-1017",
-        "ddd-auditor": "DeepSeek-V4.1-Flash-1017"
-      },
-      "rationale": {
-        "ddd-requirements": "输出上限更大，交互轮次多不涉契约忠实度",
-        "ddd-architect": "产出长文档，需更大单次输出上限",
-        "ddd-decomposer": "写签名级契约，契约忠实度优先故用 Flash 档",
-        "ddd-interface-reviewer": "审查契约本身，契约忠实度优先",
-        "ddd-implementer": "实测契约忠实度唯一满分",
-        "ddd-fixer": "同实现者，修改代码须严格对齐契约",
-        "ddd-auditor": "需实测消费路径，审计召回实测 8/8",
-        "ddd-doc-sync": "全量检索比对量最大，取同族更快档"
-      }
-    },
-    "quality": {
-      "_说明": "质量优先。以异构模型降低同族共同盲区，代价是延迟与成本上升，仅用于少量高风险角色。",
-      "roles": {
-        "ddd-requirements": "DeepSeek-V4.1-Flash-1017",
-        "ddd-acceptance": "DeepSeek-V4.1-Flash",
-        "ddd-architect": "DeepSeek-V4.1-Flash-1017",
-        "ddd-decomposer": "DeepSeek-V4.1-Flash-1017",
-        "ddd-interface-reviewer": "DeepSeek-V4.1-Flash-1017",
-        "ddd-implementer": "DeepSeek-V4.1-Flash-1017",
-        "ddd-test-planner": "DeepSeek-V4.1-Flash",
-        "ddd-tester": "DeepSeek-V4.1-Flash",
-        "ddd-fixer": "DeepSeek-V4.1-Flash-1017",
-        "ddd-arbiter": "GLM-5.3-Flash",
-        "ddd-doc-sync": "DeepSeek-V4.1-Flash",
-        "ddd-auditor": "GLM-5.3-Flash"
-      },
-      "rationale": {
-        "ddd-architect": "架构决策影响全局，保留 1017 档的大输出上限",
-        "ddd-interface-reviewer": "冻结前高风险，换异构模型做独立视角",
-        "ddd-arbiter": "争议裁决需独立视角，接受 GLM 档的延迟与成本",
-        "ddd-auditor": "换异构模型减少与实现者同族的共同盲区"
-      }
-    },
-    "economy": {
-      "_说明": "成本优先。本部署可用模型中最省的一档已是 DeepSeek 系列，故不再降档，仅取消输出上限升档。",
+      "_说明": "推荐配比。全角色使用实测综合最优档，异构模型留待质量档。",
       "roles": {
         "ddd-requirements": "DeepSeek-V4.1-Flash",
         "ddd-acceptance": "DeepSeek-V4.1-Flash",
@@ -91,11 +51,51 @@
         "ddd-tester": "DeepSeek-V4.1-Flash",
         "ddd-fixer": "DeepSeek-V4.1-Flash",
         "ddd-arbiter": "DeepSeek-V4.1-Flash",
-        "ddd-doc-sync": "GLM-5.3-Flash",
+        "ddd-doc-sync": "DeepSeek-V4.1-Flash",
         "ddd-auditor": "DeepSeek-V4.1-Flash"
       },
       "rationale": {
-        "ddd-doc-sync": "与默认档输入价相同，输出价略高，此处保留备选以便在 DeepSeek 限流时切换"
+        "全角色": "同一档覆盖，避免为一档无实测优势的模型引入额外理由"
+      }
+    },
+    "quality": {
+      "_说明": "质量优先。以异构模型降低同族共同盲区，代价是延迟与成本上升，仅用于少量高风险角色。",
+      "roles": {
+        "ddd-requirements": "DeepSeek-V4.1-Flash",
+        "ddd-acceptance": "DeepSeek-V4.1-Flash",
+        "ddd-architect": "DeepSeek-V4.1-Flash",
+        "ddd-decomposer": "DeepSeek-V4.1-Flash",
+        "ddd-interface-reviewer": "GLM-5.3-Flash",
+        "ddd-implementer": "DeepSeek-V4.1-Flash",
+        "ddd-test-planner": "DeepSeek-V4.1-Flash",
+        "ddd-tester": "DeepSeek-V4.1-Flash",
+        "ddd-fixer": "DeepSeek-V4.1-Flash",
+        "ddd-arbiter": "GLM-5.3-Flash",
+        "ddd-doc-sync": "DeepSeek-V4.1-Flash",
+        "ddd-auditor": "GLM-5.3-Flash"
+      },
+      "rationale": {
+        "审查与仲裁三类": "换异构模型以降低与实现者同族的共同盲区，代价为延迟与输出价上升"
+      }
+    },
+    "economy": {
+      "_说明": "成本优先。可用模型中最省的一档即 DeepSeek-V4.1-Flash，故与推荐配比一致。",
+      "roles": {
+        "ddd-requirements": "DeepSeek-V4.1-Flash",
+        "ddd-acceptance": "DeepSeek-V4.1-Flash",
+        "ddd-architect": "DeepSeek-V4.1-Flash",
+        "ddd-decomposer": "DeepSeek-V4.1-Flash",
+        "ddd-interface-reviewer": "DeepSeek-V4.1-Flash",
+        "ddd-implementer": "DeepSeek-V4.1-Flash",
+        "ddd-test-planner": "DeepSeek-V4.1-Flash",
+        "ddd-tester": "DeepSeek-V4.1-Flash",
+        "ddd-fixer": "DeepSeek-V4.1-Flash",
+        "ddd-arbiter": "DeepSeek-V4.1-Flash",
+        "ddd-doc-sync": "DeepSeek-V4.1-Flash",
+        "ddd-auditor": "DeepSeek-V4.1-Flash"
+      },
+      "rationale": {
+        "全角色": "无更低成本档可用"
       }
     }
   }

@@ -19,7 +19,7 @@ DDD_AGENTS=(ddd-requirements ddd-acceptance ddd-architect ddd-decomposer ddd-int
 echo "[卸载] 目标: $PI_HOME"
 
 if command -v node >/dev/null 2>&1; then
-    node "$ROOT/scripts/apply-models.js" clear --repo "$ROOT" || echo "[警告] 模型配置移除失败" >&2
+    node "$ROOT/scripts/apply-models.js" clear || echo "[警告] 模型配置移除失败" >&2
     node "$ROOT/scripts/merge-append-system.js" remove "$PI_HOME/APPEND_SYSTEM.md" || echo "[警告] 全局规则移除失败" >&2
 else
     echo "[警告] 未找到 node，跳过全局规则移除" >&2

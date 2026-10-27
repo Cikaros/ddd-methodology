@@ -1,8 +1,14 @@
 @echo off
 rem ============================================================
-rem DDD-Methodology 卸载脚本（Windows）
-rem 用法: uninstall.bat
-rem 仅移除本方法论安装的固定文件，不影响用户其他配置。
+rem DDD-Methodology uninstaller for Windows
+rem   uninstall.bat
+rem Removes only files installed by this methodology, plus the
+rem global rule block and the model overrides it wrote.
+rem
+rem Encoding note: ASCII only on purpose, see install.bat.
+rem Run it from the repository: it calls scripts\apply-models.js
+rem and scripts\merge-append-system.js, which are not installed
+rem into the skill directory.
 rem ============================================================
 chcp 65001 >nul
 setlocal enabledelayedexpansion
@@ -14,24 +20,25 @@ set "PI_HOME=%USERPROFILE%\.pi\agent"
 set "SKILL_DST=%PI_HOME%\skills\ddd-methodology"
 set "AGENT_DST=%PI_HOME%\agents"
 
-rem 固定清单：与 agents\ 目录下 12 个文件一一对应（防止通配符误删用户自有 ddd- 前缀代理）
+rem Fixed list: one entry per file under agents\
 set DDD_AGENTS=ddd-requirements ddd-acceptance ddd-architect ddd-decomposer ddd-interface-reviewer ddd-implementer ddd-test-planner ddd-tester ddd-arbiter ddd-doc-sync ddd-auditor ddd-fixer
 
-echo [卸载] 目标: %PI_HOME%
+echo [UNINSTALL] target: %PI_HOME%
 
 where node >nul 2>nul
 if errorlevel 1 (
-    echo [警告] 未找到 node，跳过全局规则移除
+    echo [WARN] node not found, skipping model overrides
+    echo [WARN] node not found, skipping global rules
 ) else (
-    node "%ROOT%scripts\apply-models.js" clear --repo "%ROOT%"
+    node "%ROOT%scripts\apply-models.js" clear
     node "%ROOT%scripts\merge-append-system.js" remove "%PI_HOME%\APPEND_SYSTEM.md"
 )
 
 if exist "%SKILL_DST%" (
     rmdir /s /q "%SKILL_DST%"
-    echo [完成] 已移除 Skill: %SKILL_DST%
+    echo [OK] removed Skill: %SKILL_DST%
 ) else (
-    echo [提示] Skill 未安装
+    echo [INFO] Skill not installed
 )
 
 set N=0
@@ -41,7 +48,7 @@ for %%A in (%DDD_AGENTS%) do (
         set /a N+=1
     )
 )
-echo [完成] 已移除 !N! 个 ddd agent 定义
+echo [OK] removed !N! ddd agent definitions
 
-echo [成功] 卸载完成。
+echo [DONE] uninstalled.
 exit /b 0

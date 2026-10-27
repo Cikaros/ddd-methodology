@@ -59,11 +59,11 @@ function resolveProfile(repoRoot, name) {
     console.error(`[错误] 缺少或无法解析 ${file}`);
     process.exit(1);
   }
-  if (!j.profiles[name]) {
-    console.error(`[错误] 未知配比 ${name}，可用：${Object.keys(j.profiles).join("、")}`);
+  if (!name || !j.profiles[name]) {
+    console.error(`[错误] 未知配比 ${name || "（未指定）"}，可用：${Object.keys(j.profiles).join("、")}`);
     process.exit(1);
   }
-  return { provider: j.provider, profile: j.profiles[name], all: Object.keys(j.profiles), unavailable: j._不可用 || {} };
+  return { provider: j.provider, profile: j.profiles[name], all: Object.keys(j.profiles) };
 }
 
 // 最小请求冒烟：验证模型确实返回内容，并记录首字延迟，供配比选择与排障使用
@@ -131,8 +131,10 @@ if (mode === "status") {
   if (!keys.length) console.log("未配置：全部代理沿用默认模型");
   for (const k of keys) console.log(`  ${k} -> ${ov[k].model}`);
   const recorded = Object.keys(record.agents || {});
-  if (recorded.length) console.log(`\n由本方法论写入并可安全移除：${recorded.join("、")}`);
-  else if (keys.length) console.log("\n现有配置非本方法论写入，卸载不会改动");
+  if (recorded.length) {
+    console.log(`\n配比 ${record.profile || "未知"}，provider ${record.provider || "未知"}`);
+    console.log(`由本方法论写入并可安全移除：${recorded.join("、")}`);
+  } else if (keys.length) console.log("\n现有配置非本方法论写入，卸载不会改动");
   process.exit(0);
 }
 
@@ -145,11 +147,17 @@ if (mode === "clear") {
   const settings = readJson(SETTINGS, {});
   const ov = (settings.subagents && settings.subagents.agentOverrides) || {};
   let n = 0;
-  for (const name of Object.keys(record.agents)) {
-    if (ov[name]) {
-      delete ov[name];
-      n++;
+  // 只撤回本方法论写入的字段，保留该代理下用户原有的其他字段；写入前若已有同名字段则还原原值
+  for (const [name, written] of Object.entries(record.agents)) {
+    if (!ov[name]) continue;
+    const before = record.originals && record.originals[name];
+    if (before) ov[name] = before;
+    else {
+      delete ov[name].model;
+      delete ov[name].defaultProvider;
+      if (!Object.keys(ov[name]).length) delete ov[name];
     }
+    n++;
   }
   if (settings.subagents) settings.subagents.agentOverrides = ov;
   writeJson(SETTINGS, settings);
@@ -159,17 +167,12 @@ if (mode === "clear") {
 }
 
 if (mode === "verify") {
-  const { provider, profile, all, unavailable } = resolveProfile(repoRoot, args[1]);
+  const { provider, profile, all } = resolveProfile(repoRoot, args[1]);
   const useProvider = providerArg || provider;
   const uniq = [...new Set(Object.values(profile.roles))];
   console.log(`=== 可用性冒烟：配比 ${args[1]}，provider ${useProvider} ===`);
   const bad = [];
   for (const m of uniq) {
-    if (unavailable[m]) {
-      console.log(`  ✗ ${m}  已知不可用：${unavailable[m]}`);
-      bad.push(m);
-      continue;
-    }
     const r = await smoke(useProvider, m);
     if (r.ok) console.log(`  ✓ ${m}  首字 ${r.ms} 毫秒，推理开销 ${r.used ?? "-"} token`);
     else {
@@ -187,7 +190,7 @@ if (mode !== "apply") {
 }
 
 const profileName = args[1];
-const { provider, profile, all, unavailable } = resolveProfile(repoRoot, profileName);
+const { provider, profile, all } = resolveProfile(repoRoot, profileName);
 const useProvider = providerArg || provider;
 const reg = registry();
 
@@ -196,19 +199,23 @@ const applied = {};
 const skipped = [];
 const toSmoke = new Set();
 for (const [agent, model] of Object.entries(profile.roles)) {
-  if (unavailable[model]) {
-    skipped.push({ agent, model, why: "已在配比中标记不可用" });
-    continue;
-  }
   if (reg.byId.has(model) || reg.bare.has(model)) {
     applied[agent] = model;
     toSmoke.add(model);
   } else skipped.push({ agent, model, why: "未在注册表中" });
 }
-// 用户显式指定优先，同样校验
+// 用户显式指定优先；代理名须属固定清单，模型须在注册表内
+const KNOWN_AGENTS = new Set([
+  "ddd-requirements", "ddd-acceptance", "ddd-architect", "ddd-decomposer", "ddd-interface-reviewer",
+  "ddd-implementer", "ddd-test-planner", "ddd-tester", "ddd-arbiter", "ddd-doc-sync", "ddd-auditor", "ddd-fixer",
+]);
 for (const pair of sets) {
   const [agent, model] = pair.split("=");
   if (!agent || !model) continue;
+  if (!KNOWN_AGENTS.has(agent)) {
+    skipped.push({ agent, model, why: "代理名不在固定清单中" });
+    continue;
+  }
   if (reg.byId.has(model) || reg.bare.has(model)) {
     applied[agent] = model;
     toSmoke.add(model);
@@ -247,6 +254,7 @@ if (!args.includes("--skip-verify")) {
 const settings = readJson(SETTINGS, {});
 settings.subagents = settings.subagents || {};
 const ov = settings.subagents.agentOverrides || {};
+const ovBefore = JSON.parse(JSON.stringify(ov));
 for (const [agent, model] of Object.entries(applied)) {
   ov[agent] = Object.assign({}, ov[agent], { model, defaultProvider: useProvider });
 }
@@ -254,9 +262,14 @@ settings.subagents.agentOverrides = ov;
 writeJson(SETTINGS, settings);
 
 // 记录本次写入，供卸载精确移除，不触碰用户自有配置
-const record = readJson(RECORD, { agents: {} });
+const record = readJson(RECORD, { agents: {}, originals: {} });
 record.provider = useProvider;
 record.profile = profileName;
+// 记录写入前的原值，供 clear 精确还原，避免误删用户自有配置
+record.originals = record.originals || {};
+for (const a of Object.keys(applied)) {
+  if (!(a in record.originals)) record.originals[a] = ovBefore[a] || null;
+}
 record.agents = Object.assign(record.agents || {}, Object.fromEntries(Object.keys(applied).map((a) => [a, applied[a]])));
 writeJson(RECORD, record);
 
