@@ -2,6 +2,7 @@
 /**
  * 目标：把代码树的结构健康外化为可复现的机械证据，作为 G5-INT 与 G6 的证据源。
  * 范围：文件规模、死代码、重复嫌疑、注释质量四类事实的输出与度量留盘。
+ * 归属：文件规模与注释质量可由写入者按清理义务处理；无引用文件属仓库级属性，归审计代理。
  * 不包含：语义级判断。注释是否解释为什么、分支是否真不可达需 AST，本脚本不做，交由审计代理抽检。
  *
  * 用法：node code-health.js <项目根>
@@ -12,13 +13,12 @@ const fs = require("fs");
 const path = require("path");
 
 const root = process.argv[2] || process.cwd();
-const SKIP_DIRS = new Set([".git", "node_modules", "dist", "build", "out", "target", "vendor", ".venv", "__pycache__", "coverage", "docs", ".ddd"]);
+// 点开头目录已由 walk 统一跳过，此处只列非点开头的构建与依赖目录
+const SKIP_DIRS = new Set(["node_modules", "dist", "build", "out", "target", "vendor", "__pycache__", "coverage", "docs"]);
 const CODE_EXT = new Set([".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx", ".py", ".java", ".kt", ".go", ".rs", ".rb", ".php", ".cs", ".swift", ".c", ".h", ".cpp", ".sh", ".bat", ".ps1"]);
 const LINE_LIMIT = 500;
 const BASE_LINE_LIMIT = 300;
-const LINE_SKIP = new Set([".md", ".json", ".yml", ".yaml", ".txt", ".lock"]);
 
-const problems = [];
 const warnings = [];
 
 const read = (p) => {
@@ -106,7 +106,6 @@ for (const f of codeFiles) {
 const orphans = [];
 // 引用检索范围为全仓文本，含文档；带 shebang 的文件视为命令行入口，不算孤儿
 const corpus = codeFiles
-  .filter((f) => !LINE_SKIP.has(path.extname(f).toLowerCase()))
   .map((f) => ({ f, text: read(f) }))
   .filter(({ text }) => !/^#!/.test(text));
 const REFERENCE_CORPUS = allFiles

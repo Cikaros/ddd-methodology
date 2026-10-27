@@ -10,6 +10,9 @@
 ```
 ddd-methodology/
 ├── CHANGELOG.md                  # 变更记录（v1.0 起）
+├── docs/                         # 项目侧证据与归档
+│   ├── health.json              # 结构健康度量历史，入版本管理，上限 50 条
+│   └── audits/                  # 审计报告归档，作为下次修剪清单回验的输入
 ├── skill/ddd-methodology/        # pi Skill，规范唯一权威源为 references/spec.md
 │   ├── SKILL.md                  # 调度流程入口
 │   ├── references/
