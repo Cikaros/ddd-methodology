@@ -2,8 +2,11 @@
 # ============================================================
 # DDD-Methodology 安装脚本（Linux / macOS / Git Bash）
 # 用法:
-#   ./install.sh            全新安装 / 覆盖更新（幂等，自动替换旧版）
-#   ./install.sh --check    检查当前安装状态与版本
+#   ./install.sh                                  全新安装或覆盖更新
+#   ./install.sh --check                          检查安装状态
+#   ./install.sh --models <配比>                 应用模型配比，配比见 profiles/models.json
+#   ./install.sh --models <配比> --set 代理=模型  在配比基础上改单个代理，可重复
+#   ./install.sh --models none                   显式跳过模型配比
 # 卸载请使用 uninstall.sh。
 # ============================================================
 set -euo pipefail
@@ -24,7 +27,22 @@ AGENT_DST="$PI_HOME/agents"
 # 固定清单：与 agents/ 目录下的 12 个文件一一对应（防止通配符覆盖用户自有 ddd- 前缀代理）
 DDD_AGENTS=(ddd-requirements ddd-acceptance ddd-architect ddd-decomposer ddd-interface-reviewer ddd-implementer ddd-test-planner ddd-tester ddd-arbiter ddd-doc-sync ddd-auditor ddd-fixer)
 
-if [[ "${1:-}" == "--check" ]]; then
+# 参数解析：模型配比为可选，不传则不触碰模型设置
+CHECK_ONLY=0
+MODELS_PROFILE=""
+MODEL_SETS=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --check) CHECK_ONLY=1; shift ;;
+        --models) MODELS_PROFILE="${2:-}"; shift 2 ;;
+        --models=*) MODELS_PROFILE="${1#*=}"; shift ;;
+        --set) MODEL_SETS+=("${2:-}"); shift 2 ;;
+        --set=*) MODEL_SETS+=("${1#*=}"); shift ;;
+        *) shift ;;
+    esac
+done
+
+if [[ "$CHECK_ONLY" == "1" ]]; then
     echo "[检查] 安装状态："
     if [[ -f "$SKILL_DST/SKILL.md" ]]; then
         echo "  Skill    : 已安装 ($SKILL_DST)"
@@ -48,6 +66,16 @@ if [[ "${1:-}" == "--check" ]]; then
             echo "  $s : 未安装"
         fi
     done
+    if [[ -f "$PI_HOME/.ddd-model-overrides.json" ]]; then
+        if command -v node >/dev/null 2>&1; then
+            prof=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')).profile||'未知')}catch(e){console.log('未知')}" "$PI_HOME/.ddd-model-overrides.json" 2>/dev/null || echo 未知)
+            echo "  模型配比 : 已应用，配比 $prof"
+        else
+            echo "  模型配比 : 已应用"
+        fi
+    else
+        echo "  模型配比 : 未配置，全部代理沿用默认模型"
+    fi
     if grep -q "ddd-methodology:begin" "$PI_HOME/APPEND_SYSTEM.md" 2>/dev/null; then
         echo "  全局规则 : 标记区块已部署 ($PI_HOME/APPEND_SYSTEM.md)"
     else
@@ -109,6 +137,21 @@ for name in "${DDD_AGENTS[@]}"; do
     fi
 done
 echo "[完成] Agents -> $AGENT_DST （${count} 个）"
+
+# 1.9 按代理应用模型配比，仅当用户显式传入 --models 时执行，不传则不动模型设置
+if [[ -n "$MODELS_PROFILE" && "$MODELS_PROFILE" != "none" ]]; then
+    if command -v node >/dev/null 2>&1; then
+        APPLY_ARGS=(apply "$MODELS_PROFILE" --repo "$ROOT")
+        for s in "${MODEL_SETS[@]:-}"; do
+            [[ -n "$s" ]] && APPLY_ARGS+=(--set "$s")
+        done
+        node "$ROOT/scripts/apply-models.js" "${APPLY_ARGS[@]}"
+    else
+        echo "[警告] 未找到 node，跳过模型配比应用" >&2
+    fi
+elif [[ -n "$MODELS_PROFILE" ]]; then
+    echo "[提示] 已跳过模型配比，全部代理沿用默认模型"
+fi
 
 echo
 echo "[成功] 安装完成。在任意 pi 会话中可通过 /skill:ddd-methodology 调用，"

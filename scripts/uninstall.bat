@@ -23,6 +23,7 @@ where node >nul 2>nul
 if errorlevel 1 (
     echo [警告] 未找到 node，跳过全局规则移除
 ) else (
+    node "%ROOT%scripts\apply-models.js" clear --repo "%ROOT%"
     node "%ROOT%scripts\merge-append-system.js" remove "%PI_HOME%\APPEND_SYSTEM.md"
 )
 
