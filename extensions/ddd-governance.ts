@@ -10,7 +10,9 @@
  *   基础能力 300 行与文档 200 行阈值不在此判定：其判定需解析清单与契约数，改由 code-health 度量与规范 §12 审计承接。
  * - H-2 测试分离守卫（tool_call 的 bash）：命令属窄口径的全量测试调用形态，且 docs/.ddd-state.json
  *   的 lastStage 为 g5-int 时拦截，指明全量测试唯一主体是 ddd-tester。
- * - H-3 回执守卫（agent_before_settle）：本轮发生过 write/edit 而最终回复缺「结构治理回执」时请求一次续跑。
+ *
+ * 未设收尾守卫：agent_before_settle 的事件仅含 type、outcome、entries、continue、context，不含回复
+ * 文本，无法机械判定报告是否缺节；结构治理回执的强制由代理输出契约与声明式门禁承接。
  *
  * 生效范围：根会话与后台子代理；前台子代理不加载 ambient 扩展，故本守卫对其不生效。
  * 任何处理函数内的异常一律捕获后返回 undefined 并记警告，守卫自身错误不得阻断正常工具。
@@ -23,7 +25,6 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 const GRANULARITY_LINE_LIMIT = 500;
 const RUNTIME_EXCEPTION_MARK = "运行时例外";
-const GOVERNANCE_RECEIPT = "结构治理回执";
 const STATE_FILE = "docs/.ddd-state.json";
 const G5_INT_STAGE = "g5-int";
 
@@ -49,48 +50,15 @@ const FULL_TEST_COMMANDS = [
 ];
 
 export default function (pi: ExtensionAPI) {
-	// 本轮是否发生过写入，供 H-3 使用；轮次边界事件未逐字确认，故在收尾判定时复位，保证每轮最多请求一次续跑。
-	let roundWroteFiles = false;
-
 	pi.on("tool_call", async (event, ctx) => {
 		try {
 			if (!isDddProject(ctx && ctx.cwd)) return undefined;
 			const toolName = event && event.toolName;
-			if (toolName === "write" || toolName === "edit") {
-				roundWroteFiles = true;
-				return checkGranularity(event, ctx); // H-1
-			}
-			if (toolName === "bash") {
-				return checkFullTestCommand(event, ctx); // H-2
-			}
+			if (toolName === "write" || toolName === "edit") return checkGranularity(event, ctx); // H-1
+			if (toolName === "bash") return checkFullTestCommand(event, ctx); // H-2
 			return undefined;
 		} catch (error) {
 			warn(ctx, `tool_call 判定异常，已放行：${describeError(error)}`);
-			return undefined;
-		}
-	});
-
-	// H-3：事件名与返回契约尚未逐字确认（见 method-versioning-governance.md §9 待确认项 1），
-	// 待运行时冒烟验证；取不到最终回复文本或返回字段不被运行时接受时均不阻断收尾。
-	(pi as any).on("agent_before_settle", async (event, ctx) => {
-		try {
-			if (!isDddProject(ctx && ctx.cwd)) return undefined;
-			const wrote = roundWroteFiles;
-			roundWroteFiles = false;
-			if (!wrote) return undefined;
-			const reply = readReplyText(event);
-			if (typeof reply !== "string") return undefined;
-			if (reply.includes(GOVERNANCE_RECEIPT)) return undefined;
-			return {
-				continue: true,
-				reason: [
-					`本轮发生过写入，但最终回复缺「${GOVERNANCE_RECEIPT}」。`,
-					"请补齐该节后再收尾：逐条列出本轮触碰文件的粒度判定（未超限者说明未超限）、已完成的拆解，或无法拆解的上报理由。",
-					"规范依据：skill/ddd-methodology/references/spec.md §16 触碰即治理。",
-				].join("\n"),
-			};
-		} catch (error) {
-			warn(ctx, `agent_before_settle 判定异常，已放行：${describeError(error)}`);
 			return undefined;
 		}
 	});
@@ -203,34 +171,6 @@ function readLastStage(cwd) {
 		return state && typeof state.lastStage === "string" ? state.lastStage : null;
 	} catch {
 		return null;
-	}
-}
-
-// ---- H-3 回执守卫 ----
-
-function readReplyText(event) {
-	if (!event || typeof event !== "object") return null;
-	const parts = [];
-	for (const key of ["text", "reply", "response", "content", "finalMessage", "message", "messages", "history"]) {
-		if (key in event) collectText(event[key], parts, 0);
-	}
-	return parts.length > 0 ? parts.join("\n") : null;
-}
-
-function collectText(value, parts, depth) {
-	if (depth > 3 || parts.length > 20) return;
-	if (typeof value === "string") {
-		parts.push(value);
-		return;
-	}
-	if (Array.isArray(value)) {
-		for (const item of value.slice(-5)) collectText(item, parts, depth + 1);
-		return;
-	}
-	if (value && typeof value === "object") {
-		for (const key of ["text", "content", "reply", "response", "message", "messages", "lastMessage", "finalMessage"]) {
-			if (key in value) collectText(value[key], parts, depth + 1);
-		}
 	}
 }
 

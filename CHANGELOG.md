@@ -2,6 +2,13 @@
 
 ---
 
+## v2.3.3（2026-10-28）未闭环两项推进：H-3 移除与 workflow 接入评估结论
+
+- **H-3 移除**：加临时探针实机验证，确认 agent_before_settle 事件确实触发且 tool_call 判定正常，但事件键仅为 type、outcome、entries、continue、context，不含回复文本，文本提取永远取空而放行。该守卫依赖未文档化的事件结构，无法可靠实现，按可验证原则移除，扩展由 280 行降至 220 行并只注册 tool_call。结构治理回执的强制改由八个写入类代理的输出契约与声明式门禁承接，有消费方与验证手段。
+- **workflow 不接入 gate，附实验依据**：三项实验确认接入不可行。其一，gate 与 frontmatter acceptance 不冲突，宿主执行命令并将 evidenceStatus 置为 verified，但 gate 归一化会覆盖 frontmatter 的 review 设置，评审要求被加回。其二，改用 acceptance 显式传 verify 可同时得到 verified 与 review optional。其三，宿主执行的 verify 命令不经 shell，`~` 不展开，子代理在 shell 中运行同一命令成功而宿主验收失败并置为 rejected。skill 脚本位于用户目录，路径随 PI_HOME 变化而无法硬编码，故该证据由 ddd-fixer 的职责自查与 G5-INT 记录要求承接。
+- **流程正确性旁证**：夹具上的 ddd-implementer 遇到 DESIGN 未登记接口时正确上报 B 级设计偏离并停止，未经授权不改设计。
+- **顺带修复**：一次编辑误删 H-1 仍在使用的运行时例外常量，当轮发现并恢复。
+
 ## v2.3.2（2026-10-28）最小实机验证：声明式门禁端到端确认与评审推断关闭
 
 - **实机证据**：派 ddd-implementer 在最小 DDD 夹具上完成两次实现任务，确认三项事实。其一，frontmatter 的 acceptance 被注入子代理提示词，级别为 checked 且列明必需证据项；其二，子代理按提示产出合规验收报告，含标准判定、变更文件、用例、命令与验证输出；其三，后台子代理确实加载了 ambient 扩展，status.json 的 launchResolvedExtensions.effective 非空且 disableAmbientExtensions 为 false。
