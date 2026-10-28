@@ -12,7 +12,8 @@ ddd-methodology/
 ├── CHANGELOG.md                  # 变更记录（v1.0 起）
 ├── docs/                         # 项目侧证据与归档
 │   ├── health.json              # 结构健康度量历史，入版本管理，上限 50 条
-│   └── audits/                  # 审计报告归档，作为下次修剪清单回验的输入
+│   ├── audits/                  # 审计报告归档，作为下次修剪清单回验的输入
+│   └── analysis/                # 方法论自身的改造设计文档
 ├── skill/ddd-methodology/        # pi Skill，规范唯一权威源为 references/spec.md
 │   ├── SKILL.md                  # 调度流程入口
 │   ├── references/
@@ -37,6 +38,8 @@ ddd-methodology/
 │   ├── ddd-arbiter.md            # 仲裁者（缺陷定级争议，路由知识内嵌）
 │   ├── ddd-doc-sync.md           # 文档同步守护者（方法论自身文档巡检）
 │   └── ddd-auditor.md            # 声明面审计者（可验证性与无用代码修剪）
+├── extensions/
+│   └── ddd-governance.ts         # 运行时守卫，仅 DDD 项目激活，拦截越阈值写入与全量测试误跑
 └── scripts/
     ├── install.bat               # Windows 安装/更新（幂等）
     ├── install.sh                # Linux/macOS/Git Bash 安装/更新
@@ -45,6 +48,9 @@ ddd-methodology/
     ├── trace-check.js            # 追溯一致性校验脚本，G4/G5 门禁证据
     ├── apply-models.js           # 按代理模型配比的应用与可用性冒烟
     ├── code-health.js            # 代码结构健康检查脚本，G5-INT 与 G6 门禁证据
+    ├── governance-check.js       # 契约指纹与结构趋势门槛校验，G5-INT 的 typed gate 证据
+    ├── fingerprint.js            # 契约指纹唯一实现，供 trace-check 与 governance-check 共用
+    ├── design-root.js            # 设计树根路径解析唯一实现，供同上两者共用
     └── merge-append-system.js    # 全局规则区块合并，供安装与卸载脚本调用
 ```
 
@@ -76,6 +82,8 @@ chmod +x scripts/*.sh
   - workflow 脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`，供根会话以 `subagent({ workflow: ... , args: { root: "<项目根>" } })` 调用
   - trace-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js`，作为 G4/G5 门禁证据
   - code-health 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/code-health.js`，作为 G5-INT/G6 门禁证据，度量写入项目内 docs/health.json
+  - governance-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/governance-check.js`，校验契约指纹与结构趋势，输出 verdict 供 typed gate 使用
+- 运行时守卫扩展 `~/.pi/agent/extensions/ddd-governance.ts`，仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默
 - 模型配比记录文件 `~/.pi/agent/.ddd-model-overrides.json`，记录本方法论写入的代理、配比名与写入前原值，供精确回退
 - 全局规则区块，按标记合并入 `~/.pi/agent/APPEND_SYSTEM.md`：只替换标记区块，区块外用户自定义内容原样保留，卸载时移除该区块；首次安装前自动备份为 `APPEND_SYSTEM.md.ddd-bak`，卸载时若仅剩标记区块则优先从该备份恢复并删除备份文件
 - 12 个 agent 定义，按固定文件名清单，安装到 `~/.pi/agent/agents/ddd-*.md`
@@ -95,6 +103,8 @@ chmod +x scripts/*.sh
 ## 版本管理
 
 本仓库使用 git tag 管理版本。规范修订流程：修改文档 → commit → 打递增版本 tag，例如 `v1.2`、`v1.3`。
+
+被开发项目的接口契约以契约指纹作冻结锚点，算法与变更判定见 `skill/ddd-methodology/references/spec.md` §16。
 
 ## 按代理的模型配比
 

@@ -15,6 +15,8 @@
 
 const fs = require("fs");
 const path = require("path");
+const { checkContractFingerprint } = require("./fingerprint");
+const { absoluteDesignDir } = require("./design-root");
 
 const root = process.argv[2] || process.cwd();
 const problems = [];
@@ -52,17 +54,10 @@ const totalACs = [...new Set(read(acFile).match(AC_RE) || [])];
 if (totalACs.length === 0) problems.push("AC.md 中未发现任何 AC-xxx 编号条目");
 
 // ---- 2. 模块级 AC（DESIGN.md）——锚定章节提取，避免变更记录等散文提及导致假通过 ----
-// 设计树根路径：优先读 ARCHITECTURE.md 的根路径声明，读不到回退 docs/design 并告警
-function resolveDesignRoot() {
-  const arch = read(path.join(root, "ARCHITECTURE.md"));
-  let m = arch.match(/设计文档树根路径为[：:]*\s*`([^`]+)`/);
-  if (!m) m = arch.match(/设计文档树根路径为[：:]*\s*([^\n\s。]+)/);
-  if (m) return { dir: m[1].trim(), declared: true };
-  return { dir: "docs/design", declared: false };
-}
-const designRoot = resolveDesignRoot();
+// 设计树根路径解析见 scripts/design-root.js，与 governance-check 同源，避免两处口径漂移
+const designRoot = absoluteDesignDir(root);
 if (!designRoot.declared) warnings.push("ARCHITECTURE.md 未找到设计文档树根路径声明，已回退 docs/design；建议补声明以消除歧义");
-const designDir = path.isAbsolute(designRoot.dir) ? designRoot.dir : path.join(root, designRoot.dir);
+const designDir = designRoot.dir;
 const designFiles = (fs.existsSync(designDir) ? walk(designDir, ".md") : []).filter((f) => /DESIGN.*\.md$/i.test(path.basename(f)));
 if (designFiles.length === 0) problems.push(`设计树 ${designRoot.dir} 下未发现任何 DESIGN 文档（G4 门禁前置）`);
 
@@ -111,6 +106,16 @@ function variantCheck(text, label) {
   if (loose > std) warnings.push(`${label} 检测到非标准 AC 编号格式变体（如 AC-1/小写），请统一为 AC-XXX（三位数字），否则可能被静默漏计`);
 }
 
+// ---- 3.5 契约指纹一致性（spec §16）——无 docs/design 时 designFiles 为空，自然跳过 ----
+let fingerprintsChecked = 0;
+for (const f of designFiles) {
+  const rel = path.relative(root, f);
+  const text = read(f);
+  const issue = checkContractFingerprint(text);
+  if (issue) problems.push(`${rel} ${issue}`);
+  else fingerprintsChecked++;
+}
+
 // ---- 4. 校验 ----
 // G4：总 AC 被模块承接
 for (const ac of totalACs) {
@@ -139,7 +144,7 @@ for (const f of [...designFiles, ...testFiles]) variantCheck(read(f), path.relat
 
 // ---- 5. 输出 ----
 console.log("=== DDD 追溯一致性校验 ===");
-console.log(`总 AC：${totalACs.length} 条；DESIGN.md：${designFiles.length} 份；TEST_PLAN.md：${testFiles.length} 份`);
+console.log(`总 AC：${totalACs.length} 条；DESIGN.md：${designFiles.length} 份；TEST_PLAN.md：${testFiles.length} 份；契约指纹已校验 ${fingerprintsChecked} 份`);
 if (warnings.length) {
   console.log("\n[警告]");
   warnings.forEach((w) => console.log(`  ⚠ ${w}`));
