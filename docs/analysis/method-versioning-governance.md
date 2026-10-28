@@ -119,7 +119,7 @@
 
 bash 类规则被拒绝且 bash 恒放行，故命令级约束不可用 permission 实现。
 
-落点：六个代理增 acceptanceRole，写入类四个增 acceptance 证据声明；新增 scripts/governance-check.js 作为 gate 命令，由根会话按需派发或经 acceptance.verify 挂载。workflow 加速档未接入 gate，属未实现落点，见 §9。
+落点：六个代理增 acceptanceRole，写入类四个增 acceptance 证据声明；新增 scripts/governance-check.js 作为门槛校验，由根会话按需派发，或在命令路径可确定时经 acceptance.verify 挂载。workflow 加速档不接入，理由见 §9。
 
 governance-check 校验三项可机械判定事项：各 DESIGN 的契约指纹齐备且与契约表内容一致；docs/health.json 最新一条相对上一条超阈值文件数未增加；变更记录节已填写变更类型。
 
@@ -131,9 +131,10 @@ governance-check 校验三项可机械判定事项：各 DESIGN 的契约指纹�
 |---|---|---|---|
 | H-1 | tool_call 的 write 或 edit | 写入后越过 500 行粒度阈值，且文件内未显式声明运行时例外 | block，附就近 DESIGN 路径与拆解要求 |
 | H-2 | tool_call 的 bash | 阶段为 G5-INT 且命令为全量测试 | block，指明全量测试唯一主体为 ddd-tester |
-| H-3 | agent_before_settle | 本轮有写入但最终报告缺结构治理回执 | 请求一次续跑补齐 |
 
 H-1 与 H-2 直接对应结构治理与测试分离两条规则。C 级修复阶段的 lastStage 与测试执行相同，无法机械区分，故 H-2 只覆盖 G5-INT，修复阶段的全量测试约束由 ddd-fixer 职责承接。守卫任何异常一律放行并记警告，不得阻断正常工具。
+
+原设 H-3 收尾守卫，实机验证发现 agent_before_settle 的事件仅含 type、outcome、entries、continue、context，不含回复文本，无法机械判定报告是否缺节，故移除；结构治理回执的强制改由八个写入类代理的输出契约与声明式门禁承接。
 
 ## 6. 挂门设计
 
@@ -171,9 +172,17 @@ G5-INT 那条是本改造的受力点，它使"重构"从呼吁变为过门条�
 5. 入口与记录：SKILL.md 与 README.md 同步，CHANGELOG.md 登记。
 6. 验证：ddd-doc-sync 巡检跨文件一致性，ddd-auditor 审计新增声明是否均有消费方与门禁承接。
 
-## 9. 待确认项
+## 9. 已确认事实与待确认项
 
-1. agent_before_settle 的 continue 返回契约与 tool_result 的替换形态尚未逐字确认，H-3 与提醒注入实现前须以运行时冒烟验证。
-2. typed gate 要求命令 stdout 输出单个 JSON 文档且不超过 12000 字符，governance-check 须遵守该上限。
-3. 扩展以仓库内文件形式随安装脚本复制，还是改为 pi package 分发。前者与现有安装机制一致，后者可复用版本管理但需引入 package.json。
-4. workflow 加速档尚未接入 gate，门禁目前依赖代理自查与根会话派发义务，接入时机待定。
+已确认事实，均来自实机验证：
+
+1. **声明式门禁端到端生效**。frontmatter 的 acceptance 被注入子代理提示词，子代理产出合规的 acceptance-report；后台子代理确实加载 ambient 扩展。
+2. **acceptanceRole 为 writer 会触发异步评审推断**，需在 acceptance 里显式设 review.required 为 false 才能关闭，实测提示词由 Review gate: required 变为 optional。
+3. **gate 与 frontmatter acceptance 不冲突**，gate 优先且宿主执行命令并将 evidenceStatus 置为 verified；但 gate 归一化会覆盖 frontmatter 的 review 设置，导致评审要求被加回。
+4. **宿主执行的 verify 命令不经 shell**，`~` 不展开，引号亦不可依赖；实测子代理在 shell 中运行同一命令成功，而宿主验收失败并置为 rejected。故 workflow 不接入 gate 与 verify，该证据由 ddd-fixer 的职责自查与 G5-INT 记录要求承接。
+5. **agent_before_settle 的事件不含回复文本**，键仅为 type、outcome、entries、continue、context，无法机械判定报告是否缺节，H-3 因此移除。
+
+待确认项：
+
+1. typed gate 要求命令 stdout 输出单个 JSON 文档且不超过 12000 字符，governance-check 已按 UTF-8 字节收缩，待实机确认消费端口径。
+2. 扩展以仓库内文件形式随安装脚本复制，还是改为 pi package 分发。前者与现有安装机制一致，后者可复用版本管理但需引入 package.json。
