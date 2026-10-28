@@ -7,7 +7,7 @@ systemPromptMode: replace
 inheritProjectContext: true
 inheritSkills: false
 acceptanceRole: writer
-acceptance: {"level":"checked","evidence":["changed-files","commands-run","validation-output","residual-risks"]}
+acceptance: {"level":"checked","review":{"required":false},"evidence":["changed-files","commands-run","validation-output","residual-risks"]}
 ---
 
 # 角色

@@ -2,6 +2,12 @@
 
 ---
 
+## v2.3.2（2026-10-28）最小实机验证：声明式门禁端到端确认与评审推断关闭
+
+- **实机证据**：派 ddd-implementer 在最小 DDD 夹具上完成两次实现任务，确认三项事实。其一，frontmatter 的 acceptance 被注入子代理提示词，级别为 checked 且列明必需证据项；其二，子代理按提示产出合规验收报告，含标准判定、变更文件、用例、命令与验证输出；其三，后台子代理确实加载了 ambient 扩展，status.json 的 launchResolvedExtensions.effective 非空且 disableAmbientExtensions 为 false。
+- **新缺陷与修复**：acceptanceRole 为 writer 时，pi-subagents 对异步写入者自动推断独立评审要求，提示词出现 Review gate: required by reviewer。本方法论的独立评审发生在 G4.5 与 G6，每次实现都评审属重复。四个写入类代理的 acceptance 增 review.required 为 false，实机复验提示词已变为 Review gate: optional，证据要求不受影响。
+- **覆盖矩阵获得实证**：此前该矩阵由 pi-subagents 代码推断得出，现由运行工件的加载记录直接证实，后台子代理侧的运行时守卫生效。
+
 ## v2.3.1（2026-10-28）reload 后自检：声明面一致性补齐与噪音收敛
 
 - **规范与代理定义不一致修复**：规范 §16 要求所有写入者的完成报告含结构治理回执，实际只有实现者与修复者落实，其余六个写入类代理缺失，在 DDD 项目内会被运行时守卫反复要求补节。六个代理的输出契约已补齐，并在 §16 明确代码写入者记行数变化、文档写入者记文档规模与文档粒度阈值的比对。

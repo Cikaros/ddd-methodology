@@ -193,4 +193,4 @@ workflow 加速档以 `<项目根>/docs/.ddd-state.json` 记录进度。
 
 **等价性验证。** 测试执行者先判定变更性质。指纹不变时验证用例集合未减少且全绿；指纹变化时核对版本已递增与 AC 已同步，未同步报 B 级。测试用例集合逆向缩减是堆叠信号。
 
-**机械约束。** 可机械判定者分两层承载。声明式门禁为主，即代理 frontmatter 的 acceptanceRole、acceptance 与派发 options 的 gate，对所有子代理生效；写入类与审计类代理已显式声明，其余代理沿用 pi-subagents 的默认推断，属分级而非遗漏。运行时守卫为辅，即 `extensions/ddd-governance.ts` 在工具调用与收尾两处拦截，仅覆盖根会话与后台子代理，判定编号见该文件头。守卫只拦机械可判定且零误报的项，当前仅覆盖代码文件的 500 行硬阈值，基础能力 300 行与文档 200 行阈值由 code-health 与审计承接；须对非 DDD 项目静默，且任何异常一律放行并记警告。命令级门禁由 scripts/governance-check.js 经 gate 承载，不可用 permission 实现，因其对 bash 恒放行。
+**机械约束。** 可机械判定者分两层承载。声明式门禁为主，即代理 frontmatter 的 acceptanceRole、acceptance 与派发 options 的 gate，对所有子代理生效；写入类与审计类代理已显式声明，其余代理沿用 pi-subagents 的默认推断，属分级而非遗漏。写入类代理显式关闭 acceptanceRole 带来的自动评审推断，独立评审由 G4.5 与 G6 承担，避免每次实现重复评审。运行时守卫为辅，即 `extensions/ddd-governance.ts` 在工具调用与收尾两处拦截，仅覆盖根会话与后台子代理，判定编号见该文件头。守卫只拦机械可判定且零误报的项，当前仅覆盖代码文件的 500 行硬阈值，基础能力 300 行与文档 200 行阈值由 code-health 与审计承接；须对非 DDD 项目静默，且任何异常一律放行并记警告。命令级门禁由 scripts/governance-check.js 经 gate 承载，不可用 permission 实现，因其对 bash 恒放行。
