@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * 目标：把代码树的结构健康外化为可复现的机械证据，作为 G5-INT 与 G6 的证据源。
- * 范围：文件规模、死代码、重复嫌疑、注释质量四类事实的输出与度量留盘。
- * 归属：文件规模与注释质量可由写入者按清理义务处理；无引用文件属仓库级属性，归审计代理。
+ * 范围：文件规模、死代码、重复嫌疑、注释质量、结构趋势五类事实的输出与度量留盘。
+ * 归属：文件规模与注释质量可由写入者按 §16 结构治理义务处理；无引用文件属仓库级属性，归审计代理。
  * 不包含：语义级判断。注释是否解释为什么、分支是否真不可达需 AST，本脚本不做，交由审计代理抽检。
  *
  * 用法：node code-health.js <项目根>
@@ -72,12 +72,16 @@ const baseFiles = readBaseCapabilityFiles();
 // ---- 1. 文件规模 ----
 const oversized = [];
 const nearLimit = [];
+let oversizedBase = 0; // 基础能力文件超 300 行的单列计数，供超阈值趋势细分
 for (const f of codeFiles) {
   const rel = path.relative(root, f).split(path.sep).join("/");
   const lines = read(f).split("\n").length;
-  const limit = baseFiles.has(rel) || [...baseFiles].some((b) => rel.endsWith(b)) ? BASE_LINE_LIMIT : LINE_LIMIT;
-  if (lines > limit) oversized.push({ file: rel, lines, limit });
-  else if (lines > limit * 0.8) nearLimit.push({ file: rel, lines, limit });
+  const isBase = baseFiles.has(rel) || [...baseFiles].some((b) => rel.endsWith(b));
+  const limit = isBase ? BASE_LINE_LIMIT : LINE_LIMIT;
+  if (lines > limit) {
+    oversized.push({ file: rel, lines, limit });
+    if (isBase) oversizedBase++;
+  } else if (lines > limit * 0.8) nearLimit.push({ file: rel, lines, limit });
 }
 
 // ---- 2. 死代码 ----
@@ -175,6 +179,7 @@ const metrics = {
   at: new Date().toISOString(),
   files: codeFiles.length,
   oversized: oversized.length,
+  oversizedBase,
   nearLimit: nearLimit.length,
   commentedCode: commentedCode.length,
   compatMarkers: compatMarkers.length,
@@ -210,7 +215,7 @@ const line = (s) => console.log(s);
 line("=== 代码结构健康检查 ===");
 line(`源码文件 ${metrics.files} 个；度量已写入 docs/health.json`);
 line("");
-line(`[文件规模] 超限 ${oversized.length}，接近上限 ${nearLimit.length}`);
+line(`[文件规模] 超限 ${oversized.length}（其中基础能力超 300 行 ${oversizedBase}），接近上限 ${nearLimit.length}`);
 for (const o of oversized) line(`  ✗ ${o.file}  ${o.lines} 行，上限 ${o.limit}`);
 for (const o of nearLimit) line(`  ! ${o.file}  ${o.lines} 行，上限 ${o.limit}`);
 line("");

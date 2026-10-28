@@ -71,13 +71,18 @@ if [[ "$CHECK_ONLY" == "1" ]]; then
     else
         echo "  Workflow : 未安装"
     fi
-    for s in trace-check code-health; do
+    for s in trace-check code-health governance-check fingerprint design-root; do
         if [[ -f "$SKILL_DST/scripts/$s.js" ]]; then
             echo "  $s : 已安装"
         else
             echo "  $s : 未安装"
         fi
     done
+    if [[ -f "$PI_HOME/extensions/ddd-governance.ts" ]]; then
+        echo "  扩展     : 已安装 ($PI_HOME/extensions/ddd-governance.ts)"
+    else
+        echo "  扩展     : 未安装"
+    fi
     if [[ -f "$PI_HOME/.ddd-model-overrides.json" ]]; then
         if command -v node >/dev/null 2>&1; then
             prof=$(node -e "try{console.log(JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')).profile||'未知')}catch(e){console.log('未知')}" "$PI_HOME/.ddd-model-overrides.json" 2>/dev/null || echo 未知)
@@ -116,7 +121,7 @@ fi
 
 # 1.6 安装门禁证据脚本
 mkdir -p "$SKILL_DST/scripts"
-for s in trace-check code-health; do
+for s in trace-check code-health governance-check fingerprint design-root; do
     if [[ -f "$ROOT/scripts/$s.js" ]]; then
         cp -f "$ROOT/scripts/$s.js" "$SKILL_DST/scripts/"
         echo "[完成] $s -> $SKILL_DST/scripts/$s.js"
@@ -124,6 +129,16 @@ for s in trace-check code-health; do
         echo "[警告] 缺少 $ROOT/scripts/$s.js" >&2
     fi
 done
+
+# 1.7 安装运行时守卫扩展，仅本方法论的固定文件，不触碰用户其他扩展
+EXT_DST="$PI_HOME/extensions"
+if [[ -f "$ROOT/extensions/ddd-governance.ts" ]]; then
+    mkdir -p "$EXT_DST"
+    cp -f "$ROOT/extensions/ddd-governance.ts" "$EXT_DST/ddd-governance.ts"
+    echo "[完成] 扩展 -> $EXT_DST/ddd-governance.ts"
+else
+    echo "[警告] 缺少 $ROOT/extensions/ddd-governance.ts" >&2
+fi
 
 # 1.8 安装全局规则区块，块级标记合并，区块外用户自定义内容保留
 if [[ -f "$ROOT/global/APPEND_SYSTEM.md" ]]; then

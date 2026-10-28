@@ -32,6 +32,12 @@ else
     echo "[提示] Skill 未安装"
 fi
 
+EXT_FILE="$PI_HOME/extensions/ddd-governance.ts"
+if [[ -f "$EXT_FILE" ]]; then
+    rm -f "$EXT_FILE"
+    echo "[完成] 已移除运行时守卫扩展: $EXT_FILE"
+fi
+
 count=0
 for name in "${DDD_AGENTS[@]}"; do
     f="$AGENT_DST/$name.md"

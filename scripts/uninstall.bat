@@ -41,6 +41,11 @@ if exist "%SKILL_DST%" (
     echo [INFO] Skill not installed
 )
 
+if exist "%PI_HOME%\extensions\ddd-governance.ts" (
+    del /q "%PI_HOME%\extensions\ddd-governance.ts"
+    echo [OK] removed runtime guard extension
+)
+
 set N=0
 for %%A in (%DDD_AGENTS%) do (
     if exist "%AGENT_DST%\%%A.md" (

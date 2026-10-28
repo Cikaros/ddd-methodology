@@ -26,17 +26,17 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 3. **架构设计**（ddd-architect）：产出 ARCHITECTURE.md，含技术环境、目录规划、横切规范、基础能力清单、改造影响评估、设计文档树根路径声明。过 G3。
    > 加载：templates 的 ARCHITECTURE 节；二次开发加读 spec §10；改造评估读 spec §11。
 4. **分解设计**（ddd-decomposer）：产出目录同构文档树与签名级接口契约。过 G4。
-   > 加载：templates 的 DESIGN 节；粒度与独立性读 spec §4。
+   > 加载：templates 的 DESIGN 节；粒度与独立性读 spec §4；契约指纹与结构治理读 spec §16。
 5. **接口冻结**（ddd-interface-reviewer）：独立交叉评审，结论非 pass 则退回分解设计。过 G4.5。
    > 加载：spec §5。
 6. **实现与测试规划并行**（ddd-implementer ∥ ddd-test-planner）：实现按就近 DESIGN，测试规划产出计划树。过 G5。
-   > 加载：templates 的 TEST_PLAN 节；并行接缝读 spec §6；测试分级读 spec §8。
+   > 加载：templates 的 TEST_PLAN 节；并行接缝读 spec §6；测试分级读 spec §8；结构治理义务读 spec §16。
 7. **集成收口**（ddd-fixer）：构建与接缝核对，声明测试就绪，修集成问题。过 G5-INT。
-   > 加载：spec §7；证据源为 `node ~/.pi/agent/skills/ddd-methodology/scripts/code-health.js <项目根>`，见 spec §13。
+   > 加载：spec §7 与 §16；证据源为 code-health 与 governance-check 两个脚本，见 spec §13。
 8. **测试执行**（ddd-tester）：按计划执行，缺陷定级路由。
    > 加载：spec §3。路由知识已内联于该代理；仅争议时派 ddd-arbiter。
-9. **声明面审计**（ddd-auditor）：全量核对消费方与验证手段，回验上次修剪清单，输出恶化项与修剪清单。过 G6。
-   > 加载：spec §12 与 §13；证据源含 docs/health.json 的相对恶化项。
+9. **声明面审计**（ddd-auditor）：全量核对消费方与验证手段，回验上次修剪清单，核验契约指纹与变更类型声明，输出恶化项与修剪清单。过 G6。
+   > 加载：spec §12、§13 与 §16；证据源含 docs/health.json 的相对恶化项与 governance-check 的 verdict。
 
 过门时按 templates 的门禁检查单填写，写入 `<项目根>/docs/gates/`。
 
@@ -45,6 +45,14 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 只调度、仲裁与验收，不承担实现类工作。派 ddd-arbiter 处理定级争议，仅最终裁决与升级用户由你决定。同一缺陷超 2 轮强制升级用户。
 
 审计代理为只读，其报告须由你按报告给出的建议归档名落盘至 `<项目根>/docs/audits/`，作为下次修剪清单回验的输入。
+
+## 机械门禁
+
+约束不得只靠提示词，派发须绑定机械证据。分两层，覆盖面见 spec §16。
+
+- 声明式：写入类与审计类代理的 frontmatter 已声明 acceptanceRole 与 acceptance，派发时按其默认执行；需要额外校验时在 options 传 gate 或 acceptance。
+- 运行时：`~/.pi/agent/extensions/ddd-governance.ts` 在 DDD 项目内拦截越阈值写入与全量测试误跑，仅覆盖根会话与后台子代理，前台子代理不加载 ambient 扩展。
+- 门槛脚本：governance-check 校验契约指纹一致性与超阈值趋势，输出 verdict 作为 G5-INT 证据，见 spec §13。
 
 ## Workflow 加速档
 

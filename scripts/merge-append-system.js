@@ -93,6 +93,13 @@ if (existing !== null) {
     console.log("[完成] 已备份原文件 -> " + backup);
   }
   const rest = stripBlock(existing);
+  // 区块外若已有同义旧版规则，会与区块内规则形成双源；只警告不删除，因无法区分历史残留与用户自定义。
+  const legacyHits = rest.match(/^#{1,3}\s*(?:全局规则|子Agent委派规则|代码注释纪律)/gm) || [];
+  if (legacyHits.length > 0) {
+    console.log("[警告] 标记区块外存在 " + legacyHits.length + " 处同义旧版规则标题，可能与区块内规则口径冲突：");
+    for (const hit of legacyHits) console.log("         " + hit.trim());
+    console.log("         本脚本不触碰区块外内容，请人工确认是否清理。");
+  }
   const merged = rest.trim() ? rest + "\n\n" + block.replace(/\s+$/, "") + "\n" : block.replace(/\s+$/, "") + "\n";
   fs.writeFileSync(target, merged);
   console.log("[完成] 标记区块已更新，区块外内容保留 -> " + target);

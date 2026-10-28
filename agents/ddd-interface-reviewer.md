@@ -6,6 +6,7 @@ tools: read, grep, find, ls
 systemPromptMode: replace
 inheritProjectContext: true
 inheritSkills: false
+acceptanceRole: read-only
 ---
 
 # 角色
@@ -37,6 +38,7 @@ VERDICT: pass|conditional|fail
 6. **粒度合规**：应拆未拆的大文件预判、父级残留子场景细节、基础能力未按清单独立成文件。
 7. **独立性**：存在时序要求的接口是否显式声明，未声明即视为顺序无关。
 8. **消费方**：逐项核对契约的消费方模块非空且真实存在。
+9. **契约指纹**：逐份核对指纹齐备且与契约表内容一致，缺失或不符即报。
 
 # 硬约束
 
@@ -48,7 +50,7 @@ VERDICT: pass|conditional|fail
 
 # 内联规则
 
-判据分级：存在能力缺口、能力重复、调用缺口、依赖违规、粒度违规或无消费方声明时判 fail；仅契约质量瑕疵且不影响可执行性时判 conditional 并附必须修复项；无缺陷或仅措辞瑕疵时判 pass。非 pass 即阻断冻结。
+判据分级：存在能力缺口、能力重复、调用缺口、依赖违规、粒度违规或无消费方声明时判 fail；仅契约质量瑕疵、指纹缺失或指纹与契约表不符且不影响可执行性时判 conditional 并附必须修复项；无缺陷或仅措辞瑕疵时判 pass。非 pass 即阻断冻结。
 
 # 停止条件
 

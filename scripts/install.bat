@@ -71,13 +71,21 @@ if errorlevel 1 ( echo [ERROR] skill install failed & exit /b 1 )
 echo [OK] Skill -> %SKILL_DST%
 
 if not exist "%SKILL_DST%\scripts" mkdir "%SKILL_DST%\scripts"
-for %%S in (trace-check code-health) do (
+for %%S in (trace-check code-health governance-check fingerprint design-root) do (
     if exist "%ROOT%scripts\%%S.js" (
         copy /y "%ROOT%scripts\%%S.js" "%SKILL_DST%\scripts\%%S.js" >nul
         if errorlevel 1 ( echo [WARN] %%S copy failed ) else ( echo [OK] %%S )
     ) else (
         echo [WARN] missing %ROOT%scripts\%%S.js
     )
+)
+
+if not exist "%PI_HOME%\extensions" mkdir "%PI_HOME%\extensions"
+if exist "%ROOT%extensions\ddd-governance.ts" (
+    copy /y "%ROOT%extensions\ddd-governance.ts" "%PI_HOME%\extensions\ddd-governance.ts" >nul
+    if errorlevel 1 ( echo [WARN] extension copy failed ) else ( echo [OK] Extension -> %PI_HOME%\extensions\ddd-governance.ts )
+) else (
+    echo [WARN] missing %ROOT%extensions\ddd-governance.ts
 )
 
 if exist "%ROOT%global\APPEND_SYSTEM.md" (
@@ -133,9 +141,10 @@ for %%A in (%DDD_AGENTS%) do (
 )
 echo   Agents   : !N! / 12 installed
 if exist "%SKILL_DST%\workflows\ddd-workflow.js" ( echo   Workflow : installed ) else ( echo   Workflow : missing )
-for %%S in (trace-check code-health) do (
+for %%S in (trace-check code-health governance-check fingerprint design-root) do (
     if exist "%SKILL_DST%\scripts\%%S.js" ( echo   %%S : installed ) else ( echo   %%S : missing )
 )
+if exist "%PI_HOME%\extensions\ddd-governance.ts" ( echo   Extension: installed ) else ( echo   Extension: missing )
 if exist "%PI_HOME%\.ddd-model-overrides.json" (
     echo   Models   : profile applied
 ) else (
