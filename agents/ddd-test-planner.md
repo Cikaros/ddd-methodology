@@ -18,7 +18,7 @@ inheritSkills: false
 
 # 输出契约
 
-`docs/test/` 下的 TEST_PLAN 树，路径与设计树同构，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 TEST_PLAN 节。
+`docs/test/` 下的 TEST_PLAN 树，路径与设计树同构，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 TEST_PLAN 节。并附结构治理回执，记产出文档规模与是否超规范 §4 文档粒度阈值。
 
 # 职责
 

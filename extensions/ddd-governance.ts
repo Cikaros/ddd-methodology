@@ -7,7 +7,7 @@
  * 判定编号与摘要：
  * - H-1 粒度守卫（tool_call 的 write/edit）：估算写入后行数超 500 行即拦截，与规范 §4 的硬阈值一致，
  *   理由含文件路径、就近 DESIGN 路径与拆解要求；文件内显式声明运行时例外者放行。
- *   基础能力 300 行阈值不在此判定：其清单解析与 code-health 重复，改由 code-health 度量与规范 §12 审计承接。
+ *   基础能力 300 行与文档 200 行阈值不在此判定：其判定需解析清单与契约数，改由 code-health 度量与规范 §12 审计承接。
  * - H-2 测试分离守卫（tool_call 的 bash）：命令属窄口径的全量测试调用形态，且 docs/.ddd-state.json
  *   的 lastStage 为 g5-int 时拦截，指明全量测试唯一主体是 ddd-tester。
  * - H-3 回执守卫（agent_before_settle）：本轮发生过 write/edit 而最终回复缺「结构治理回执」时请求一次续跑。

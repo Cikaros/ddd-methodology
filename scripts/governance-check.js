@@ -50,8 +50,10 @@ function check() {
   const checked = { designs: 0, fingerprints: 0, thresholdFiles: 0, thresholdBaseFiles: 0, trend: "none" };
 
   const designRoot = absoluteDesignDir(root);
-  if (!designRoot.declared) warnings.push("ARCHITECTURE.md 未声明设计树根路径，已回退 docs/design");
-  if (fs.existsSync(designRoot.dir)) {
+  const hasDesignDir = fs.existsSync(designRoot.dir);
+  // 无设计树时不告警：非 DDD 项目零考察，避免噪音。
+  if (hasDesignDir && !designRoot.declared) warnings.push("ARCHITECTURE.md 未声明设计树根路径，已回退 docs/design");
+  if (hasDesignDir) {
     const designFiles = walk(designRoot.dir).filter((f) => /DESIGN.*\.md$/i.test(path.basename(f)));
     checked.designs = designFiles.length;
     for (const f of designFiles) {

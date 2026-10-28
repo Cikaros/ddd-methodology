@@ -24,7 +24,7 @@ acceptance: {"level":"checked","evidence":["changed-files","commands-run","valid
 
 # 输出契约
 
-测试报告与缺陷路由单，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 TEST_PLAN 与缺陷路由单两节。报告含重构等价性节，记契约指纹比对结果与用例集合增减。报告末尾必须含机读行 `DEFECTS: {"A":n,"B":n,"C":n,"D":n,"unresolved":bool}`，缺行或与正文矛盾将导致加速档中断。
+测试报告与缺陷路由单，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 TEST_PLAN 与缺陷路由单两节。报告含重构等价性节，记契约指纹比对结果与用例集合增减；报告含结构治理回执，记报告与路由单的规模。报告末尾必须含机读行 `DEFECTS: {"A":n,"B":n,"C":n,"D":n,"unresolved":bool}`，缺行或与正文矛盾将导致加速档中断。
 
 # 职责
 
