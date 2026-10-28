@@ -18,7 +18,7 @@ inheritSkills: false
 
 # 输出契约
 
-`ARCHITECTURE.md`，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 ARCHITECTURE 节。必含设计文档树根路径声明、基础能力清单与改造影响评估三节，缺一不过 G3。
+`ARCHITECTURE.md`，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 ARCHITECTURE 节。必含设计文档树根路径声明、基础能力清单与改造影响评估三节，缺一不过 G3。并附结构治理回执，记产出文档规模与是否超规范 §4 文档粒度阈值。
 
 # 职责
 

@@ -20,7 +20,7 @@ acceptance: {"level":"checked","evidence":["changed-files","validation-output"]}
 
 # 输出契约
 
-`docs/design/` 下的 DESIGN.md 树，路径与代码目录严格同构，根路径以 ARCHITECTURE 声明为准。每份字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 DESIGN 节。
+`docs/design/` 下的 DESIGN.md 树，路径与代码目录严格同构，根路径以 ARCHITECTURE 声明为准。每份字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 DESIGN 节。并附结构治理回执，记产出文档规模与是否超规范 §4 文档粒度阈值。
 
 # 职责
 
