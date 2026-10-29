@@ -173,7 +173,7 @@ pi 运行时契约类声明，如 worktree、control 字段与 frontmatter 字�
 
 度量仅报告不阻断，其阻断地位由 G5-INT 的治理条件承接。度量恶化的具体项写入审计报告的必填节。
 
-`node ~/.pi/agent/skills/ddd-methodology/scripts/governance-check.js <项目根>` 输出单项 JSON verdict，校验契约指纹齐备且与契约表一致、超阈值趋势未恶化，作为 G5-INT 的 typed gate 证据，退出码非零即 blocked。输出上限按 UTF-8 字节计量，不超 12000 字节，以免消费端按字符或按字节解释时出现歧义。
+`node ~/.pi/agent/skills/ddd-methodology/scripts/governance-check.js <项目根>` 输出单项 JSON verdict，校验契约指纹齐备且与契约表一致、超阈值趋势未恶化，作为 G5-INT 的门槛证据，退出码非零即 blocked；命令路径可确定时可经 typed gate 挂载。输出上限按 UTF-8 字节计量，不超 12000 字节，以免消费端按字符或按字节解释时出现歧义。
 
 ## 14. 本方法论仓库自身的适用边界
 
@@ -209,4 +209,4 @@ workflow 加速档以 `<项目根>/docs/.ddd-state.json` 记录进度。
 
 **等价性验证。** 测试执行者先判定变更性质。指纹不变时验证用例集合未减少且全绿；指纹变化时核对版本已递增与 AC 已同步，未同步报 B 级。测试用例集合逆向缩减是堆叠信号。
 
-**机械约束。** 可机械判定者分两层承载。声明式门禁为主，即代理 frontmatter 的 acceptanceRole、acceptance 与派发 options 的 gate，对所有子代理生效；写入类与审计类代理已显式声明，其余代理沿用 pi-subagents 的默认推断，属分级而非遗漏。写入类代理显式关闭 acceptanceRole 带来的自动评审推断，独立评审由 G4.5 与 G6 承担，避免每次实现重复评审。运行时守卫为辅，即 `extensions/ddd-governance.ts` 在工具调用处拦截，仅覆盖根会话与后台子代理，判定编号见该文件头。守卫只拦机械可判定且零误报的项，当前仅覆盖代码文件的 500 行硬阈值，基础能力 300 行与文档 200 行阈值由 code-health 与审计承接；须对非 DDD 项目静默，且任何异常一律放行并记警告。命令级门禁由 scripts/governance-check.js 经 gate 承载，不可用 permission 实现，因其对 bash 恒放行。
+**机械约束。** 可机械判定者分两层承载。声明式门禁为主，即代理 frontmatter 的 acceptanceRole、acceptance 与派发 options 的 gate，对所有子代理生效；写入类与审计类代理已显式声明，其余代理沿用 pi-subagents 的默认推断，属分级而非遗漏。写入类代理显式关闭 acceptanceRole 带来的自动评审推断，独立评审由 G4.5 与 G6 承担，避免每次实现重复评审。运行时守卫为辅，即 `extensions/ddd-governance.ts` 在工具调用处拦截，仅覆盖根会话与后台子代理，判定编号见该文件头。守卫只拦机械可判定且零误报的项，当前仅覆盖代码文件的 500 行硬阈值，基础能力 300 行与文档 200 行阈值由 code-health 与审计承接；须对非 DDD 项目静默，且任何异常一律放行并记警告。命令级门禁由 scripts/governance-check.js 承担，命令路径可确定时经 typed gate 挂载，不可用 permission 实现，因其对 bash 恒放行。
