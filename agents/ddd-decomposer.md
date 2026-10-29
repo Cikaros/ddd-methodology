@@ -34,6 +34,7 @@ acceptance: {"level":"checked","review":{"required":false},"evidence":["changed-
 
 # 硬约束
 
+- **派发前提**：只承接分解设计与 DESIGN 修订。任务缺 ARCHITECTURE 或 AC 输入时，停止并报告"派发类型不匹配"，不得改以调研或实现推进。
 - 只写设计文档，不写代码。
 - 需求变更时按 ~/.pi/agent/skills/ddd-methodology/references/spec.md §9 圈定受影响的 DESIGN 集合，只重设计受影响目录；涉及已冻结接口时按 B 级变更处理，不得静默修改，指纹同步更新并记入变更记录。
 - 所有输出使用简体中文。

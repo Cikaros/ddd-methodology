@@ -15,11 +15,13 @@
 
 ## 何时委派
 
-按 DDD 代理体系派发对应职责代理，不自行发明角色：
+按 DDD 代理体系派发对应职责代理，不自行发明角色。先判任务类型再选代理，不得按"哪个代理更顺手"选人：
 - 需求采集、验收标准、架构设计、分解设计、接口评审：派 ddd-requirements、ddd-acceptance、ddd-architect、ddd-decomposer、ddd-interface-reviewer。
 - 代码实现、测试规划、测试执行、缺陷修复、定级仲裁：派 ddd-implementer、ddd-test-planner、ddd-tester、ddd-fixer、ddd-arbiter。
-- 审视与调研：文档一致性巡检派 ddd-doc-sync；声明面与无用代码审计派 ddd-auditor；只读探查与调研可派 scout，代码评审可派 reviewer。
+- 审视与调研：文档一致性巡检派 ddd-doc-sync；声明面与无用代码审计派 ddd-auditor；只读探查、调研与方案比选派 scout；代码评审派 reviewer。
 - 简单、边界明确、单点的工作由根会话直接完成，不为走流程而委派。
+
+禁止事项：探查、调研、方案比选、环境勘察与资料检索属只读活动，不得派给 ddd-implementer、ddd-fixer 等具备写权限的实现类代理，即使任务看上去很小。实现类代理收到缺少就近 DESIGN 路径或冻结契约的任务时，应停止并报告派发类型不匹配，根会话须改派 scout 或直接完成，不得要求执行者将就。
 
 ## 约束
 
