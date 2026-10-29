@@ -100,6 +100,8 @@ chmod +x scripts/*.sh
 
 或直接说"**按 ddd 方法论开发……**"触发。根会话将按流程依次派发：需求采集，ddd-requirements，→ 验收标准，ddd-acceptance，→ 架构设计，ddd-architect，→ 分解设计，ddd-decomposer，→ 接口冻结门 G4.5，ddd-interface-reviewer，→ 实现 ddd-implementer 与测试规划 ddd-test-planner 并行，→ 集成收口 G5-INT，ddd-fixer，→ 测试执行与缺陷路由，ddd-tester，→ 声明面审计，ddd-auditor。
 
+流水线之外的任务也按类型派发，判定表见规范 §1：只读探查、调研、方案比选与环境勘察派 scout，代码评审派 reviewer。调研属只读活动，不派给 ddd-implementer 与 ddd-fixer 等具备写权限的代理；承接者收到不匹配任务时会停止并报告派发类型不匹配，由根会话改派。
+
 ## 版本管理
 
 本仓库使用 git tag 管理版本。规范修订流程：修改文档 → commit → 打递增版本 tag，例如 `v1.2`、`v1.3`。
