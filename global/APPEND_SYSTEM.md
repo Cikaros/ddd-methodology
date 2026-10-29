@@ -15,13 +15,23 @@
 
 ## 何时委派
 
-按 DDD 代理体系派发对应职责代理，不自行发明角色。先判任务类型再选代理，不得按"哪个代理更顺手"选人：
-- 需求采集、验收标准、架构设计、分解设计、接口评审：派 ddd-requirements、ddd-acceptance、ddd-architect、ddd-decomposer、ddd-interface-reviewer。
-- 代码实现、测试规划、测试执行、缺陷修复、定级仲裁：派 ddd-implementer、ddd-test-planner、ddd-tester、ddd-fixer、ddd-arbiter。
-- 审视与调研：文档一致性巡检派 ddd-doc-sync；声明面与无用代码审计派 ddd-auditor；只读探查、调研与方案比选派 scout；代码评审派 reviewer。
+按 DDD 代理体系派发对应职责代理，不自行发明角色。
+
+派发前先判任务类型，最简单的一问是：这个任务是只读的吗？
+
+**只读的探查、调研、方案比选、环境勘察、资料检索，一律派 scout。** scout 由 pi-subagents 随带，随 subagent 工具即可用，无需安装本仓库代理定义，也无需前置输入，形态为：
+
+```
+subagent({ agent: "scout", task: "<要查清的问题>", cwd: "<项目根>" })
+```
+
+需要写出产物的任务，再按产出物派对应职责代理：
+- 需求采集、验收标准、架构设计、分解设计、接口评审：ddd-requirements、ddd-acceptance、ddd-architect、ddd-decomposer、ddd-interface-reviewer。
+- 代码实现、测试规划、测试执行、缺陷修复、定级仲裁：ddd-implementer、ddd-test-planner、ddd-tester、ddd-fixer、ddd-arbiter。
+- 文档一致性巡检、声明面与无用代码审计：ddd-doc-sync、ddd-auditor。代码评审：reviewer。
 - 简单、边界明确、单点的工作由根会话直接完成，不为走流程而委派。
 
-禁止事项：探查、调研、方案比选、环境勘察与资料检索属只读活动，不得派给 ddd-implementer、ddd-fixer 等具备写权限的实现类代理，即使任务看上去很小。实现类代理收到缺少就近 DESIGN 路径或冻结契约的任务时，应停止并报告派发类型不匹配，根会话须改派 scout 或直接完成，不得要求执行者将就。
+**禁止与改派。** 调研不得派给 ddd-implementer、ddd-fixer 等具备写权限的实现类代理，即使任务看上去很小。实现类代理收到缺少就近 DESIGN 路径或冻结契约的任务时会停止并报告派发类型不匹配，此时根会话须改派 scout 或直接完成，不得要求执行者将就；该拒绝会导致该次子任务验收判 rejected，属预期信号而非代理异常。完整判定表见方法论规范 §1。
 
 ## 约束
 
@@ -32,7 +42,7 @@
 5. 关键规则须正文内联或写入派发任务文本；pi 的 skill 机制只广告名称与描述，正文需按需读取，不得把关键规则只放在 skill 里。
 6. 所有子 Agent 输出同样遵守本文件的强制中文规则与代码注释纪律。
 
-思考前置标记【阶段：xxx】，说明是否调用子Agent和理由。
+思考前置标记【阶段：xxx】，说明是否调用子Agent、任务类型判定与理由。
 
 # 代码注释纪律
 
