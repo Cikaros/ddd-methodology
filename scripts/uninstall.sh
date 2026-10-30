@@ -3,7 +3,9 @@
 # DDD-Methodology 卸载脚本（Linux / macOS / Git Bash）
 # 用法: ./uninstall.sh
 # 仅移除本方法论安装的固定文件，不影响用户其他配置。
-# 固定清单：agents 段为 12 个 ddd 前缀代理；skill 包整目录移除，故 scripts 段的 ref-check.js 等脚本随包一并移除，不另列第二份清单。
+# 固定清单：agents 段为 12 个 ddd 前缀代理；skill 段为下列清单内的三个 skill 目录。
+# 白名单语义：卸载逐个移除清单内的 skill 目录，绝不递归删除整个 $PI_HOME/skills/，
+# 以免误删用户自有 skill。skill 包整目录移除，故 scripts 段的 ref-check.js 等脚本随包一并移除，不另列第二份清单。
 # ============================================================
 set -euo pipefail
 
@@ -11,11 +13,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(dirname "$SCRIPT_DIR")"
 
 PI_HOME="$HOME/.pi/agent"
-SKILL_DST="$PI_HOME/skills/ddd-methodology"
 AGENT_DST="$PI_HOME/agents"
 
 # 固定清单：与 agents/ 目录下的 12 个文件一一对应（防止通配符误删用户自有 ddd- 前缀代理）
 DDD_AGENTS=(ddd-requirements ddd-acceptance ddd-architect ddd-decomposer ddd-interface-reviewer ddd-implementer ddd-test-planner ddd-tester ddd-arbiter ddd-doc-sync ddd-auditor ddd-fixer)
+
+# 固定清单：本方法论自带的 skill 目录，逐个移除（白名单，不递归删除整个 skills/）
+DDD_SKILLS=(ddd-methodology ddd-rebuild ddd-refactor)
 
 echo "[卸载] 目标: $PI_HOME"
 
@@ -26,12 +30,15 @@ else
     echo "[警告] 未找到 node，跳过全局规则移除" >&2
 fi
 
-if [[ -d "$SKILL_DST" ]]; then
-    rm -rf "$SKILL_DST"
-    echo "[完成] 已移除 Skill: $SKILL_DST"
-else
-    echo "[提示] Skill 未安装"
-fi
+for name in "${DDD_SKILLS[@]}"; do
+    dst="$PI_HOME/skills/$name"
+    if [[ -d "$dst" ]]; then
+        rm -rf "$dst"
+        echo "[完成] 已移除 Skill: $dst"
+    else
+        echo "[提示] Skill 未安装: $name"
+    fi
+done
 
 EXT_FILE="$PI_HOME/extensions/ddd-governance.ts"
 if [[ -f "$EXT_FILE" ]]; then

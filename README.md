@@ -19,7 +19,12 @@ ddd-methodology/
 │   ├── SKILL.md                  # 调度流程入口
 │   ├── references/
 │   │   ├── spec.md               # 规范唯一权威源
-│   │   └── templates.md          # 产物模板库
+│   │   ├── templates.md          # 产物模板库
+│   │   └── templates-rebuild.md  # 存量重建与定向重构产物模板
+├── skill/ddd-rebuild/            # 存量重建 skill，仅由用户显式调用
+│   └── SKILL.md                  # 存量重建流程入口
+├── skill/ddd-refactor/           # 定向重构 skill，仅由用户显式调用
+│   └── SKILL.md                  # 定向重构流程入口
 ├── global/
 │   └── APPEND_SYSTEM.md         # 全局规则权威版本，安装时按标记区块合并入用户全局文件
 ├── profiles/
@@ -54,7 +59,8 @@ ddd-methodology/
     ├── design-root.js            # 设计树根路径解析唯一实现，供同上两者共用
     ├── merge-append-system.js    # 全局规则区块合并，供安装与卸载脚本调用
     ├── decision-tables.js        # 判定表默认分支校验库，供 ref-check 调用
-    └── ref-check.js              # 跨文档引用、常量与枚举一致性校验，本仓库文档同步链证据
+    ├── ref-check.js              # 跨文档引用、常量与枚举一致性校验，本仓库文档同步链证据
+    └── roster-check.js           # 代理与 skill 清单一致性校验，供 ref-check 的 C5、C11 调用
 ```
 
 ## 安装与卸载
@@ -89,6 +95,7 @@ Linux、macOS 与 Git Bash 首次使用前执行 `chmod +x scripts/*.sh`。
   - code-health 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/code-health.js`，度量结构健康并写入项目内 docs/health.json，仅报告不作门禁
   - governance-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/governance-check.js`，校验契约指纹与结构趋势，输出 verdict 作为 G5-INT 门槛证据
   - ref-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/ref-check.js`，校验跨文档引用、常量与枚举集合一致性，供文档同步链使用
+- 存量重建 skill `ddd-rebuild` 与定向重构 skill `ddd-refactor`，分别安装到 `~/.pi/agent/skills/ddd-rebuild/` 与 `~/.pi/agent/skills/ddd-refactor/`。三者同属一份固定清单，安装时一并复制、卸载时一并移除，随装随卸；卸载只删清单内目录，不影响用户自有 skill
 - 运行时守卫扩展 `~/.pi/agent/extensions/ddd-governance.ts`，仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默
 - 模型配比记录文件 `~/.pi/agent/.ddd-model-overrides.json`，记录本方法论写入的代理、配比名与写入前原值，供精确回退
 - 全局规则区块，按标记合并入 `~/.pi/agent/APPEND_SYSTEM.md`：只替换标记区块，区块外用户自定义内容原样保留，卸载时移除该区块；首次安装前自动备份为 `APPEND_SYSTEM.md.ddd-bak`，卸载时若仅剩标记区块则优先从该备份恢复并删除备份文件
@@ -106,13 +113,20 @@ Linux、macOS 与 Git Bash 首次使用前执行 `chmod +x scripts/*.sh`。
 
 或直接说"**按 ddd 方法论开发……**"触发。根会话按规范「角色与交接」节的交接链与 `SKILL.md` 的流程表依次派发。
 
+存量重建与定向重构两个 skill 由用户显式调用，模型不会自动选中，须在会话中直接给出：
+
+```
+/skill:ddd-rebuild     存量重建
+/skill:ddd-refactor    定向重构
+```
+
 流水线之外的任务同样按此判据派发。派发前先判任务类型。第一问是这个任务是只读的吗，是则一律派 scout。非只读任务按产出物查规范「角色与交接」节的派发表。承接者收到不符合自身职责的任务时停止并报告派发类型不匹配。
 
 只读的探查、调研、方案比选、环境勘察、资料检索，一律派 scout，不派给任何具备写权限的 ddd-* 代理。
 
 ## 版本管理
 
-本仓库使用 git tag 管理版本。规范修订流程：修改文档 → commit → 打递增版本 tag，例如 `v1.2`、`v1.3`。规范修订后运行 `node scripts/ref-check.js .` 校验跨文档一致性，作为提交前检查。
+本仓库使用 git tag 管理版本。规范修订流程：修改文档 → commit → 打递增版本 tag，例如 `v1.2`、`v1.3`。规范修订后运行 `node scripts/ref-check.js .` 校验跨文档一致性，作为提交前检查。代理与 skill 清单的一致性判据由 `scripts/roster-check.js` 提供，`ref-check` 的 C5 代理清单校验与 C11 skill 清单校验均调用它。
 
 `ref-check` 默认只读，不写盘；加 `--fix` 时由规范「状态文件」节的键清单生成 `workflows/ddd-workflow.js` 的 stageRegistry，并校验 `extensions/ddd-governance.ts` 的 `G5_INT_STAGE` 单键属于该集合，写盘范围限于 stageRegistry 数组块，改完须复跑默认模式确认无漂移。
 
