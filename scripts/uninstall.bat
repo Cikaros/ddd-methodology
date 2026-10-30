@@ -8,7 +8,9 @@ rem Fixed list: agents\ holds 12 ddd-prefixed agents. The skill section is a
 rem whitelist of the three shipped skill directories; they are removed one by
 rem one and the skills\ folder itself is never deleted wholesale, so user-owned
 rem skills stay untouched. Each skill package is removed as a whole, so
-rem scripts\ref-check.js and the other scripts go with ddd-methodology.
+rem scripts\ref-check.js, the other scripts and the shared layer
+rem scripts\lib\text.js and scripts\lib\walk.js go with ddd-methodology;
+rem the scripts folder is never deleted recursively on its own.
 rem
 rem Encoding note: ASCII only on purpose, see install.bat.
 rem Run it from the repository: it calls scripts\apply-models.js

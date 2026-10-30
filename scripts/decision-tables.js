@@ -5,7 +5,10 @@
  * 调用形态：checkJudgmentDefault(files, readText)；files 为待扫描文件的路径集合，readText 为按路径取文本的函数。
  *   回传漂移项数组，每项字段与 ref-check 现有漂移项一致，含 item、file、line、criterion、expect、found。
  * 调用方：scripts/ref-check.js 的 C10 校验项 require 本模块并传入活文档路径集合与文本读取函数。
+ * 依赖：行号与漂移项构造取 ./lib/text.js 的 withLineNumbers、drift，本模块不再内联重复实现。
  */
+
+const { withLineNumbers, drift } = require("./lib/text.js");
 
 // 判定表列名与默认分支词：精确相等匹配，避免 机读结论 与 默认值 等列名子串误报
 const CONDITION_COLUMNS = new Set(["级别", "条件", "情境", "触发点", "判定条件", "检查项", "巡检项", "声明面对象", "产出物"]);
@@ -13,19 +16,11 @@ const ACTION_COLUMNS = new Set(["处理", "动作", "处置", "结论", "追加�
 const DEFAULT_BRANCH_WORDS = ["默认", "其余", "未命中", "其他", "无匹配"];
 const hasDefaultBranchWord = (text) => DEFAULT_BRANCH_WORDS.some((word) => text.includes(word));
 
-// 漂移项字段与 ref-check 现有形态一致；found 截断 60 字符，避免超长单元格撑爆报告
-function drift(item, file, line, criterion, expect, found) {
-  return { item, file, line, criterion, expect, found: found === undefined ? "" : String(found).slice(0, 60) };
-}
-// 行号化：分块判定按物理行定位，需要保留原始行号
-function numberedRows(text) {
-  return String(text || "").split("\n").map((line, index) => ({ line, no: index + 1 }));
-}
-// 去围栏：代码围栏区间内的行不参与判定，模板骨架表在围栏内须排除
+// 去围栏：代码围栏区间内的行不参与判定，模板骨架表在围栏内须排除；行号由共享层 withLineNumbers 提供
 function unFencedRows(text) {
   const rows = [];
   let fenced = false;
-  for (const row of numberedRows(text)) {
+  for (const row of withLineNumbers(text)) {
     if (/^\s*(```|~~~)/.test(row.line)) { fenced = !fenced; continue; }
     if (!fenced) rows.push(row);
   }

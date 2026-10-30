@@ -4,7 +4,7 @@ description: 存量重建。当用户判断项目碎片累积、修补成本已�
 disable-model-invocation: true
 ---
 
-规范唯一权威源为 `~/.pi/agent/skills/ddd-methodology/references/spec.md` 的「存量重建」节，产物模板见 `~/.pi/agent/skills/ddd-methodology/references/templates.md` 与 `~/.pi/agent/skills/ddd-methodology/references/templates-rebuild.md`。
+规范唯一权威源为 `~/.pi/agent/skills/ddd-methodology/references/spec-rebuild.md` 的「存量重建」节，产物模板见 `~/.pi/agent/skills/ddd-methodology/references/templates.md` 与 `~/.pi/agent/skills/ddd-methodology/references/templates-rebuild.md`。
 
 # 定位
 

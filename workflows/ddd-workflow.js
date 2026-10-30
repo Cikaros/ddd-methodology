@@ -11,7 +11,8 @@
  *
  * 前置条件：12 个 ddd-* 代理须已安装于 ~/.pi/agent/agents/，未安装将导致派发失败，脚本不自建存在性校验。
  *
- * 阶段流以 `references/spec.md`「角色与交接」节的交接链为唯一权威，本脚本的阶段定义须与其一致，由 `scripts/ref-check.js` 的 C4 校验。
+ * 阶段键清单的权威源为 `references/spec-govern.md`「状态文件」节，本脚本的 stageRegistry 须与其一致，由 `scripts/ref-check.js` 的 C4 校验；
+ * 阶段流的时序另由 `references/spec-role.md`「角色与交接」节的交接链定义。
  *
  * 实现/测试硬分离：ddd-tester 与 ddd-implementer 永不同段；并行段仅为实现与测试规划。
  *

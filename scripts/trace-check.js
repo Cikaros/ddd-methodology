@@ -20,28 +20,16 @@ const fs = require("fs");
 const path = require("path");
 const { checkContractFingerprint } = require("./fingerprint");
 const { absoluteDesignDir } = require("./design-root");
+const { walk, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
 
 const root = process.argv[2] || process.cwd();
 const problems = [];
 const warnings = [];
 
 // ---- 收集文件 ----
-function walk(dir, ext, out = []) {
-  if (!fs.existsSync(dir)) return out;
-  let entries;
-  try {
-    entries = fs.readdirSync(dir, { withFileTypes: true });
-  } catch (e) {
-    warnings.push(`目录不可读，已跳过：${dir}（${e.code || e.message}）`);
-    return out;
-  }
-  for (const e of entries) {
-    const p = path.join(dir, e.name);
-    if (e.isDirectory()) walk(p, ext, out);
-    else if (e.name.endsWith(ext)) out.push(p);
-  }
-  return out;
-}
+// 遍历与排除集复用 scripts/lib/walk.js；设计树与测试树是待校验对象，须用不排除 docs/build 等命名的口径，
+// 否则 docs/design 下名为 build/dist 的子目录会被漏检；不存在的目录由 walk 回传空清单，扩展名筛选由本脚本自理
+const collectFiles = (dir, ext) => walk(dir, DOC_TREE_SKIP_DIR_NAMES).filter((f) => f.endsWith(ext));
 
 const read = (p) => (fs.existsSync(p) ? fs.readFileSync(p, "utf8") : "");
 const AC_RE = /\bAC-\d{3,}\b/g;      // 标准格式：三位及以上数字
@@ -82,7 +70,7 @@ if (totalACs.length === 0) problems.push("AC.md 中未发现任何 AC-xxx 编号
 const designRoot = absoluteDesignDir(root);
 if (!designRoot.declared) warnings.push("ARCHITECTURE.md 未找到设计文档树根路径声明，已回退 docs/design；建议补声明以消除歧义");
 const designDir = designRoot.dir;
-const designFiles = (fs.existsSync(designDir) ? walk(designDir, ".md") : []).filter((f) => /DESIGN.*\.md$/i.test(path.basename(f)));
+const designFiles = collectFiles(designDir, ".md").filter((f) => /DESIGN.*\.md$/i.test(path.basename(f)));
 if (designFiles.length === 0) problems.push(`设计树 ${designRoot.dir} 下未发现任何 DESIGN 文档（G4 门禁前置）`);
 
 // 从 DESIGN.md 中仅提取"## 模块级验收要点"章节内的 AC 引用；若无该章节则告警并全文提取（降级）
@@ -109,7 +97,7 @@ for (const f of designFiles) {
 
 // ---- 3. 测试用例覆盖（TEST_PLAN.md）——锚定用例表 ----
 const testDir = path.join(root, "docs", "test");
-const testFiles = (fs.existsSync(testDir) ? walk(testDir, ".md") : []).filter((f) => /TEST_PLAN.*\.md$/i.test(path.basename(f)));
+const testFiles = collectFiles(testDir, ".md").filter((f) => /TEST_PLAN.*\.md$/i.test(path.basename(f)));
 if (testFiles.length === 0) problems.push(`测试树 ${path.relative(root, testDir) || "docs/test"} 下未发现任何 TEST_PLAN 文档（G5 门禁前置）`);
 
 const coveredByTests = new Set();

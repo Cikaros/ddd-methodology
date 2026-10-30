@@ -4,7 +4,7 @@ description: 定向重构。当用户针对部分代码或模块在使用中发�
 disable-model-invocation: true
 ---
 
-规范唯一权威源为 `~/.pi/agent/skills/ddd-methodology/references/spec.md` 的「存量重建」节，产物模板见 `~/.pi/agent/skills/ddd-methodology/references/templates.md` 与 `~/.pi/agent/skills/ddd-methodology/references/templates-rebuild.md`。
+规范唯一权威源为 `~/.pi/agent/skills/ddd-methodology/references/spec-rebuild.md` 的「存量重建」节，产物模板见 `~/.pi/agent/skills/ddd-methodology/references/templates.md` 与 `~/.pi/agent/skills/ddd-methodology/references/templates-rebuild.md`。
 
 # 定位
 

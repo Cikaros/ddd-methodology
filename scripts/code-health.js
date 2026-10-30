@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * 目标：把代码树的结构健康外化为可复现的机械证据，作为 G5-INT 与 G6 的证据源。
- * 范围：文件规模、死代码、重复嫌疑、注释质量、结构趋势五类事实的输出与度量留盘。
+ * 范围：文件规模（源码与活文档）、死代码、重复嫌疑、注释质量、结构趋势五类事实的输出与度量留盘。
  * 归属：文件规模与注释质量可由写入者按规范「结构与契约的演进治理」节的治理义务处理；无引用文件属仓库级属性，归审计代理。
  * 不包含：语义级判断。注释是否解释为什么、分支是否真不可达需 AST，本脚本不做，交由审计代理抽检。
  *
@@ -14,15 +14,15 @@
 
 const fs = require("fs");
 const path = require("path");
+const { walk } = require("./lib/walk");
 
 const root = process.argv[2] || process.cwd();
-// 点开头目录已由 walk 统一跳过，此处只列非点开头的构建与依赖目录
-const SKIP_DIRS = new Set(["node_modules", "dist", "build", "out", "target", "vendor", "__pycache__", "coverage", "docs"]);
 const CODE_EXT = new Set([".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx", ".py", ".java", ".kt", ".go", ".rs", ".rb", ".php", ".cs", ".swift", ".c", ".h", ".cpp", ".sh", ".bat", ".ps1"]);
 const LINE_LIMIT = 500;
 const BASE_LINE_LIMIT = 300;
-
-const warnings = [];
+const DOC_LINE_LIMIT = 200;
+// 活文档扫描根：规范、代理定义与全局系统提示；docs 目录与 CHANGELOG.md 不在其内，天然不入度量
+const DOC_ROOTS = ["skill", "agents", "global"];
 
 const read = (p) => {
   try {
@@ -31,26 +31,6 @@ const read = (p) => {
     return "";
   }
 };
-
-function walk(dir, out = []) {
-  let entries;
-  try {
-    entries = fs.readdirSync(dir, { withFileTypes: true });
-  } catch (e) {
-    warnings.push(`目录不可读，已跳过：${dir}`);
-    return out;
-  }
-  for (const e of entries) {
-    if (e.name.startsWith(".")) continue;
-    const p = path.join(dir, e.name);
-    if (e.isDirectory()) {
-      if (!SKIP_DIRS.has(e.name)) walk(p, out);
-    } else {
-      out.push(p);
-    }
-  }
-  return out;
-}
 
 // 基础能力文件取自 ARCHITECTURE 的能力清单，这些文件按更严上限评估
 function readBaseCapabilityFiles() {
@@ -85,6 +65,20 @@ for (const f of codeFiles) {
     oversized.push({ file: rel, lines, limit });
     if (isBase) oversizedBase++;
   } else if (lines > limit * 0.8) nearLimit.push({ file: rel, lines, limit });
+}
+
+// 活文档规模：规范拆分后各文件与代理定义同受 200 行阈值管辖，消除「规范不受阈值管辖」的缺口
+const docCandidates = DOC_ROOTS.flatMap((dir) => walk(path.join(root, dir)));
+const rootReadme = path.join(root, "README.md");
+if (fs.existsSync(rootReadme)) docCandidates.push(rootReadme);
+const docFiles = docCandidates.filter((f) => path.extname(f).toLowerCase() === ".md");
+const docOversized = [];
+const docNearLimit = [];
+for (const f of docFiles) {
+  const rel = path.relative(root, f).split(path.sep).join("/");
+  const lines = read(f).split("\n").length;
+  if (lines > DOC_LINE_LIMIT) docOversized.push({ file: rel, lines, limit: DOC_LINE_LIMIT });
+  else if (lines > DOC_LINE_LIMIT * 0.8) docNearLimit.push({ file: rel, lines, limit: DOC_LINE_LIMIT });
 }
 
 // ---- 2. 死代码 ----
@@ -184,6 +178,9 @@ const metrics = {
   oversized: oversized.length,
   oversizedBase,
   nearLimit: nearLimit.length,
+  docFiles: docFiles.length,
+  docOversized: docOversized.length,
+  docNearLimit: docNearLimit.length,
   commentedCode: commentedCode.length,
   compatMarkers: compatMarkers.length,
   orphans: orphans.length,
@@ -203,7 +200,8 @@ const degraded = [];
 if (history.length) {
   const last = history[history.length - 1];
   for (const key of Object.keys(metrics)) {
-    if (key === "at" || key === "files") continue;
+    // 文件总数随增删自然波动，不构成恶化；其余计数项上升均为信号
+    if (key === "at" || key === "files" || key === "docFiles") continue;
     if (typeof last[key] === "number" && metrics[key] > last[key]) degraded.push(`${key} 由 ${last[key]} 升至 ${metrics[key]}`);
   }
 }
@@ -226,6 +224,10 @@ say(`[文件规模] 超限 ${oversized.length}（其中基础能力超 300 行 $
 for (const o of oversized) say(`  ✗ ${o.file}  ${o.lines} 行，上限 ${o.limit}`, true);
 for (const o of nearLimit) say(`  ! ${o.file}  ${o.lines} 行，上限 ${o.limit}`, true);
 say("");
+say(`[文档规模] 活文档 ${docFiles.length} 份，超限 ${docOversized.length}（上限 ${DOC_LINE_LIMIT} 行），接近上限 ${docNearLimit.length}`);
+for (const o of docOversized) say(`  ✗ ${o.file}  ${o.lines} 行，上限 ${o.limit}`, true);
+for (const o of docNearLimit) say(`  ! ${o.file}  ${o.lines} 行，上限 ${o.limit}`, true);
+say("");
 say(`[死代码] 注释代码块 ${commentedCode.length}，兼容层标记 ${compatMarkers.length}，无引用文件 ${orphans.length}`);
 for (const o of commentedCode) say(`  ✗ ${o.file}:${o.lines} ${o.note}`, true);
 for (const o of compatMarkers) say(`  ✗ ${o.file}:${o.line} ${o.text}`, true);
@@ -241,13 +243,10 @@ for (const o of staleComments) say(`  ✗ ${o.file}:${o.line} 提及已不存在
 say("");
 say(degraded.length ? `[相对上次恶化] ${degraded.length} 项` : "[相对上次恶化] 无");
 for (const d of degraded) say(`  ✗ ${d}`);
-if (warnings.length) {
-  say("");
-  say("[警告]");
-  for (const w of warnings) say(`  ! ${w}`, true);
-}
 
-const total = oversized.length + commentedCode.length + compatMarkers.length + orphans.length + bannedComments.length;
+// 结论行只累加「问题项」：超限（源码与活文档）与违禁/死代码/无引用均属问题，故一并计入；
+// 接近上限（nearLimit/docNearLimit）只是预警阈值，未构成问题，故不计入 total——与末行「未发现超限项」的语义一致，避免把预警误报成超限。
+const total = oversized.length + docOversized.length + commentedCode.length + compatMarkers.length + orphans.length + bannedComments.length;
 say("");
 say("本脚本恒退出 0，仅报告，不作门禁");
 say(total ? `结论：存在 ${total} 项结构健康问题，本版仅报告不阻断` : "结论：结构健康未发现超限项");

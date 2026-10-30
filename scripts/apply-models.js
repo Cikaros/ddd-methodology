@@ -92,6 +92,25 @@ async function smoke(provider, model) {
   }
 }
 
+// 代理名清单的唯一来源：脚本所在仓库根下 agents/ddd-*.md 的文件名集合，不再内联第二份名单。
+// 该目录随本方法论安装，与被应用项目无关，故取自 __dirname 而非 --repo。
+// 读不到目录或目录为空说明安装不完整，此时无法判定代理名合法性，报错退出而非静默放行。
+function loadAgentNames() {
+  const dir = path.join(__dirname, "..", "agents");
+  let names = [];
+  try {
+    names = fs.readdirSync(dir).filter((name) => /^ddd-.*\.md$/.test(name)).map((name) => name.replace(/\.md$/, ""));
+  } catch (e) {
+    console.error(`[错误] 无法读取代理定义目录 ${dir}：${e.message}`);
+    process.exit(1);
+  }
+  if (!names.length) {
+    console.error(`[错误] 代理定义目录 ${dir} 下无 ddd-*.md 文件，无法校验 --set 指定的代理名`);
+    process.exit(1);
+  }
+  return new Set(names);
+}
+
 const args = process.argv.slice(2);
 const mode = args[0];
 function opt(name) {
@@ -167,7 +186,7 @@ if (mode === "clear") {
 }
 
 if (mode === "verify") {
-  const { provider, profile, all } = resolveProfile(repoRoot, args[1]);
+  const { provider, profile } = resolveProfile(repoRoot, args[1]);
   const useProvider = providerArg || provider;
   const uniq = [...new Set(Object.values(profile.roles))];
   console.log(`=== 可用性冒烟：配比 ${args[1]}，provider ${useProvider} ===`);
@@ -204,16 +223,13 @@ for (const [agent, model] of Object.entries(profile.roles)) {
     toSmoke.add(model);
   } else skipped.push({ agent, model, why: "未在注册表中" });
 }
-// 用户显式指定优先；代理名须属固定清单，模型须在注册表内
-const KNOWN_AGENTS = new Set([
-  "ddd-requirements", "ddd-acceptance", "ddd-architect", "ddd-decomposer", "ddd-interface-reviewer",
-  "ddd-implementer", "ddd-test-planner", "ddd-tester", "ddd-arbiter", "ddd-doc-sync", "ddd-auditor", "ddd-fixer",
-]);
+// 用户显式指定优先；代理名须属 agents/ 目录集合，模型须在注册表内
+const KNOWN_AGENTS = loadAgentNames();
 for (const pair of sets) {
   const [agent, model] = pair.split("=");
   if (!agent || !model) continue;
   if (!KNOWN_AGENTS.has(agent)) {
-    skipped.push({ agent, model, why: "代理名不在固定清单中" });
+    skipped.push({ agent, model, why: "代理名不在 agents/ 目录集合中" });
     continue;
   }
   if (reg.byId.has(model) || reg.bare.has(model)) {
