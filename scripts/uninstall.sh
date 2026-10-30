@@ -5,7 +5,8 @@
 # 仅移除本方法论安装的固定文件，不影响用户其他配置。
 # 固定清单：agents 段为 12 个 ddd 前缀代理；skill 段为下列清单内的三个 skill 目录。
 # 白名单语义：卸载逐个移除清单内的 skill 目录，绝不递归删除整个 $PI_HOME/skills/，
-# 以免误删用户自有 skill。skill 包整目录移除，故 scripts 段的 ref-check.js 等脚本随包一并移除，不另列第二份清单。
+# 以免误删用户自有 skill。skill 包整目录移除，故 scripts 段的 ref-check.js 等脚本与共享层
+# scripts/lib/text.js、scripts/lib/walk.js 随包一并移除，不另列第二份清单，也不递归删除整个 scripts 目录。
 # ============================================================
 set -euo pipefail
 

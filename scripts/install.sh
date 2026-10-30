@@ -77,7 +77,7 @@ if [[ "$CHECK_ONLY" == "1" ]]; then
     else
         echo "  Workflow : 未安装"
     fi
-    for s in trace-check code-health governance-check fingerprint design-root decision-tables ref-check roster-check; do
+    for s in trace-check code-health governance-check fingerprint design-root decision-tables ref-check roster-check lib/text lib/walk; do
         if [[ -f "$SKILL_DST/scripts/$s.js" ]]; then
             echo "  $s : 已安装"
         else
@@ -130,11 +130,11 @@ if [[ -d "$ROOT/workflows" ]]; then
     echo "[完成] Workflow -> $SKILL_DST/workflows/"
 fi
 
-# 1.6 安装门禁证据脚本
-mkdir -p "$SKILL_DST/scripts"
-for s in trace-check code-health governance-check fingerprint design-root decision-tables ref-check roster-check; do
+# 1.6 安装门禁证据脚本与共享层：逐个白名单复制，lib/ 子目录随列表项一并建出
+mkdir -p "$SKILL_DST/scripts/lib"
+for s in trace-check code-health governance-check fingerprint design-root decision-tables ref-check roster-check lib/text lib/walk; do
     if [[ -f "$ROOT/scripts/$s.js" ]]; then
-        cp -f "$ROOT/scripts/$s.js" "$SKILL_DST/scripts/"
+        cp -f "$ROOT/scripts/$s.js" "$SKILL_DST/scripts/$s.js"
         echo "[完成] $s -> $SKILL_DST/scripts/$s.js"
     else
         echo "[警告] 缺少 $ROOT/scripts/$s.js" >&2

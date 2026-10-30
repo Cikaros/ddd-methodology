@@ -18,25 +18,11 @@ const fs = require("fs");
 const path = require("path");
 const { checkContractFingerprint } = require("./fingerprint");
 const { absoluteDesignDir } = require("./design-root");
+const { walk, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
 
 const root = process.argv[2] || process.cwd();
 
 const read = (p) => (fs.existsSync(p) ? fs.readFileSync(p, "utf8") : "");
-
-function walk(dir, out = []) {
-  let entries;
-  try {
-    entries = fs.readdirSync(dir, { withFileTypes: true });
-  } catch (e) {
-    return out;
-  }
-  for (const e of entries) {
-    const p = path.join(dir, e.name);
-    if (e.isDirectory()) walk(p, out);
-    else out.push(p);
-  }
-  return out;
-}
 
 // 「变更记录」节是否存在至少一条数据行（表头与分隔行不计）
 function hasChangeRecordRow(text) {
@@ -59,7 +45,8 @@ function check() {
   // 无设计树时不告警：非 DDD 项目零考察，避免噪音。
   if (hasDesignDir && !designRoot.declared) warnings.push("ARCHITECTURE.md 未声明设计树根路径，已回退 docs/design");
   if (hasDesignDir) {
-    const designFiles = walk(designRoot.dir).filter((f) => /DESIGN.*\.md$/i.test(path.basename(f)));
+    // 设计树是待校验对象，须用不排除 docs/build 等命名的口径，否则 docs/design 下名为 build/dist 的子目录会被漏检
+    const designFiles = walk(designRoot.dir, DOC_TREE_SKIP_DIR_NAMES).filter((f) => /DESIGN.*\.md$/i.test(path.basename(f)));
     checked.designs = designFiles.length;
     for (const f of designFiles) {
       const rel = path.relative(root, f).split(path.sep).join("/");

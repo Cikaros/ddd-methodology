@@ -1,6 +1,6 @@
 # 重建与定向重构产物模板
 
-`templates.md` 的配套文件，承载存量重建与定向重构的产物模板。规范条款见 `~/.pi/agent/skills/ddd-methodology/references/spec.md` 的「存量重建」节。
+`templates.md` 的配套文件，承载存量重建与定向重构的产物模板。规范条款见 `~/.pi/agent/skills/ddd-methodology/references/spec-rebuild.md` 的「存量重建」节。
 
 ## REBUILD_RECORD 回溯点记录
 

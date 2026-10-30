@@ -13,12 +13,20 @@ ddd-methodology/
 ├── docs/                         # 项目侧证据与归档
 │   ├── health.json              # 结构健康度量历史，入版本管理，上限 50 条
 │   ├── audits/                  # 审计报告归档，作为下次修剪清单回验的输入
-│   └── analysis/                # 方法论自身的改造设计文档
-│       └── v2.4-refactor/       # v2.4 改造的冻结契约：总览、规范、代理、入口、工具面与验收
-├── skill/ddd-methodology/        # pi Skill，规范唯一权威源为 references/spec.md
+│   ├── analysis/                # 方法论自身的改造设计文档，按版本目录归档
+│   ├── refactor/                # 定向重构的冻结契约与设计
+│   └── rebuild/                 # 存量重建的冻结锚点、设计与回溯记录
+├── skill/ddd-methodology/        # pi Skill，规范权威源为 references/ 下的规范文件集
 │   ├── SKILL.md                  # 调度流程入口
 │   ├── references/
-│   │   ├── spec.md               # 规范唯一权威源
+│   │   ├── spec.md               # 规范索引入口
+│   │   ├── spec-role.md          # 角色与交接
+│   │   ├── spec-gate.md          # 质量门禁、缺陷四级路由
+│   │   ├── spec-design.md        # 粒度与独立性、接口先行与冻结、并行实现与集成、实现与测试分离、测试阻塞防护
+│   │   ├── spec-change.md        # 需求变更、二次开发、渐进式改造
+│   │   ├── spec-declare.md       # 声明面可验证与修剪、结构与注释的机械证据
+│   │   ├── spec-govern.md        # 本仓库适用边界、状态文件、结构与契约的演进治理
+│   │   ├── spec-rebuild.md       # 存量重建
 │   │   ├── templates.md          # 产物模板库
 │   │   └── templates-rebuild.md  # 存量重建与定向重构产物模板
 ├── skill/ddd-rebuild/            # 存量重建 skill，仅由用户显式调用
@@ -60,7 +68,10 @@ ddd-methodology/
     ├── merge-append-system.js    # 全局规则区块合并，供安装与卸载脚本调用
     ├── decision-tables.js        # 判定表默认分支校验库，供 ref-check 调用
     ├── ref-check.js              # 跨文档引用、常量与枚举一致性校验，本仓库文档同步链证据
-    └── roster-check.js           # 代理与 skill 清单一致性校验，供 ref-check 的 C5、C11 调用
+    ├── roster-check.js           # 代理与 skill 清单一致性校验，供 ref-check 的 C5、C11 调用
+    └── lib/                      # 脚本共享层，供上述脚本复用
+        ├── text.js               # 安全读文件、按行编号与漂移项构造三项纯函数
+        └── walk.js               # 目录深度优先遍历，统一各脚本的排除集
 ```
 
 ## 安装与卸载
@@ -95,6 +106,7 @@ Linux、macOS 与 Git Bash 首次使用前执行 `chmod +x scripts/*.sh`。
   - code-health 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/code-health.js`，度量结构健康并写入项目内 docs/health.json，仅报告不作门禁
   - governance-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/governance-check.js`，校验契约指纹与结构趋势，输出 verdict 作为 G5-INT 门槛证据
   - ref-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/ref-check.js`，校验跨文档引用、常量与枚举集合一致性，供文档同步链使用
+  - 共享层 `scripts/lib/`（`text.js`、`walk.js`）供上述校验脚本复用，随 Skill 装到 `~/.pi/agent/skills/ddd-methodology/scripts/lib/`，卸载时随固定清单一并移除
 - 存量重建 skill `ddd-rebuild` 与定向重构 skill `ddd-refactor`，分别安装到 `~/.pi/agent/skills/ddd-rebuild/` 与 `~/.pi/agent/skills/ddd-refactor/`。三者同属一份固定清单，安装时一并复制、卸载时一并移除，随装随卸；卸载只删清单内目录，不影响用户自有 skill
 - 运行时守卫扩展 `~/.pi/agent/extensions/ddd-governance.ts`，仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默
 - 模型配比记录文件 `~/.pi/agent/.ddd-model-overrides.json`，记录本方法论写入的代理、配比名与写入前原值，供精确回退
