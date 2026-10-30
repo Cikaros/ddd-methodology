@@ -3,9 +3,12 @@
  * DDD-Methodology 追溯一致性校验脚本（只读）
  *
  * 用法：node trace-check.js <项目根>
- * 校验链：AC.md 总验收 ↔ 各 DESIGN.md 模块级验收要点 ↔ 各 TEST_PLAN.md 用例表；作为 G4 与 G5 门禁证据
- * 输出：未覆盖（总 AC 无模块承接 / 模块 AC 无用例覆盖）与悬空引用（引用了不存在的 AC 编号）清单
- * 退出码：0=通过，可作为 G4/G5 门禁证据；1=存在缺口
+ * 校验链：AC.md 总验收 ↔ 各 DESIGN.md 模块级验收要点 ↔ 各 TEST_PLAN.md 用例表
+ * 输出形态：文本正文，内容为未覆盖（总 AC 无模块承接 / 模块 AC 无用例覆盖）与悬空引用（引用了不存在的 AC 编号）清单
+ * 末行机读结论：通过输出 `RESULT: pass`，存在缺口输出 `RESULT: gap`
+ * 退出码：0 通过，1 存在缺口。门禁地位：G4 与 G5 门禁的脚本证据源
+ * 输出上限：12000 字节，按 UTF-8 计量；超限截断明细，末行机读结论与截断计数行保留
+ * 规范依据：规范「结构与注释的机械证据」节的脚本消费契约表，与「质量门禁」节的证据源行
  *
  * 约定格式（与 templates.md 模板一致）：
  *   AC.md 中条目形如 "AC-001"、"AC-002"…
@@ -43,11 +46,32 @@ function walk(dir, ext, out = []) {
 const read = (p) => (fs.existsSync(p) ? fs.readFileSync(p, "utf8") : "");
 const AC_RE = /\bAC-\d{3,}\b/g;      // 标准格式：三位及以上数字
 const AC_LOOSE_RE = /\bAC-\d{1,}\b/g; // 宽松格式：检测变体（AC-1、ac-001 等）
+const TRACE_LIMIT_BYTES = 12000;      // 与本脚本在脚本消费契约表中的输出上限一致
+
+// ---- 输出组装 ----
+// 明细与固定行分离：超限时自尾部回撤明细，末行机读结论与截断计数行不受影响
+function capTraceReport(head, details, tail) {
+  const build = (keep) =>
+    keep >= details.length
+      ? head.concat(details, tail)
+      : head.concat(details.slice(0, keep), [`明细已截断：共 ${details.length} 项，已列 ${keep} 项`], tail);
+  for (let keep = details.length; keep >= 0; keep--) {
+    const out = build(keep);
+    if (Buffer.byteLength(out.join("\n"), "utf8") <= TRACE_LIMIT_BYTES) return out;
+  }
+  return build(0);
+}
 
 // ---- 1. 总 AC ----
 const acFile = path.join(root, "AC.md");
 if (!fs.existsSync(acFile)) {
-  console.error("[错误] 未找到 AC.md（G2 门禁前置）");
+  // 无 G2 前置时无判定对象，仍给出机读结论，供消费方按末行统一解析
+  const message = capTraceReport(
+    ["=== DDD 追溯一致性校验 ==="],
+    ["[错误] 未找到 AC.md（G2 门禁前置），追溯链无判定对象"],
+    ["结果：不通过", "RESULT: gap"],
+  );
+  console.log(message.join("\n"));
   process.exit(1);
 }
 const totalACs = [...new Set(read(acFile).match(AC_RE) || [])];
@@ -106,7 +130,7 @@ function variantCheck(text, label) {
   if (loose > std) warnings.push(`${label} 检测到非标准 AC 编号格式变体（如 AC-1/小写），请统一为 AC-XXX（三位数字），否则可能被静默漏计`);
 }
 
-// ---- 3.5 契约指纹一致性（spec §16）——无 docs/design 时 designFiles 为空，自然跳过 ----
+// ---- 3.5 契约指纹一致性（规范「结构与契约的演进治理」节的契约指纹条）——无 docs/design 时 designFiles 为空，自然跳过 ----
 let fingerprintsChecked = 0;
 for (const f of designFiles) {
   const rel = path.relative(root, f);
@@ -143,16 +167,22 @@ variantCheck(read(acFile), "AC.md");
 for (const f of [...designFiles, ...testFiles]) variantCheck(read(f), path.relative(root, f));
 
 // ---- 5. 输出 ----
-console.log("=== DDD 追溯一致性校验 ===");
-console.log(`总 AC：${totalACs.length} 条；DESIGN.md：${designFiles.length} 份；TEST_PLAN.md：${testFiles.length} 份；契约指纹已校验 ${fingerprintsChecked} 份`);
+const head = [
+  "=== DDD 追溯一致性校验 ===",
+  `总 AC：${totalACs.length} 条；DESIGN.md：${designFiles.length} 份；TEST_PLAN.md：${testFiles.length} 份；契约指纹已校验 ${fingerprintsChecked} 份`,
+];
+const details = [];
 if (warnings.length) {
-  console.log("\n[警告]");
-  warnings.forEach((w) => console.log(`  ⚠ ${w}`));
+  details.push("", "[警告]");
+  warnings.forEach((w) => details.push(`  ⚠ ${w}`));
 }
 if (problems.length) {
-  console.log("\n[缺口]（退出码 1）");
-  problems.forEach((p) => console.log(`  ✗ ${p}`));
-  console.log(`\n结果：未通过（${problems.length} 项缺口，${warnings.length} 项警告）`);
-  process.exit(1);
+  details.push("", "[缺口]（退出码 1）");
+  problems.forEach((p) => details.push(`  ✗ ${p}`));
 }
-console.log("\n结果：通过 ✓（可作为 G4/G5 门禁证据）");
+const tail = problems.length
+  ? ["", `结果：未通过（${problems.length} 项缺口，${warnings.length} 项警告）`, "RESULT: gap"]
+  : ["", "结果：通过 ✓（可作为 G4/G5 门禁证据）", "RESULT: pass"];
+
+console.log(capTraceReport(head, details, tail).join("\n"));
+process.exit(problems.length ? 1 : 0);

@@ -4,6 +4,8 @@ rem DDD-Methodology uninstaller for Windows
 rem   uninstall.bat
 rem Removes only files installed by this methodology, plus the
 rem global rule block and the model overrides it wrote.
+rem Fixed list: agents\ holds 12 ddd-prefixed agents; the skill package is
+rem removed wholesale, so scripts\ref-check.js and the other scripts go with it.
 rem
 rem Encoding note: ASCII only on purpose, see install.bat.
 rem Run it from the repository: it calls scripts\apply-models.js

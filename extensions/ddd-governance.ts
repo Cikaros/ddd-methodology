@@ -4,19 +4,19 @@
  * 目标：为 DDD 项目补充过程拦截，机械判定结构粒度与测试分离两类门槛，覆盖声明式门禁覆盖不到的过程。
  * 范围：仅当 ctx.cwd 下存在 docs/design 或 docs/gates 时激活；对普通项目静默，所有处理函数立即返回 undefined。
  *
- * 判定编号与摘要：
- * - H-1 粒度守卫（tool_call 的 write/edit）：估算写入后行数超 500 行即拦截，与规范 §4 的硬阈值一致，
- *   理由含文件路径、就近 DESIGN 路径与拆解要求；文件内显式声明运行时例外者放行。
- *   基础能力 300 行与文档 200 行阈值不在此判定：其判定需解析清单与契约数，改由 code-health 度量与规范 §12 审计承接。
- * - H-2 测试分离守卫（tool_call 的 bash）：命令属窄口径的全量测试调用形态，且 docs/.ddd-state.json
- *   的 lastStage 为 g5-int 时拦截，指明全量测试唯一主体是 ddd-tester。
+ * 判定编号摘要，与规范「结构与契约的演进治理」节的守卫判定表逐项一致：
+ * - H-1 粒度守卫。触发点：tool_call 的 write/edit。判定条件：估算写入后行数超 500 行。动作：拦截，理由含文件路径、就近 DESIGN 路径与拆解要求。
+ * - H-2 测试分离守卫。触发点：tool_call 的 bash。判定条件：命令属窄口径的全量测试调用形态，且 docs/.ddd-state.json 的 lastStage 为 g5-int。动作：拦截，指明全量测试的唯一主体是 ddd-tester。
+ *
+ * 阈值承载：基础能力 300 行与文档 200 行阈值由 `code-health` 度量与审计承接，本守卫只拦代码文件 500 行。
+ * 运行时例外：文件内显式声明「运行时例外」者放行，未声明不适用。
  *
  * 未设收尾守卫：agent_before_settle 的事件仅含 type、outcome、entries、continue、context，不含回复
  * 文本，无法机械判定报告是否缺节；结构治理回执的强制由代理输出契约与声明式门禁承接。
  *
  * 生效范围：根会话与后台子代理；前台子代理不加载 ambient 扩展，故本守卫对其不生效。
  * 任何处理函数内的异常一律捕获后返回 undefined 并记警告，守卫自身错误不得阻断正常工具。
- * 依据：docs/analysis/method-versioning-governance.md §5.1、§5.3、§9；skill/ddd-methodology/references/spec.md §4、§7、§16。
+ * 依据：docs/analysis/method-versioning-governance.md 的硬门禁节；规范「粒度与独立性」节、「实现与测试分离」节、「结构与契约的演进治理」节。
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -75,7 +75,7 @@ function checkGranularity(event, ctx) {
 	const projected = estimateProjectedLines(absPath, input);
 	if (typeof projected !== "number") return undefined;
 	if (projected <= GRANULARITY_LINE_LIMIT) return undefined;
-	// 规范 §4 的运行时例外须在文件内显式声明；声明即放行，未声明不适用。
+	// 规范「粒度与独立性」节的运行时例外须在文件内显式声明；声明即放行，未声明不适用。
 	if (typeof input.content === "string" && input.content.includes(RUNTIME_EXCEPTION_MARK)) return undefined;
 
 	const designPath = nearestDesignPath(ctx.cwd, absPath);
@@ -84,8 +84,8 @@ function checkGranularity(event, ctx) {
 		reason: [
 			`[H-1 粒度守卫] 写入后约 ${projected} 行，越过 ${GRANULARITY_LINE_LIMIT} 行粒度阈值：${absPath}`,
 			designPath ? `就近 DESIGN：${designPath}` : "未找到就近 DESIGN，请补齐设计文档后再拆解。",
-			"规范 §4 要求超 500 行的单文件必须拆解，被多模块依赖的基础能力独立成文件并配套独立单元测试；受平台约束无法拆解者须在文件头显式声明运行时例外。",
-			"拆解不得超出 DESIGN 预判，超出属设计偏离走 B 级。规范依据：skill/ddd-methodology/references/spec.md §4 与 §16。",
+			"规范「粒度与独立性」节要求超 500 行的单文件必须拆解，被多模块依赖的基础能力独立成文件并配套独立单元测试；受平台约束无法拆解者须在文件头显式声明运行时例外。",
+			"拆解不得超出 DESIGN 预判，超出属设计偏离走 B 级。规范依据：规范「粒度与独立性」节与「结构与契约的演进治理」节。",
 		].join("\n"),
 	};
 }
@@ -147,7 +147,7 @@ function checkFullTestCommand(event, ctx) {
 			`[H-2 测试分离守卫] 命令「${normalized}」属全量测试调用形态，当前阶段 lastStage 为 ${G5_INT_STAGE}。`,
 			"全量测试的唯一主体是 ddd-tester，G5-INT 与 C 级修复阶段禁止执行全量测试套件。",
 			"请改跑所负责接缝的自测，或把全量执行留给 ddd-tester 在测试执行阶段单独串行启动。",
-			"规范依据：skill/ddd-methodology/references/spec.md §7 实现与测试分离。",
+			"规范依据：规范「实现与测试分离」节。",
 		].join("\n"),
 	};
 }

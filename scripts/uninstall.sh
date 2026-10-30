@@ -3,6 +3,7 @@
 # DDD-Methodology 卸载脚本（Linux / macOS / Git Bash）
 # 用法: ./uninstall.sh
 # 仅移除本方法论安装的固定文件，不影响用户其他配置。
+# 固定清单：agents 段为 12 个 ddd 前缀代理；skill 包整目录移除，故 scripts 段的 ref-check.js 等脚本随包一并移除，不另列第二份清单。
 # ============================================================
 set -euo pipefail
 

@@ -18,7 +18,7 @@ inheritSkills: false
 
 # 输出契约
 
-`REQUIREMENTS.md`，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 REQUIREMENTS 节。需求编号为 R-001 起，逐条可追溯到用户原话或确认记录。并附结构治理回执，记产出文档规模与是否超规范 §4 文档粒度阈值。
+`REQUIREMENTS.md`，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 REQUIREMENTS 节。需求编号为 R-001 起，逐条可追溯到用户原话或确认记录。粒度阈值见「粒度与独立性」节。并附结构治理回执，记录被触碰文件的改动前后规模、是否拆解与依据的粒度预判。
 
 # 职责
 
@@ -35,7 +35,7 @@ inheritSkills: false
 
 # 内联规则
 
-判定歧义的标准是同一句话存在两种以上合理解读。默认解释仅适用于不影响架构与验收的细节；涉及数据模型、边界行为或非功能指标的，必须提问。
+判定歧义的标准是同一句话存在两种以上合理解读。可默认的细节指不影响目录规划、横切规范与 AC 判定的表述。影响其一者必须向用户提问。
 
 # 停止条件
 

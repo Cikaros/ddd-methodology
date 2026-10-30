@@ -14,6 +14,7 @@ ddd-methodology/
 │   ├── health.json              # 结构健康度量历史，入版本管理，上限 50 条
 │   ├── audits/                  # 审计报告归档，作为下次修剪清单回验的输入
 │   └── analysis/                # 方法论自身的改造设计文档
+│       └── v2.4-refactor/       # v2.4 改造的冻结契约：总览、规范、代理、入口、工具面与验收
 ├── skill/ddd-methodology/        # pi Skill，规范唯一权威源为 references/spec.md
 │   ├── SKILL.md                  # 调度流程入口
 │   ├── references/
@@ -45,44 +46,48 @@ ddd-methodology/
     ├── install.sh                # Linux/macOS/Git Bash 安装/更新
     ├── uninstall.bat             # Windows 卸载（固定文件清单，防误删）
     ├── uninstall.sh              # Linux/macOS/Git Bash 卸载
-    ├── trace-check.js            # 追溯一致性校验脚本，G4/G5 门禁证据
+    ├── trace-check.js            # 追溯一致性校验脚本，G4 与 G5 门禁证据
     ├── apply-models.js           # 按代理模型配比的应用与可用性冒烟
-    ├── code-health.js            # 代码结构健康检查脚本，G5-INT 与 G6 门禁证据
-    ├── governance-check.js       # 契约指纹与结构趋势门槛校验，G5-INT 的 typed gate 证据
+    ├── code-health.js            # 结构健康度量脚本，仅报告不作门禁，写入项目内 docs/health.json
+    ├── governance-check.js       # 契约指纹与结构趋势门槛校验，输出 verdict 作为 G5-INT 门槛证据
     ├── fingerprint.js            # 契约指纹唯一实现，供 trace-check 与 governance-check 共用
     ├── design-root.js            # 设计树根路径解析唯一实现，供同上两者共用
-    └── merge-append-system.js    # 全局规则区块合并，供安装与卸载脚本调用
+    ├── merge-append-system.js    # 全局规则区块合并，供安装与卸载脚本调用
+    └── ref-check.js              # 跨文档引用、常量与枚举一致性校验，本仓库文档同步链证据
 ```
 
 ## 安装与卸载
 
-安装卸载均为全局操作。
+安装卸载均为全局操作，按平台执行。
 
-**Windows，cmd 环境**
-```bat
-scripts\install.bat              rem 安装/覆盖更新
-scripts\install.bat --check     rem 检查安装状态
-scripts\uninstall.bat           rem 卸载
-```
+| 操作 | Windows | Linux、macOS 与 Git Bash |
+|---|---|---|
+| 安装或覆盖更新 | `scripts\install.bat` | `./scripts/install.sh` |
+| 检查安装状态 | `scripts\install.bat --check` | `./scripts/install.sh --check` |
+| 卸载 | `scripts\uninstall.bat` | `./scripts/uninstall.sh` |
 
-**Linux、macOS 与 Git Bash**
-```bash
-chmod +x scripts/*.sh
-./scripts/install.sh                              # 安装或覆盖更新，不触碰模型设置
-./scripts/install.sh --models balanced            # 安装并按配比配置各代理模型
-./scripts/install.sh --models balanced --set ddd-arbiter=GLM-5.3-Flash
-./scripts/install.sh --models balanced --skip-verify      # 跳过冒烟，仅在确认模型可用时使用
-./scripts/install.sh --models none                # 显式跳过模型配比
-./scripts/install.sh --check                     # 检查安装状态
-./scripts/uninstall.sh                           # 卸载，并移除本方法论写入的模型配置
-```
+Linux、macOS 与 Git Bash 首次使用前执行 `chmod +x scripts/*.sh`。
+
+安装参数如下，Windows 与 Linux 通用。
+
+| 参数 | 取值 | 说明 |
+|---|---|---|
+| `--models` | `balanced`、`quality`、`economy` | 安装并按 `profiles/models.json` 的配比配置各代理模型 |
+| `--models none` | 固定值 | 显式跳过模型配比，不读取配比文件 |
+| `--set` | `ddd-<代理名>=<模型名>` | 在配比基础上改单个代理，可重复 |
+| `--skip-verify` | 无 | 跳过可用性冒烟，仅在已确认模型可用时使用 |
+| `--check` | 无 | 只检查安装状态，不写入 |
+| `--repo` | 仓库根路径 | 指定仓库位置，供 `apply-models.js` 定位 `profiles/models.json` |
+
+省略 `--models` 时不触碰模型设置，`--models none` 为显式跳过。卸载会移除本方法论写入的模型配置。
 
 安装内容：
-- Skill，含 workflows 加速档脚本与 trace-check 校验脚本，安装到 `~/.pi/agent/skills/ddd-methodology/`
+- Skill，含 workflows 加速档脚本与门禁证据脚本，安装到 `~/.pi/agent/skills/ddd-methodology/`
   - workflow 脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`，供根会话以 `subagent({ workflow: ... , args: { root: "<项目根>" } })` 调用
-  - trace-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js`，作为 G4/G5 门禁证据
-  - code-health 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/code-health.js`，作为 G5-INT/G6 门禁证据，度量写入项目内 docs/health.json
-  - governance-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/governance-check.js`，校验契约指纹与结构趋势，输出 verdict 供 typed gate 使用
+  - trace-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js`，作为 G4 与 G5 门禁证据
+  - code-health 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/code-health.js`，度量结构健康并写入项目内 docs/health.json，仅报告不作门禁
+  - governance-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/governance-check.js`，校验契约指纹与结构趋势，输出 verdict 作为 G5-INT 门槛证据
+  - ref-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/ref-check.js`，校验跨文档引用、常量与枚举集合一致性，供文档同步链使用
 - 运行时守卫扩展 `~/.pi/agent/extensions/ddd-governance.ts`，仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默
 - 模型配比记录文件 `~/.pi/agent/.ddd-model-overrides.json`，记录本方法论写入的代理、配比名与写入前原值，供精确回退
 - 全局规则区块，按标记合并入 `~/.pi/agent/APPEND_SYSTEM.md`：只替换标记区块，区块外用户自定义内容原样保留，卸载时移除该区块；首次安装前自动备份为 `APPEND_SYSTEM.md.ddd-bak`，卸载时若仅剩标记区块则优先从该备份恢复并删除备份文件
@@ -98,15 +103,17 @@ chmod +x scripts/*.sh
 /skill:ddd-methodology 按此方法论开发一个 <项目描述>
 ```
 
-或直接说"**按 ddd 方法论开发……**"触发。根会话将按流程依次派发：需求采集，ddd-requirements，→ 验收标准，ddd-acceptance，→ 架构设计，ddd-architect，→ 分解设计，ddd-decomposer，→ 接口冻结门 G4.5，ddd-interface-reviewer，→ 实现 ddd-implementer 与测试规划 ddd-test-planner 并行，→ 集成收口 G5-INT，ddd-fixer，→ 测试执行与缺陷路由，ddd-tester，→ 声明面审计，ddd-auditor。
+或直接说"**按 ddd 方法论开发……**"触发。根会话按规范「角色与交接」节的交接链与 `SKILL.md` 的流程表依次派发。
 
-流水线之外的任务也按类型派发，判定表见规范 §1：只读探查、调研、方案比选与环境勘察派 scout，代码评审派 reviewer。调研属只读活动，不派给 ddd-implementer 与 ddd-fixer 等具备写权限的代理；承接者收到不匹配任务时会停止并报告派发类型不匹配，由根会话改派。
+流水线之外的任务同样按此判据派发。派发前先判任务类型。第一问是这个任务是只读的吗，是则一律派 scout。非只读任务按产出物查规范「角色与交接」节的派发表。承接者收到不符合自身职责的任务时停止并报告派发类型不匹配。
+
+只读的探查、调研、方案比选、环境勘察、资料检索，一律派 scout，不派给任何具备写权限的 ddd-* 代理。
 
 ## 版本管理
 
-本仓库使用 git tag 管理版本。规范修订流程：修改文档 → commit → 打递增版本 tag，例如 `v1.2`、`v1.3`。
+本仓库使用 git tag 管理版本。规范修订流程：修改文档 → commit → 打递增版本 tag，例如 `v1.2`、`v1.3`。规范修订后运行 `node scripts/ref-check.js .` 校验跨文档一致性，作为提交前检查。
 
-被开发项目的接口契约以契约指纹作冻结锚点，算法与变更判定见 `skill/ddd-methodology/references/spec.md` §16。
+被开发项目的接口契约以契约指纹作冻结锚点，算法与变更判定见规范「结构与契约的演进治理」节。
 
 ## 按代理的模型配比
 
@@ -134,6 +141,6 @@ node scripts/apply-models.js clear                                  # 移除本�
 
 前置条件：`node` 必须可用，配比应用与全局规则合并均依赖它；未安装 node 时脚本降级为警告并跳过这两项。
 
-**配比应用与卸载都依赖仓库在场**：`profiles/`、`scripts/apply-models.js` 与 `scripts/merge-append-system.js` 均不随安装复制到 skill 目录，故更换配比与执行卸载需在仓库内运行，或用 `--repo` 指向仓库根。
+**配比应用与卸载都依赖仓库在场**：`profiles/`、`scripts/apply-models.js` 与 `scripts/merge-append-system.js` 均不随安装复制到 skill 目录，故更换配比与执行卸载需在仓库内运行；在仓库外直接调用 `apply-models.js` 时可用 `--repo` 指向仓库根。
 
 `profiles/models.json` 内记录了配比的实测证据与理由，含可用性、延迟、审计召回、编码契约忠实度与成本结构。证据为单轮对照，样本量有限，使用中出现反例应更新该表。
