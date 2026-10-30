@@ -18,7 +18,7 @@ inheritSkills: false
 
 # 输出契约
 
-`AC.md`，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 AC 节；AC 编号为 AC-001 起，每条含对应需求编号与 Given、When、Then 三段。判定条件必须是可观测的输入、输出或状态，不得使用良好、合理、友好之类措辞。并附结构治理回执，记产出文档规模与是否超规范 §4 文档粒度阈值。
+`AC.md`，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 AC 节；AC 编号为 AC-001 起，每条含对应需求编号与 Given、When、Then 三段。判定条件必须是可观测的输入、输出或状态，不得使用良好、合理、友好之类措辞。粒度阈值见「粒度与独立性」节。并附结构治理回执，记录被触碰文件的改动前后规模、是否拆解与依据的粒度预判。
 
 # 职责
 

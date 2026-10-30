@@ -2,11 +2,14 @@
 /**
  * 目标：把代码树的结构健康外化为可复现的机械证据，作为 G5-INT 与 G6 的证据源。
  * 范围：文件规模、死代码、重复嫌疑、注释质量、结构趋势五类事实的输出与度量留盘。
- * 归属：文件规模与注释质量可由写入者按 §16 结构治理义务处理；无引用文件属仓库级属性，归审计代理。
+ * 归属：文件规模与注释质量可由写入者按规范「结构与契约的演进治理」节的治理义务处理；无引用文件属仓库级属性，归审计代理。
  * 不包含：语义级判断。注释是否解释为什么、分支是否真不可达需 AST，本脚本不做，交由审计代理抽检。
  *
  * 用法：node code-health.js <项目根>
- * 退出码：始终 0。首版仅报告不阻断，待累积真实噪声水平后再决定是否引入阻断开关。
+ * 输出形态：文本正文，末行机读结论 `RESULT: report`
+ * 退出码：始终 0，仅报告，不作门禁；阻断地位由 G5-INT 的治理条件承接，消费方不得以退出码判定通过
+ * 输出上限：12000 字节，按 UTF-8 计量；超限截断明细项，`[相对上次恶化]` 段与末行机读结论保留
+ * 规范依据：规范「结构与注释的机械证据」节的脚本消费契约表
  */
 
 const fs = require("fs");
@@ -211,40 +214,70 @@ fs.mkdirSync(path.dirname(healthPath), { recursive: true });
 fs.writeFileSync(healthPath, JSON.stringify({ history }, null, 2) + "\n");
 
 // ---- 输出 ----
-const line = (s) => console.log(s);
-line("=== 代码结构健康检查 ===");
-line(`源码文件 ${metrics.files} 个；度量已写入 docs/health.json`);
-line("");
-line(`[文件规模] 超限 ${oversized.length}（其中基础能力超 300 行 ${oversizedBase}），接近上限 ${nearLimit.length}`);
-for (const o of oversized) line(`  ✗ ${o.file}  ${o.lines} 行，上限 ${o.limit}`);
-for (const o of nearLimit) line(`  ! ${o.file}  ${o.lines} 行，上限 ${o.limit}`);
-line("");
-line(`[死代码] 注释代码块 ${commentedCode.length}，兼容层标记 ${compatMarkers.length}，无引用文件 ${orphans.length}`);
-for (const o of commentedCode) line(`  ✗ ${o.file}:${o.lines} ${o.note}`);
-for (const o of compatMarkers) line(`  ✗ ${o.file}:${o.line} ${o.text}`);
-for (const o of orphans) line(`  ✗ ${o} 未见引用`);
-line("");
-line(`[重复嫌疑] ${duplicates.length} 项同名声明跨文件出现，属弱信号，语义级重复需审计代理判定`);
-for (const d of duplicates.slice(0, 20)) line(`  ! ${d.name} :: ${d.files.join(", ")}`);
-if (duplicates.length > 20) line(`  ... 其余 ${duplicates.length - 20} 项见健康文件`);
-line("");
-line(`[注释质量] 违禁模式 ${bannedComments.length}，过时引用 ${staleComments.length}`);
-for (const o of bannedComments) line(`  ✗ ${o.file}:${o.line} ${o.why} :: ${o.text}`);
-for (const o of staleComments) line(`  ✗ ${o.file}:${o.line} 提及已不存在的 ${o.name}()`);
-line("");
-if (degraded.length) {
-  line(`[相对上次恶化] ${degraded.length} 项`);
-  for (const d of degraded) line(`  ✗ ${d}`);
-} else {
-  line("[相对上次恶化] 无");
-}
+// 明细项与固定行分离：超限时自尾部回撤明细项，小节标题、各项小结、[相对上次恶化] 段与末行结论保留
+const HEALTH_LIMIT_BYTES = 12000;
+const entries = [];
+const say = (text, droppable) => entries.push({ text, droppable: Boolean(droppable) });
+
+say("=== 代码结构健康检查 ===");
+say(`源码文件 ${metrics.files} 个；度量已写入 docs/health.json`);
+say("");
+say(`[文件规模] 超限 ${oversized.length}（其中基础能力超 300 行 ${oversizedBase}），接近上限 ${nearLimit.length}`);
+for (const o of oversized) say(`  ✗ ${o.file}  ${o.lines} 行，上限 ${o.limit}`, true);
+for (const o of nearLimit) say(`  ! ${o.file}  ${o.lines} 行，上限 ${o.limit}`, true);
+say("");
+say(`[死代码] 注释代码块 ${commentedCode.length}，兼容层标记 ${compatMarkers.length}，无引用文件 ${orphans.length}`);
+for (const o of commentedCode) say(`  ✗ ${o.file}:${o.lines} ${o.note}`, true);
+for (const o of compatMarkers) say(`  ✗ ${o.file}:${o.line} ${o.text}`, true);
+for (const o of orphans) say(`  ✗ ${o} 未见引用`, true);
+say("");
+say(`[重复嫌疑] ${duplicates.length} 项同名声明跨文件出现，属弱信号，语义级重复需审计代理判定`);
+for (const d of duplicates.slice(0, 20)) say(`  ! ${d.name} :: ${d.files.join(", ")}`, true);
+if (duplicates.length > 20) say(`  ... 其余 ${duplicates.length - 20} 项见健康文件`, true);
+say("");
+say(`[注释质量] 违禁模式 ${bannedComments.length}，过时引用 ${staleComments.length}`);
+for (const o of bannedComments) say(`  ✗ ${o.file}:${o.line} ${o.why} :: ${o.text}`, true);
+for (const o of staleComments) say(`  ✗ ${o.file}:${o.line} 提及已不存在的 ${o.name}()`, true);
+say("");
+say(degraded.length ? `[相对上次恶化] ${degraded.length} 项` : "[相对上次恶化] 无");
+for (const d of degraded) say(`  ✗ ${d}`);
 if (warnings.length) {
-  line("");
-  line("[警告]");
-  for (const w of warnings) line(`  ! ${w}`);
+  say("");
+  say("[警告]");
+  for (const w of warnings) say(`  ! ${w}`, true);
 }
 
 const total = oversized.length + commentedCode.length + compatMarkers.length + orphans.length + bannedComments.length;
-line("");
-line(total ? `结论：存在 ${total} 项结构健康问题，本版仅报告不阻断` : "结论：结构健康未发现超限项");
+say("");
+say("本脚本恒退出 0，仅报告，不作门禁");
+say(total ? `结论：存在 ${total} 项结构健康问题，本版仅报告不阻断` : "结论：结构健康未发现超限项");
+say("RESULT: report");
+
+// 超限时保持终止性：截断计数行占位后重算字节数，最坏情形下仅剩固定行
+function capHealthReport(all) {
+  const droppableSlots = all.map((entry, index) => (entry.droppable ? index : -1)).filter((index) => index >= 0);
+  const build = (keep) => {
+    const dropped = new Set(droppableSlots.slice(keep));
+    const out = [];
+    let noteWritten = false;
+    all.forEach((entry, index) => {
+      if (dropped.has(index)) {
+        if (!noteWritten) {
+          out.push(`明细已截断：共 ${droppableSlots.length} 项，已列 ${keep} 项`);
+          noteWritten = true;
+        }
+        return;
+      }
+      out.push(entry.text);
+    });
+    return out;
+  };
+  for (let keep = droppableSlots.length; keep >= 0; keep--) {
+    const out = build(keep);
+    if (Buffer.byteLength(out.join("\n"), "utf8") <= HEALTH_LIMIT_BYTES) return out;
+  }
+  return build(0);
+}
+
+console.log(capHealthReport(entries).join("\n"));
 process.exit(0);

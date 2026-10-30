@@ -71,7 +71,7 @@ if [[ "$CHECK_ONLY" == "1" ]]; then
     else
         echo "  Workflow : 未安装"
     fi
-    for s in trace-check code-health governance-check fingerprint design-root; do
+    for s in trace-check code-health governance-check fingerprint design-root ref-check; do
         if [[ -f "$SKILL_DST/scripts/$s.js" ]]; then
             echo "  $s : 已安装"
         else
@@ -121,7 +121,7 @@ fi
 
 # 1.6 安装门禁证据脚本
 mkdir -p "$SKILL_DST/scripts"
-for s in trace-check code-health governance-check fingerprint design-root; do
+for s in trace-check code-health governance-check fingerprint design-root ref-check; do
     if [[ -f "$ROOT/scripts/$s.js" ]]; then
         cp -f "$ROOT/scripts/$s.js" "$SKILL_DST/scripts/"
         echo "[完成] $s -> $SKILL_DST/scripts/$s.js"

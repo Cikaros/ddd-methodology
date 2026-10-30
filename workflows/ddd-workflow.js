@@ -1,7 +1,7 @@
 /**
  * DDD-Methodology 固定阶段编排脚本（可选加速档）
  *
- * 运行时例外：本文件受 pi workflow 沙箱约束，无 require 与 fs，只能单文件，故不适用规范 §4 的文件拆分要求；
+ * 运行时例外：本文件受 pi workflow 沙箱约束，无 require 与 fs，只能单文件，故不适用规范「粒度与独立性」节的文件拆分要求；
  * 为保持在单一能力域内，此处只做流程编排与状态推进，缺陷定级、任务文本构造、状态注入等紧密相关的辅助函数内聚于本文件。
  *
  * 用法：根会话中调用
@@ -11,15 +11,11 @@
  *
  * 前置条件：12 个 ddd-* 代理须已安装于 ~/.pi/agent/agents/，未安装将导致派发失败，脚本不自建存在性校验。
  *
- * 阶段流：ddd-requirements 需求采集 → ddd-acceptance 验收标准 → ddd-architect 架构设计 → ddd-decomposer 分解设计
- *        → ddd-interface-reviewer 接口契约独立评审，G4.5
- *        → [ddd-implementer 实现 ∥ ddd-test-planner 测试规划]，均为产出类，无进程执行
- *        → [ddd-fixer 集成收口 G5-INT] → ddd-tester 测试执行，单独串行，与实现者永不同段
- *        → C/D 级缺陷自动修复并重测（最多 maxFixRounds 轮，默认 2）
+ * 阶段流以 `references/spec.md`「角色与交接」节的交接链为唯一权威，本脚本的阶段定义须与其一致，由 `scripts/ref-check.js` 的 C4 校验。
  *
  * 实现/测试硬分离：ddd-tester 与 ddd-implementer 永不同段；并行段仅为实现与测试规划。
  *
- * 断点续跑：状态文件由各阶段代理在任务中负责写入/更新 <root>/docs/.ddd-state.json（schema 见 references/spec.md §15）；
+ * 断点续跑：状态文件由各阶段代理在任务中负责写入/更新 <root>/docs/.ddd-state.json（schema 见规范「状态文件」节）；
  * 本脚本启动时由 ddd-requirements 只读检查状态文件并按契约输出 DONE: <stageKey> 机读行，已完成阶段自动跳过。
  *
  * 缺陷路由策略：
@@ -27,7 +23,7 @@
  *   - D（测试级）：派发 ddd-fixer 修计划 → 重测
  *   - C+D 混合：同时派发两类修复，再统一重测
  *   - A（需求级）/ B（设计级）：不在脚本内自动处理，立即中断返回，
- *     由根会话依据 references/spec.md §3 仲裁路由（A 须升级用户确认）
+ *     由根会话依据规范「缺陷四级路由」节仲裁路由（A 须升级用户确认）
  *   - 同一问题累计修复轮次超过 maxFixRounds 仍失败 → 中断返回根会话升级用户
  */
 
@@ -40,11 +36,11 @@ const maxFixRounds = args && Number.isFinite(Number(args.maxFixRounds))
   : 2; // 方法论约定：轮回修复超过 2 轮强制升级用户
 const stateFile = `${root}/docs/.ddd-state.json`;
 
-// 阶段注册表：键清单必须与 references/spec.md §15 的阶段注册表一致；
-// 串行段/接口评审/G5-INT/首轮测试执行均用 stateNote 写入对应键。
+// 阶段注册表：键清单必须与规范「状态文件」节的阶段注册表一致，数组顺序与阶段流一致；
+// 串行段/接口评审/G5-INT/首轮测试执行/声明面审计均用 stateNote 写入对应键。
 const stageRegistry = [
   "requirements", "acceptance", "architect", "decomposer",
-  "interface-review", "implement-plan", "g5-int", "test-execute",
+  "interface-review", "implement-plan", "g5-int", "test-execute", "audit",
 ];
 
 /**
@@ -232,7 +228,7 @@ const stages = [
     runKey: "ddd-decomposer",
     label: "分解设计产出文档树",
     agent: "ddd-decomposer",
-    task: `读取 ${root}/ARCHITECTURE.md 与 ${root}/AC.md，产出 docs/design/ 目录同构设计文档树（含签名级接口契约），分发模块级 AC。完成后附文档树清单。`,
+    task: `读取 ${root}/ARCHITECTURE.md 与 ${root}/AC.md，产出 docs/design/ 目录同构设计文档树（含签名级接口契约），分发模块级 AC。完成后附文档树清单。完成后运行 node ~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js <项目根>，将输出附入完成报告，作为 G4 证据。`,
   },
   {
     key: "interface-review",
@@ -245,13 +241,13 @@ const stages = [
 
 const parallelStages = [
   {
-    key: "ddd-implement",
+    key: "implement-plan",
     label: "就近加载实现代码",
     agent: "ddd-implementer",
     task: `按 ${root}/docs/design/ 文档树就近加载设计文档，实现各目录代码与单元测试。发现设计"做不出来"即停止并报告设计级缺陷。多模块时按互斥目录分批完成。`,
   },
   {
-    key: "ddd-test-plan",
+    key: "test-plan",
     label: "制定测试计划树",
     agent: "ddd-test-planner",
     task: `基于 ${root}/AC.md 与 ${root}/docs/design/ 各 DESIGN.md 的模块级验收要点及**已冻结的签名级接口契约**，产出 ${root}/docs/test/ 同构测试计划树（每用例含含超时的执行命令、风险级别、桩化说明、手动测试清单；可基于冻结接口直接产出契约测试），附覆盖映射表（保证 trace-check 可通过）。`,
@@ -276,7 +272,7 @@ if (validDoneStages.length !== doneStages.length) {
   throw new Error(
     "状态文件 doneStages 含非法阶段键：" +
       doneStages.filter((k) => !stageRegistry.includes(k)).join(", ") +
-      "。合法键见 references/spec.md §15。",
+      "。合法键见规范「状态文件」节的阶段注册表。",
   );
 }
 doneStages = validDoneStages;
@@ -284,8 +280,11 @@ doneStages = validDoneStages;
 // —— 前置串行阶段（断点续跑：已完成则跳过） ——
 // stateNote 仅注入有写工具的阶段（interface-reviewer 只读，不写状态）
 const READONLY_STAGES = ["interface-review"];
+// 本轮实际未执行的阶段及原因：断点已完成者与升级中断者都记入，供根会话分清「已做完」与「没做」
+const skippedStages = [];
 for (const s of stages) {
   if (doneStages.includes(s.key)) {
+    skippedStages.push({ stage: s.key, reason: "断点记录该阶段已完成，本轮跳过" });
     continue;
   }
   const r = await runStage(s.runKey + "-" + s.key, {
@@ -319,8 +318,10 @@ if (!doneStages.includes("implement-plan")) {
     key: p.key,
     label: p.label,
     agent: p.agent,
-    task: p.key === "ddd-implement" ? p.task + stateNote("implement-plan", ["interface-review"]) : p.task,
+    task: p.key === "implement-plan" ? p.task + stateNote("implement-plan", ["interface-review"]) : p.task,
   })));
+} else {
+  skippedStages.push({ stage: "implement-plan", reason: "断点记录该阶段已完成，本轮跳过" });
 }
 
 // —— G5-INT 集成收口门（与手工档标准一致） ——
@@ -330,9 +331,11 @@ if (!doneStages.includes("g5-int")) {
   const r = await runStage("ddd-int-check", {
     label: "G5-INT 集成收口检查",
     agent: "ddd-fixer",
-    task: `在项目根 ${root} 执行集成收口检查（G5-INT 门）：1) 全项目构建通过；2) 检查各接缝自测报告齐备且 TEST_PLAN 对齐说明完整，声明测试就绪；3) 运行 node ~/.pi/agent/skills/ddd-methodology/scripts/code-health.js <项目根> 并将输出附入门禁记录；4) 核对实现文件粒度与 DESIGN 预判一致，应拆未拆报告 C 级，同时核对各接缝实现者的约定遵循自检齐备；5) 修复因多接缝合并产生的集成问题，仅实现级修改。**禁止执行全量测试套件，全量测试由 ddd-tester 负责**。若发现设计级矛盾（集成暴露接口不匹配），停止并报告 B 级缺陷。` + stateNote("g5-int"),
+    task: `在项目根 ${root} 执行集成收口检查（G5-INT 门）：1) 全项目构建通过；2) 检查各接缝自测报告齐备且 TEST_PLAN 对齐说明完整，声明测试就绪；3) 运行 node ~/.pi/agent/skills/ddd-methodology/scripts/code-health.js <项目根> 并将输出附入门禁记录；4) 运行 node ~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js <项目根> 与 node ~/.pi/agent/skills/ddd-methodology/scripts/governance-check.js <项目根>，将两者输出附入门禁记录，作为 G5 与 G5-INT 证据，governance-check 的退出码非零即视为阻断；5) 核对实现文件粒度与 DESIGN 预判一致，应拆未拆报告 C 级，同时核对各接缝实现者的约定遵循自检齐备；6) 修复因多接缝合并产生的集成问题，仅实现级修改。**禁止执行全量测试套件，全量测试由 ddd-tester 负责**。若发现设计级矛盾（集成暴露接口不匹配），停止并报告 B 级缺陷。` + stateNote("g5-int"),
   }, { stage: "g5-int" });
   if (r && r.__failed) return r;
+} else {
+  skippedStages.push({ stage: "g5-int", reason: "断点记录该阶段已完成，本轮跳过" });
 }
 
 // —— 测试执行（单独串行段） + C/D 缺陷自动修复轮次 ——
@@ -361,7 +364,7 @@ while (round <= maxFixRounds) {
   if (defects.A > 0 || defects.B > 0) {
     escalated = {
       reason: defects.A > 0 ? "A级缺陷（需求级）" : "B级缺陷（设计级）",
-      detail: "A/B 级缺陷不适用自动修复，需根会话依据 references/spec.md §3 仲裁路由；A级必须升级用户确认。",
+      detail: "A/B 级缺陷不适用自动修复，需根会话依据规范「缺陷四级路由」节仲裁路由；A级必须升级用户确认。",
       round,
     };
     break;
@@ -401,6 +404,23 @@ while (round <= maxFixRounds) {
   // 循环继续 → 重测
 }
 
+// —— 声明面审计阶段（测试循环正常结束后） ——
+// 触发条件：escalated 为空，即测试全绿或未通过项已定级且未超轮次；升级中断时跳过并注明原因
+let auditReport = null;
+if (escalated) {
+  skippedStages.push({ stage: "audit", reason: `测试段以升级中断收尾（${escalated.reason}），声明面审计留待根会话仲裁后单独派发` });
+} else if (doneStages.includes("audit")) {
+  skippedStages.push({ stage: "audit", reason: "断点记录该阶段已完成，本轮跳过" });
+} else {
+  const auditRun = await runStage("ddd-audit", {
+    label: "声明面审计",
+    agent: "ddd-auditor",
+    task: `在项目根 ${root} 执行声明面审计（G6 门禁）：核验变更记录当轮声称与实际产物是否相符，输出审计报告与修剪清单；报告标题下方给出建议归档名，格式为 G6-序号-版本，序号取 docs/audits/ 现存最大序号加一；只读，不落盘，审计报告的落盘由根会话执行。` + stateNote("audit"),
+  }, { stage: "audit" });
+  if (auditRun && auditRun.__failed) return auditRun;
+  auditReport = auditRun;
+}
+
 return {
   status: escalated ? "已中断，需根会话仲裁" : "workflow 完成",
   rounds: round,
@@ -408,5 +428,7 @@ return {
   stateFile,
   escalated,
   lastReport,
-  note: "escalated 非空时，根会话须依据 references/spec.md §3 处理对应级别缺陷或升级用户；状态文件支持断点续跑。",
+  auditReport,
+  skippedStages,
+  note: "escalated 非空时，根会话须依据规范「缺陷四级路由」节处理对应级别缺陷或升级用户；auditReport 非空时，审计报告的落盘由根会话执行；skippedStages 列出本轮未执行的阶段与原因；状态文件支持断点续跑。",
 };
