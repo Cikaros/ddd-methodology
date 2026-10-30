@@ -28,6 +28,9 @@ set "PI_HOME=%USERPROFILE%\.pi\agent"
 set "SKILL_DST=%PI_HOME%\skills\ddd-methodology"
 set "AGENT_DST=%PI_HOME%\agents"
 
+rem Fixed list: one entry per skill directory shipped with this methodology
+set DDD_SKILLS=ddd-methodology ddd-rebuild ddd-refactor
+
 rem Fixed list: one entry per file under agents\
 set DDD_AGENTS=ddd-requirements ddd-acceptance ddd-architect ddd-decomposer ddd-interface-reviewer ddd-implementer ddd-test-planner ddd-tester ddd-arbiter ddd-doc-sync ddd-auditor ddd-fixer
 
@@ -62,16 +65,27 @@ if "%CHECK_ONLY%"=="1" goto :check
 :install
 echo [INSTALL] target: %PI_HOME%
 
-if exist "%SKILL_DST%" (
-    echo [INFO] previous version found, replacing.
-    rmdir /s /q "%SKILL_DST%"
+if not exist "%PI_HOME%\skills" mkdir "%PI_HOME%\skills"
+for %%K in (%DDD_SKILLS%) do (
+    if exist "%ROOT%skill\%%K" (
+        if exist "%PI_HOME%\skills\%%K" rmdir /s /q "%PI_HOME%\skills\%%K"
+        xcopy "%ROOT%skill\%%K" "%PI_HOME%\skills\%%K\" /e /i /q >nul
+        if errorlevel 1 ( echo [WARN] %%K install failed ) else ( echo [OK] Skill -> %PI_HOME%\skills\%%K )
+    ) else (
+        echo [WARN] missing %ROOT%skill\%%K
+    )
 )
-xcopy "%ROOT%skill\ddd-methodology" "%SKILL_DST%\" /e /i /q >nul
-if errorlevel 1 ( echo [ERROR] skill install failed & exit /b 1 )
-echo [OK] Skill -> %SKILL_DST%
+
+if exist "%ROOT%workflows\ddd-workflow.js" (
+    if not exist "%SKILL_DST%\workflows" mkdir "%SKILL_DST%\workflows"
+    xcopy "%ROOT%workflows" "%SKILL_DST%\workflows\" /e /i /q >nul
+    if errorlevel 1 ( echo [WARN] workflow copy failed ) else ( echo [OK] Workflow -> %SKILL_DST%\workflows )
+) else (
+    echo [WARN] missing %ROOT%workflows\ddd-workflow.js
+)
 
 if not exist "%SKILL_DST%\scripts" mkdir "%SKILL_DST%\scripts"
-for %%S in (trace-check code-health governance-check fingerprint design-root decision-tables ref-check) do (
+for %%S in (trace-check code-health governance-check fingerprint design-root decision-tables ref-check roster-check) do (
     if exist "%ROOT%scripts\%%S.js" (
         copy /y "%ROOT%scripts\%%S.js" "%SKILL_DST%\scripts\%%S.js" >nul
         if errorlevel 1 ( echo [WARN] %%S copy failed ) else ( echo [OK] %%S )
@@ -134,14 +148,16 @@ exit /b 0
 
 :check
 echo [CHECK] install status:
-if exist "%SKILL_DST%\SKILL.md" ( echo   Skill    : installed ) else ( echo   Skill    : missing )
+for %%K in (%DDD_SKILLS%) do (
+    if exist "%PI_HOME%\skills\%%K\SKILL.md" ( echo   Skill %%K : installed ) else ( echo   Skill %%K : missing )
+)
 set N=0
 for %%A in (%DDD_AGENTS%) do (
     if exist "%AGENT_DST%\%%A.md" set /a N+=1
 )
 echo   Agents   : !N! / 12 installed
 if exist "%SKILL_DST%\workflows\ddd-workflow.js" ( echo   Workflow : installed ) else ( echo   Workflow : missing )
-for %%S in (trace-check code-health governance-check fingerprint design-root decision-tables ref-check) do (
+for %%S in (trace-check code-health governance-check fingerprint design-root decision-tables ref-check roster-check) do (
     if exist "%SKILL_DST%\scripts\%%S.js" ( echo   %%S : installed ) else ( echo   %%S : missing )
 )
 if exist "%PI_HOME%\extensions\ddd-governance.ts" ( echo   Extension: installed ) else ( echo   Extension: missing )

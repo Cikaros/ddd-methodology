@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * 目标：把本仓库跨文档引用、常量、清单与冻结短语的一致性外化为可复现的机械证据，供文档同步链在提交前校验。
- * 范围：C1 至 C10 十项校验；默认只读不落盘，仅 --fix 写盘，写盘范围限 workflow 的阶段注册表块。
+ * 范围：C1 至 C11 十一项校验；默认只读不落盘，仅 --fix 写盘，写盘范围限 workflow 的阶段注册表块。
+ * 清单类校验 C5 与 C11 由 ./roster-check.js 提供，本脚本只作调用。
  * 用法：node ref-check.js <仓库根> [--fix]；--fix 从 spec 键清单生成 workflow 阶段注册表并输出改动清单。
  * 输出形态：文本正文；末行机读结论 `RESULT: pass`（无漂移）或 `RESULT: drift`（存在漂移）
  * 退出码：0 通过，1 存在漂移。门禁地位：本仓库文档同步链，不作被开发项目的门禁证据。
@@ -15,6 +16,7 @@
 const fs = require("fs");
 const path = require("path");
 const decisionTables = require("./decision-tables.js");
+const rosterCheck = require("./roster-check.js");
 
 const argv = process.argv.slice(2);
 const fixMode = argv.includes("--fix");
@@ -25,10 +27,7 @@ const WORKFLOW_REL = ["workflows", "ddd-workflow.js"];
 const GUARD_REL = ["extensions", "ddd-governance.ts"];
 const SKIP_DIR_NAMES = new Set(["node_modules", "docs"]);
 const SKIP_FILE_NAMES = new Set(["CHANGELOG.md"]);
-// 声明代理集合的入口：规范入口、仓库说明与安装脚本；卸载脚本随同一清单，不另立第二份
-const AGENT_DECLARATION_FILES = [["skill", "ddd-methodology", "SKILL.md"], ["README.md"], ["scripts", "install.sh"], ["scripts", "install.bat"]];
-const NON_AGENT_TOKENS = new Set(["ddd-methodology"]); // ddd- 前缀但非代理名：skill 包名
-// 冻结短语的锚点用于检出改写：命中锚点却未逐字含短语即判漂移；豁免串是合法的同族短语
+// 冻结短语的锚点用于检出改写：命中锚点却未逐字含短语即判漂移；豁免串是合法的同族短语；存量重建节六条锚点取该短语独有片段，避免命中措辞相近的载体行
 // 阈值锚点不入此清单：其一致性由 C3 按承载语义校验，若两处同校会因合法子集引用（如只写代码与基础能力两档）产生互斥误报
 const FROZEN_PHRASES = [
   { phrase: "这个任务是只读的吗", anchors: ["任务是只读的"], exempt: [] },
@@ -38,6 +37,11 @@ const FROZEN_PHRASES = [
   { phrase: "RESULT: pass", anchors: ["RESULT:"], exempt: ["RESULT: gap", "RESULT: report", "RESULT: drift"] },
   // 该短语在规范入口、仓库说明与全局规则三处并存；anchor 须整句前缀，短锚点会命中措辞不同的其他行而误报
   { phrase: "只读的探查、调研、方案比选、环境勘察、资料检索，一律派 scout", anchors: ["只读的探查、调研、方案比选、环境勘察、资料检索"], exempt: [] },
+  { phrase: "触发时机由人工判断，落在入口", anchors: ["触发时机由人工判断"], exempt: [] },
+  { phrase: "丢弃是相对旧版本的丢弃，不是绝对丢失", anchors: ["丢弃是相对旧版本的丢弃"], exempt: [] },
+  { phrase: "对外契约；经审计确认仍然成立的设计决策；仍在被消费的能力", anchors: ["经审计确认仍然成立的设计决策"], exempt: [] },
+  { phrase: "未列入废弃清单而实际不再使用的产物，视为静默保留，属缺陷", anchors: ["未列入废弃清单而实际不再使用的产物"], exempt: [] },
+  { phrase: "行为等价性以 AC 全量回归验证，不得以子集用例证明等价", anchors: ["行为等价性以 AC 全量回归验证"], exempt: [] },
 ];
 // 阈值上下文判据：阈值数字集中定义于规范「粒度与独立性」节，其余出现处须带正确的承载语义
 const THRESHOLD_RULES = [
@@ -200,29 +204,6 @@ function checkStageKeys() {
   return compareStageKeys(readStageKeySources());
 }
 
-// C5 代理清单一致性：agents/ddd-*.md 的文件集合与入口文档、安装脚本声明的代理集合一致
-function checkAgentRoster() {
-  let roster = [];
-  try { roster = fs.readdirSync(path.join(root, "agents")).filter((name) => /^ddd-.*\.md$/.test(name)).map((name) => name.replace(/\.md$/, "")); } catch (e) { roster = []; }
-  if (!roster.length) return [drift("C5", "agents/", 0, "代理定义目录须含 ddd-*.md", "至少一份代理定义")];
-  const declared = new Map();
-  for (const rel of AGENT_DECLARATION_FILES) {
-    for (const row of withLineNumbers(readFileText(path.join(root, ...rel)))) {
-      for (const m of row.line.matchAll(/(?<![\w./-])ddd-[a-z][a-z0-9-]*(?![\w./-])/g)) {
-        if (!NON_AGENT_TOKENS.has(m[0]) && !declared.has(m[0])) declared.set(m[0], { file: rel.join("/"), line: row.no });
-      }
-    }
-  }
-  const found = [];
-  for (const [token, at] of declared) {
-    if (!roster.includes(token)) found.push(drift("C5", at.file, at.line, "声明的代理名须对应 agents/ 下的代理定义", `agents/${token}.md 存在`, token));
-  }
-  for (const name of roster) {
-    if (!declared.has(name)) found.push(drift("C5", AGENT_DECLARATION_FILES.map((r) => r.join("/")).join("、"), 0, "每个代理定义须被入口文档或安装脚本声明", `${name} 被声明`, name));
-  }
-  return found;
-}
-
 // C6 门号一致性：文档中出现的门号须属于规范「质量门禁」节门禁表定义的门号集合
 function extractSpecGateIds() {
   const section = sectionBody(specText, "质量门禁");
@@ -374,12 +355,13 @@ const CHECKS = [
   ["C2", "裸章节号引用已清除", checkBareSectionRefs],
   ["C3", "阈值一致性", checkThresholds],
   ["C4", "阶段键一致性", checkStageKeys],
-  ["C5", "代理清单一致性", checkAgentRoster],
+  ["C5", "代理清单一致性", () => rosterCheck.checkAgentRoster(root)],
   ["C6", "门号一致性", checkGateIds],
   ["C7", "脚本名一致性", checkScriptNames],
   ["C8", "冻结短语一致性", checkFrozenPhrases],
   ["C9", "守卫编号一致性", checkGuardIds],
   ["C10", "判定表默认分支", () => decisionTables.checkJudgmentDefault(liveDocPaths.map(relPath), (rel) => readFileText(path.join(root, rel)))],
+  ["C11", "skill 清单一致性", () => rosterCheck.checkSkillRoster(root)],
 ];
 
 // --fix 先于校验写盘，使报告与末行结论反映修复后状态；默认模式不触盘

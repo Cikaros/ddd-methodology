@@ -29,6 +29,9 @@ AGENT_DST="$PI_HOME/agents"
 # 固定清单：与 agents/ 目录下的 12 个文件一一对应（防止通配符覆盖用户自有 ddd- 前缀代理）
 DDD_AGENTS=(ddd-requirements ddd-acceptance ddd-architect ddd-decomposer ddd-interface-reviewer ddd-implementer ddd-test-planner ddd-tester ddd-arbiter ddd-doc-sync ddd-auditor ddd-fixer)
 
+# Skill 清单：本方法论自带的 skill 目录，逐个安装到 $PI_HOME/skills/<名>，逐个检查
+DDD_SKILLS=(ddd-methodology ddd-rebuild ddd-refactor)
+
 # 参数解析：模型配比为可选，不传则不触碰模型设置
 CHECK_ONLY=0
 MODELS_PROFILE=""
@@ -56,11 +59,14 @@ done
 
 if [[ "$CHECK_ONLY" == "1" ]]; then
     echo "[检查] 安装状态："
-    if [[ -f "$SKILL_DST/SKILL.md" ]]; then
-        echo "  Skill    : 已安装 ($SKILL_DST)"
-    else
-        echo "  Skill    : 未安装"
-    fi
+    for name in "${DDD_SKILLS[@]}"; do
+        dst="$PI_HOME/skills/$name"
+        if [[ -f "$dst/SKILL.md" ]]; then
+            echo "  Skill    : 已安装 ($dst)"
+        else
+            echo "  Skill    : 未安装 ($name)"
+        fi
+    done
     ok=0
     for name in "${DDD_AGENTS[@]}"; do
         [[ -f "$AGENT_DST/$name.md" ]] && ok=$((ok+1))
@@ -71,7 +77,7 @@ if [[ "$CHECK_ONLY" == "1" ]]; then
     else
         echo "  Workflow : 未安装"
     fi
-    for s in trace-check code-health governance-check fingerprint design-root decision-tables ref-check; do
+    for s in trace-check code-health governance-check fingerprint design-root decision-tables ref-check roster-check; do
         if [[ -f "$SKILL_DST/scripts/$s.js" ]]; then
             echo "  $s : 已安装"
         else
@@ -103,14 +109,19 @@ fi
 
 echo "[安装] 目标: $PI_HOME（已存在旧版将自动覆盖更新）"
 
-# 1. 安装 Skill（整个目录替换，幂等）
-if [[ -d "$SKILL_DST" ]]; then
-    echo "[提示] 检测到旧版，覆盖更新。"
-    rm -rf "$SKILL_DST"
-fi
-mkdir -p "$(dirname "$SKILL_DST")"
-cp -r "$ROOT/skill/ddd-methodology" "$SKILL_DST"
-echo "[完成] Skill  -> $SKILL_DST"
+# 1. 安装 Skill 清单（逐目录替换，幂等）
+mkdir -p "$PI_HOME/skills"
+for name in "${DDD_SKILLS[@]}"; do
+    src="$ROOT/skill/$name"
+    dst="$PI_HOME/skills/$name"
+    if [[ ! -d "$src" ]]; then
+        echo "[警告] 缺少 $src" >&2
+        continue
+    fi
+    [[ -d "$dst" ]] && rm -rf "$dst"
+    cp -r "$src" "$dst"
+    echo "[完成] Skill  -> $dst"
+done
 
 # 1.5 安装 Workflow 加速档脚本（仓库根 workflows/ → skill 包内 workflows/）
 if [[ -d "$ROOT/workflows" ]]; then
@@ -121,7 +132,7 @@ fi
 
 # 1.6 安装门禁证据脚本
 mkdir -p "$SKILL_DST/scripts"
-for s in trace-check code-health governance-check fingerprint design-root decision-tables ref-check; do
+for s in trace-check code-health governance-check fingerprint design-root decision-tables ref-check roster-check; do
     if [[ -f "$ROOT/scripts/$s.js" ]]; then
         cp -f "$ROOT/scripts/$s.js" "$SKILL_DST/scripts/"
         echo "[完成] $s -> $SKILL_DST/scripts/$s.js"
