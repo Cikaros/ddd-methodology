@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * 目标：把本仓库跨文档引用、常量、清单与冻结短语的一致性外化为可复现的机械证据，供文档同步链在提交前校验。
- * 范围：C1 至 C9 九项校验，只读，不落盘；不做语义级判断，语义级重复与纸面消费方仍归审计代理。
- * 用法：node ref-check.js <仓库根>
+ * 范围：C1 至 C10 十项校验；默认只读不落盘，仅 --fix 写盘，写盘范围限 workflow 的阶段注册表块。
+ * 用法：node ref-check.js <仓库根> [--fix]；--fix 从 spec 键清单生成 workflow 阶段注册表并输出改动清单。
  * 输出形态：文本正文；末行机读结论 `RESULT: pass`（无漂移）或 `RESULT: drift`（存在漂移）
  * 退出码：0 通过，1 存在漂移。门禁地位：本仓库文档同步链，不作被开发项目的门禁证据。
  * 输出上限：12000 字节，按 UTF-8 计量；超限截断明细，末行结论与明细计数行保留。
@@ -14,8 +14,11 @@
 
 const fs = require("fs");
 const path = require("path");
+const decisionTables = require("./decision-tables.js");
 
-const root = path.resolve(process.argv[2] || process.cwd());
+const argv = process.argv.slice(2);
+const fixMode = argv.includes("--fix");
+const root = path.resolve(argv.find((a) => !a.startsWith("--")) || process.cwd());
 const REF_LIMIT_BYTES = 12000; // 与本脚本在脚本消费契约表中的输出上限一致
 const SPEC_REL = ["skill", "ddd-methodology", "references", "spec.md"];
 const WORKFLOW_REL = ["workflows", "ddd-workflow.js"];
@@ -44,11 +47,7 @@ const THRESHOLD_RULES = [
 ];
 
 function readFileText(file) {
-  try {
-    return fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
-  } catch (e) {
-    return "";
-  }
+  try { return fs.existsSync(file) ? fs.readFileSync(file, "utf8") : ""; } catch (e) { return ""; }
 }
 function withLineNumbers(text) {
   return String(text || "").split("\n").map((line, index) => ({ line, no: index + 1 }));
@@ -62,11 +61,7 @@ function drift(item, file, line, criterion, expect, found) {
 // 活文档清单：只取扫描范围内的 md，docs/ 与版本记录由 SKIP_* 常量排除
 function collectLiveDocs(dir, out = []) {
   let entries;
-  try {
-    entries = fs.readdirSync(dir, { withFileTypes: true });
-  } catch (e) {
-    return out;
-  }
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return out; }
   for (const entry of entries) {
     if (entry.name.startsWith(".") || SKIP_DIR_NAMES.has(entry.name)) continue;
     const full = path.join(dir, entry.name);
@@ -127,11 +122,7 @@ function collectScanScripts() {
   const out = [];
   for (const [dirName, suffix] of [["scripts", ".js"], ["extensions", ".ts"]]) {
     let entries;
-    try {
-      entries = fs.readdirSync(path.join(root, dirName), { withFileTypes: true });
-    } catch (e) {
-      continue;
-    }
+    try { entries = fs.readdirSync(path.join(root, dirName), { withFileTypes: true }); } catch (e) { continue; }
     for (const entry of entries) {
       if (entry.isFile() && entry.name.endsWith(suffix)) out.push(path.join(root, dirName, entry.name));
     }
@@ -164,7 +155,7 @@ function checkThresholds() {
   return found;
 }
 
-// C4 阶段键一致性：workflow 的 stageRegistry 与规范「状态文件」节的 doneStages 键集合完全一致
+// C4 阶段键三方一致性：spec 键清单、workflow 阶段注册表、guard 单键
 function extractSpecStageKeys() {
   const section = sectionBody(specText, "状态文件");
   if (!section) return null;
@@ -175,34 +166,44 @@ function extractSpecStageKeys() {
   }
   return null;
 }
-function checkStageKeys() {
-  if (!specText) return specMissing("C4", "规范状态文件节须给出 doneStages 键集合");
+// 三处副本的唯一读取入口：C4 与 --fix 共用，不得另立解析
+function readStageKeySources() {
   const workflowPath = path.join(root, ...WORKFLOW_REL);
   const workflowText = readFileText(workflowPath);
-  const arrayMatch = workflowText.match(/const\s+stageRegistry\s*=\s*\[([\s\S]*?)\]/);
-  const registryKeys = arrayMatch ? [...arrayMatch[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]) : [];
-  const arrayLine = arrayMatch ? workflowText.slice(0, arrayMatch.index).split("\n").length : 0;
-  const specKeys = extractSpecStageKeys();
-  if (!specKeys) return specMissing("C4", "规范状态文件节须以固定句列出 doneStages 键集合");
-  if (!registryKeys.length) return [drift("C4", relPath(workflowPath), 0, "stageRegistry 须为字符串数组字面量", "可解析的阶段键列表", "未解析到数组")];
+  const stageRegistryBlock = workflowText.match(/const\s+stageRegistry\s*=\s*\[[\s\S]*?\]/);
+  const spec = extractSpecStageKeys();
+  const guard = readFileText(path.join(root, ...GUARD_REL)).match(/G5_INT_STAGE\s*=\s*"([^"]+)"/);
+  return {
+    workflowPath, workflowText, stageRegistryBlock,
+    registryKeys: stageRegistryBlock ? [...stageRegistryBlock[0].matchAll(/"([^"]+)"/g)].map((m) => m[1]) : [],
+    registryLine: stageRegistryBlock ? workflowText.slice(0, stageRegistryBlock.index).split("\n").length : 0,
+    specKeys: spec ? spec.keys : null, specLine: spec ? spec.line : 0, guardKey: guard ? guard[1] : null,
+  };
+}
+// 三方比对的唯一实现：spec 为源，workflow 与 guard 为受控副本，任一缺失或多出即报漂移
+function compareStageKeys(src) {
+  if (!src.specKeys) return [drift("C4", relPath(specPath), 0, "规范状态文件节须以固定句列出 doneStages 键集合", "spec 键清单", "未解析到")];
+  if (!src.registryKeys.length) return [drift("C4", relPath(src.workflowPath), 0, "stageRegistry 须为字符串数组字面量", "可解析的阶段键列表", "未解析到数组")];
   const found = [];
-  for (const key of specKeys.keys) {
-    if (!registryKeys.includes(key)) found.push(drift("C4", relPath(workflowPath), arrayLine, "阶段注册表键集合须与规范状态文件节一致", `registry 含键「${key}」`));
+  for (const key of src.specKeys) {
+    if (!src.registryKeys.includes(key)) found.push(drift("C4", relPath(src.workflowPath), src.registryLine, "三方键集合须一致", `registry 含键「${key}」`));
   }
-  for (const key of registryKeys) {
-    if (!specKeys.keys.includes(key)) found.push(drift("C4", relPath(specPath), specKeys.line, "阶段注册表键集合须与规范状态文件节一致", `规范状态文件节含键「${key}」`));
+  for (const key of src.registryKeys) {
+    if (!src.specKeys.includes(key)) found.push(drift("C4", relPath(specPath), src.specLine, "三方键集合须一致", `spec 键清单含键「${key}」`));
   }
+  if (!src.guardKey) found.push(drift("C4", GUARD_REL.join("/"), 0, "guard 单键须可解析且属于 spec 键清单", "G5_INT_STAGE 常量", "未解析到"));
+  else if (!src.specKeys.includes(src.guardKey)) found.push(drift("C4", GUARD_REL.join("/"), 0, "guard 单键须属于 spec 键清单", `guard 键属于 ${src.specKeys.join("/")}`, src.guardKey));
   return found;
+}
+function checkStageKeys() {
+  if (!specText) return specMissing("C4", "规范状态文件节须给出 doneStages 键集合");
+  return compareStageKeys(readStageKeySources());
 }
 
 // C5 代理清单一致性：agents/ddd-*.md 的文件集合与入口文档、安装脚本声明的代理集合一致
 function checkAgentRoster() {
   let roster = [];
-  try {
-    roster = fs.readdirSync(path.join(root, "agents")).filter((name) => /^ddd-.*\.md$/.test(name)).map((name) => name.replace(/\.md$/, ""));
-  } catch (e) {
-    roster = [];
-  }
+  try { roster = fs.readdirSync(path.join(root, "agents")).filter((name) => /^ddd-.*\.md$/.test(name)).map((name) => name.replace(/\.md$/, "")); } catch (e) { roster = []; }
   if (!roster.length) return [drift("C5", "agents/", 0, "代理定义目录须含 ddd-*.md", "至少一份代理定义")];
   const declared = new Map();
   for (const rel of AGENT_DECLARATION_FILES) {
@@ -341,6 +342,32 @@ function checkGuardIds() {
   }
   return found;
 }
+// 生成 workflow 阶段注册表块：与期望集合逐项且顺序一致；同一输入必得同一文本，保证 --fix 幂等
+function renderStageRegistry(keys) {
+  const lines = [];
+  let line = "";
+  for (const key of keys) {
+    const token = `"${key}"`;
+    const joined = line ? `${line}, ${token}` : token;
+    if (line && joined.length > 74) { lines.push(`  ${line},`); line = token; }
+    else line = joined;
+  }
+  if (line) lines.push(`  ${line},`);
+  return `const stageRegistry = [\n${lines.join("\n")}\n]`;
+}
+// --fix 唯一写盘点：只重写 workflow 的阶段注册表块，写盘前先比对，无差异不写盘；guard 只校验不写
+function runFix(src) {
+  if (!src.specKeys) return { error: "spec 状态文件节的键清单不可解析", changes: [] };
+  if (!src.stageRegistryBlock) return { error: "workflow 的 stageRegistry 数组块不可解析", changes: [] };
+  const expected = renderStageRegistry(src.specKeys);
+  const changes = [];
+  if (src.stageRegistryBlock[0] !== expected) {
+    const next = src.workflowText.slice(0, src.stageRegistryBlock.index) + expected + src.workflowText.slice(src.stageRegistryBlock.index + src.stageRegistryBlock[0].length);
+    fs.writeFileSync(src.workflowPath, next);
+    changes.push(`${relPath(src.workflowPath)}：阶段注册表已按 spec 键清单重写（${src.specKeys.length} 项）`);
+  }
+  return { changes, guardOk: !!src.guardKey && src.specKeys.includes(src.guardKey), guardKey: src.guardKey };
+}
 
 const CHECKS = [
   ["C1", "语义化节引用有效", checkSemanticRefs],
@@ -352,7 +379,11 @@ const CHECKS = [
   ["C7", "脚本名一致性", checkScriptNames],
   ["C8", "冻结短语一致性", checkFrozenPhrases],
   ["C9", "守卫编号一致性", checkGuardIds],
+  ["C10", "判定表默认分支", () => decisionTables.checkJudgmentDefault(liveDocPaths.map(relPath), (rel) => readFileText(path.join(root, rel)))],
 ];
+
+// --fix 先于校验写盘，使报告与末行结论反映修复后状态；默认模式不触盘
+const fixResult = fixMode ? runFix(readStageKeySources()) : null;
 
 // 每项独立执行：单项异常记入漂移清单后继续，不中断其余项
 const checkResults = [];
@@ -363,7 +394,7 @@ for (const [id, title, run] of CHECKS) {
     checkResults.push({ id, title, drifts: [drift(id, "scripts/ref-check.js", 0, "单项校验异常须记入漂移清单并继续", "该单项正常完成", String((error && error.message) || error))] });
   }
 }
-const totalDrifts = checkResults.reduce((sum, result) => sum + result.drifts.length, 0);
+const totalDrifts = checkResults.reduce((sum, result) => sum + result.drifts.length, 0) + (fixResult && fixResult.error ? 1 : 0);
 
 // 输出按明细与固定行分离：超限时自尾部回撤明细，计数行、各项小结与末行结论保留
 function capRefReport(entries) {
@@ -391,11 +422,16 @@ function capRefReport(entries) {
   return build(0);
 }
 
-const entries = [
-  { droppable: false, text: "=== 跨文档引用一致性校验 ===" },
-  { droppable: false, text: `仓库根：${root}` },
-  { droppable: false, text: `活文档：${liveDocPaths.length} 份；校验项：${CHECKS.length} 项` },
-];
+const entries = [{ droppable: false, text: "=== 跨文档引用一致性校验 ===" }, { droppable: false, text: `仓库根：${root}` }, { droppable: false, text: `活文档：${liveDocPaths.length} 份；校验项：${CHECKS.length} 项` }];
+// --fix 的改动清单入报告：列出写盘项，或声明无需改动；guard 单键只校验不写
+if (fixResult) {
+  entries.push({ droppable: false, text: "=== --fix 生成模式 ===" });
+  if (fixResult.error) entries.push({ droppable: false, text: `  ✗ 中止：${fixResult.error}` });
+  else {
+    for (const line of fixResult.changes.length ? fixResult.changes : ["无需改动：受控副本已与 spec 键清单一致"]) entries.push({ droppable: false, text: `  · ${line}` });
+    entries.push({ droppable: false, text: `  · guard 单键「${fixResult.guardKey}」${fixResult.guardOk ? "属于期望集合，未写该文件" : "不属于期望集合，须人工处理"}` });
+  }
+}
 for (const result of checkResults) {
   const passed = !result.drifts.length;
   entries.push({ droppable: false, text: passed ? `[${result.id} ${result.title}] 通过` : `[${result.id} ${result.title}] 漂移 ${result.drifts.length} 项` });
@@ -405,9 +441,7 @@ for (const result of checkResults) {
     entries.push({ droppable: true, text: `  ✗ ${d.item} ${where} :: ${d.criterion}；期望 ${d.expect}${actual}` });
   }
 }
-entries.push({ droppable: false, text: "" });
-entries.push({ droppable: false, text: totalDrifts ? `结果：存在 ${totalDrifts} 项漂移` : "结果：通过，九项校验无漂移" });
-entries.push({ droppable: false, text: totalDrifts ? "RESULT: drift" : "RESULT: pass" });
+entries.push({ droppable: false, text: "" }, { droppable: false, text: totalDrifts ? `结果：存在 ${totalDrifts} 项漂移` : `结果：通过，${CHECKS.length} 项校验无漂移` }, { droppable: false, text: totalDrifts ? "RESULT: drift" : "RESULT: pass" });
 
 process.stdout.write(capRefReport(entries).join("\n") + "\n");
 process.exit(totalDrifts ? 1 : 0);

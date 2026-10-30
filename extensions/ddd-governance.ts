@@ -8,6 +8,8 @@
  * - H-1 粒度守卫。触发点：tool_call 的 write/edit。判定条件：估算写入后行数超 500 行。动作：拦截，理由含文件路径、就近 DESIGN 路径与拆解要求。
  * - H-2 测试分离守卫。触发点：tool_call 的 bash。判定条件：命令属窄口径的全量测试调用形态，且 docs/.ddd-state.json 的 lastStage 为 g5-int。动作：拦截，指明全量测试的唯一主体是 ddd-tester。
  *
+ * 键关系：G5_INT_STAGE 的值为状态文件阶段键集合中的单键，即 docs/.ddd-state.json 的 doneStages 枚举成员之一；ref-check 的 C4 与 --fix 据此比对并单向校验其属于该集合，脚本不改本文件，值变更须人工处理。
+ *
  * 阈值承载：基础能力 300 行与文档 200 行阈值由 `code-health` 度量与审计承接，本守卫只拦代码文件 500 行。
  * 运行时例外：文件内显式声明「运行时例外」者放行，未声明不适用。
  *

@@ -53,6 +53,7 @@ ddd-methodology/
     ├── fingerprint.js            # 契约指纹唯一实现，供 trace-check 与 governance-check 共用
     ├── design-root.js            # 设计树根路径解析唯一实现，供同上两者共用
     ├── merge-append-system.js    # 全局规则区块合并，供安装与卸载脚本调用
+    ├── decision-tables.js        # 判定表默认分支校验库，供 ref-check 调用
     └── ref-check.js              # 跨文档引用、常量与枚举一致性校验，本仓库文档同步链证据
 ```
 
@@ -112,6 +113,8 @@ Linux、macOS 与 Git Bash 首次使用前执行 `chmod +x scripts/*.sh`。
 ## 版本管理
 
 本仓库使用 git tag 管理版本。规范修订流程：修改文档 → commit → 打递增版本 tag，例如 `v1.2`、`v1.3`。规范修订后运行 `node scripts/ref-check.js .` 校验跨文档一致性，作为提交前检查。
+
+`ref-check` 默认只读，不写盘；加 `--fix` 时由规范「状态文件」节的键清单生成 `workflows/ddd-workflow.js` 的 stageRegistry，并校验 `extensions/ddd-governance.ts` 的 `G5_INT_STAGE` 单键属于该集合，写盘范围限于 stageRegistry 数组块，改完须复跑默认模式确认无漂移。
 
 被开发项目的接口契约以契约指纹作冻结锚点，算法与变更判定见规范「结构与契约的演进治理」节。
 

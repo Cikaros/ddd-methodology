@@ -71,7 +71,7 @@ if errorlevel 1 ( echo [ERROR] skill install failed & exit /b 1 )
 echo [OK] Skill -> %SKILL_DST%
 
 if not exist "%SKILL_DST%\scripts" mkdir "%SKILL_DST%\scripts"
-for %%S in (trace-check code-health governance-check fingerprint design-root ref-check) do (
+for %%S in (trace-check code-health governance-check fingerprint design-root decision-tables ref-check) do (
     if exist "%ROOT%scripts\%%S.js" (
         copy /y "%ROOT%scripts\%%S.js" "%SKILL_DST%\scripts\%%S.js" >nul
         if errorlevel 1 ( echo [WARN] %%S copy failed ) else ( echo [OK] %%S )
@@ -141,7 +141,7 @@ for %%A in (%DDD_AGENTS%) do (
 )
 echo   Agents   : !N! / 12 installed
 if exist "%SKILL_DST%\workflows\ddd-workflow.js" ( echo   Workflow : installed ) else ( echo   Workflow : missing )
-for %%S in (trace-check code-health governance-check fingerprint design-root ref-check) do (
+for %%S in (trace-check code-health governance-check fingerprint design-root decision-tables ref-check) do (
     if exist "%SKILL_DST%\scripts\%%S.js" ( echo   %%S : installed ) else ( echo   %%S : missing )
 )
 if exist "%PI_HOME%\extensions\ddd-governance.ts" ( echo   Extension: installed ) else ( echo   Extension: missing )
