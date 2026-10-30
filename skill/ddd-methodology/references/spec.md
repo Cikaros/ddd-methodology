@@ -211,7 +211,7 @@ G5-INT 与 C 级修复禁止执行全量测试套件；全量测试的唯一主�
 | L4 架构级 | 目录树或依赖方向 | 根会话确认后修订 ARCHITECTURE |
 | L5 项目级 | 技术环境或全局规范 | 必须升级用户确认 |
 
-定级按下列步骤：
+定级按下列判定顺序：
 
 1. 从 L1 起评。
 2. 范围超出该级时上移一级。
@@ -297,7 +297,7 @@ workflow 加速档以 `<项目根>/docs/.ddd-state.json` 记录进度。
 { "doneStages": ["requirements", "architect"], "lastStage": "architect", "status": "done" }
 ```
 
-`doneStages` 的阶段键集合固定为九个，与 workflow 的阶段流一一对应：requirements、acceptance、architect、decomposer、interface-review、implement-plan、g5-int、test-execute、audit。`audit` 键由审计阶段写入，用于对齐 workflow 的九步。
+`doneStages` 的阶段键集合与 workflow 的阶段流一一对应：requirements、acceptance、architect、decomposer、interface-review、implement-plan、g5-int、test-execute、audit。`audit` 键由审计阶段写入，用于对齐 workflow 的阶段流。
 
 每个阶段完成后由该阶段代理或其后继写入者合并更新。并行段仅实现者写。JSON 损坏时中断续跑并交根会话，不得当作全新启动。
 
