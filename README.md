@@ -69,6 +69,7 @@ ddd-methodology/
     ├── decision-tables.js        # 判定表默认分支校验库，供 ref-check 调用
     ├── ref-check.js              # 跨文档引用、常量与枚举一致性校验，本仓库文档同步链证据
     ├── roster-check.js           # 代理与 skill 清单一致性校验，供 ref-check 的 C5、C11 调用
+    ├── spec-index-check.js       # 规范索引表与规范标题一致性校验，供 ref-check 的 C12 调用
     └── lib/                      # 脚本共享层，供上述脚本复用
         ├── text.js               # 安全读文件、按行编号与漂移项构造三项纯函数
         └── walk.js               # 目录深度优先遍历，统一各脚本的排除集

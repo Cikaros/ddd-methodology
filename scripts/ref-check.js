@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
  * 目标：把本仓库跨文档引用、常量、清单与冻结短语的一致性外化为可复现的机械证据，供文档同步链在提交前校验。
- * 范围：C1 至 C11 十一项校验；默认只读不落盘，仅 --fix 写盘，写盘范围限 workflow 的阶段注册表块。
+ * 范围：C1 至 C12 十二项校验；默认只读不落盘，仅 --fix 写盘，写盘范围限 workflow 的阶段注册表块。
  * 清单类校验 C5 与 C11 由 ./roster-check.js 提供，本脚本只作调用。
+ * 索引表校验 C12 由 ./spec-index-check.js 提供，本脚本只作调用并注入已枚举的规范文件清单与索引入口路径。
  * 用法：node ref-check.js <仓库根> [--fix]；--fix 从 spec 键清单生成 workflow 阶段注册表并输出改动清单。
  * 输出形态：文本正文；末行机读结论 `RESULT: pass`（无漂移）或 `RESULT: drift`（存在漂移）
  * 退出码：0 通过，1 存在漂移。门禁地位：本仓库文档同步链，不作被开发项目的门禁证据。
@@ -19,6 +20,7 @@ const path = require("path");
 const { readFileText, withLineNumbers, drift } = require("./lib/text.js");
 const decisionTables = require("./decision-tables.js");
 const rosterCheck = require("./roster-check.js");
+const specIndexCheck = require("./spec-index-check.js");
 
 const argv = process.argv.slice(2);
 const fixMode = argv.includes("--fix");
@@ -111,8 +113,10 @@ for (const doc of specDocs) {
   }
 }
 const specHeadingSet = new Set(headingSources.keys());
+// 规范索引入口路径：C12 的判定对象，随规范文件清单一并注入 spec-index-check，使其不自定目录常量
+const SPEC_INDEX_REL = SPEC_DIR_REL.concat("spec.md").join("/");
 // 规范文件回填：节缺失时漂移项须指向具体文件，不得退化为目录名；目录名只留在 found 提示
-const SPEC_FILE_FALLBACK = SPEC_DIR_REL.concat("spec.md").join("/");
+const SPEC_FILE_FALLBACK = SPEC_INDEX_REL;
 const firstSpecFile = () => (specDocs.length ? specDocs[0].rel : SPEC_FILE_FALLBACK);
 const specMissing = (item, criterion) => [drift(item, firstSpecFile(), 0, criterion, "规范文件存在且可读", SPEC_DIR_REL.join("/"))];
 // 节标题在规范中命中多于一处即歧义：漂移项指首处，found 列全部命中位置供人工复核
@@ -120,7 +124,7 @@ function specSectionDrift(item, title, hits) {
   return drift(item, hits[0].rel, hits[0].line, `规范节标题「${title}」须跨文件唯一，定位不得歧义`, "唯一命中", hits.map((h) => `${h.rel}:${h.line}`).join("、"));
 }
 
-// C1 语义化节引用有效：见「X」节 的 X 须命中规范的二级或三级标题；规范节标题去编号后须跨文件唯一
+// C1 语义化节引用有效：见「X」节 与 见规范「X」节 的 X 须命中规范的二级或三级标题；规范节标题去编号后须跨文件唯一
 function checkSemanticRefs() {
   if (!specDocs.length) return specMissing("C1", "语义化节引用须解析到规范节标题");
   const found = [];
@@ -129,10 +133,11 @@ function checkSemanticRefs() {
   }
   for (const file of liveDocPaths) {
     for (const row of withLineNumbers(readFileText(file))) {
-      for (const m of row.line.matchAll(/见「([^」\n]+)」节/g)) {
+      // 兼容两种引用形态：见「X」节 与 见规范「X」节（中间多出规范二字），后者原不入校验而致失效引用漏检
+      for (const m of row.line.matchAll(/见(?:规范)?「([^」\n]+)」节/g)) {
         const title = trimHeadingNumber(m[1]);
         if (specHeadingSet.has(title)) continue;
-        found.push(drift("C1", relPath(file), row.no, "见「X」节 的 X 须命中规范二级或三级标题", `标题「${title}」在规范节标题集合中`, m[0]));
+        found.push(drift("C1", relPath(file), row.no, "见「X」节 或 见规范「X」节 的 X 须命中规范二级或三级标题", `标题「${title}」在规范节标题集合中`, m[0]));
       }
     }
   }
@@ -413,6 +418,7 @@ const CHECKS = [
   ["C9", "守卫编号一致性", checkGuardIds],
   ["C10", "判定表默认分支", () => decisionTables.checkJudgmentDefault(liveDocPaths.map(relPath), (rel) => readFileText(path.join(root, rel)))],
   ["C11", "skill 清单一致性", () => rosterCheck.checkSkillRoster(root)],
+  ["C12", "规范索引表一致性", () => specIndexCheck.checkSpecIndex(root, specDocs.map((doc) => doc.rel), SPEC_INDEX_REL)],
 ];
 
 // --fix 先于校验写盘，使报告与末行结论反映修复后状态；默认模式不触盘

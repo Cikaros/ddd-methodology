@@ -4,6 +4,7 @@
  * 范围：文件规模（源码与活文档）、死代码、重复嫌疑、注释质量、结构趋势五类事实的输出与度量留盘。
  * 归属：文件规模与注释质量可由写入者按规范「结构与契约的演进治理」节的治理义务处理；无引用文件属仓库级属性，归审计代理。
  * 不包含：语义级判断。注释是否解释为什么、分支是否真不可达需 AST，本脚本不做，交由审计代理抽检。
+ * 依赖：文本读取取 ./lib/text.js 的 readFileText，本脚本不再内联读取实现。
  *
  * 用法：node code-health.js <项目根>
  * 输出形态：文本正文，末行机读结论 `RESULT: report`
@@ -14,6 +15,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { readFileText } = require("./lib/text.js");
 const { walk } = require("./lib/walk");
 
 const root = process.argv[2] || process.cwd();
@@ -24,17 +26,9 @@ const DOC_LINE_LIMIT = 200;
 // 活文档扫描根：规范、代理定义与全局系统提示；docs 目录与 CHANGELOG.md 不在其内，天然不入度量
 const DOC_ROOTS = ["skill", "agents", "global"];
 
-const read = (p) => {
-  try {
-    return fs.readFileSync(p, "utf8");
-  } catch (e) {
-    return "";
-  }
-};
-
 // 基础能力文件取自 ARCHITECTURE 的能力清单，这些文件按更严上限评估
 function readBaseCapabilityFiles() {
-  const arch = read(path.join(root, "ARCHITECTURE.md"));
+  const arch = readFileText(path.join(root, "ARCHITECTURE.md"));
   const files = new Set();
   const section = arch.match(/##\s*基础能力清单[^\n]*([\s\S]*?)(?=\n## |$)/);
   if (!section) return files;
@@ -58,7 +52,7 @@ const nearLimit = [];
 let oversizedBase = 0; // 基础能力文件超 300 行的单列计数，供超阈值趋势细分
 for (const f of codeFiles) {
   const rel = path.relative(root, f).split(path.sep).join("/");
-  const lines = read(f).split("\n").length;
+  const lines = readFileText(f).split("\n").length;
   const isBase = baseFiles.has(rel) || [...baseFiles].some((b) => rel.endsWith(b));
   const limit = isBase ? BASE_LINE_LIMIT : LINE_LIMIT;
   if (lines > limit) {
@@ -76,7 +70,7 @@ const docOversized = [];
 const docNearLimit = [];
 for (const f of docFiles) {
   const rel = path.relative(root, f).split(path.sep).join("/");
-  const lines = read(f).split("\n").length;
+  const lines = readFileText(f).split("\n").length;
   if (lines > DOC_LINE_LIMIT) docOversized.push({ file: rel, lines, limit: DOC_LINE_LIMIT });
   else if (lines > DOC_LINE_LIMIT * 0.8) docNearLimit.push({ file: rel, lines, limit: DOC_LINE_LIMIT });
 }
@@ -88,7 +82,7 @@ const COMMENTED_CODE_RE = /^\s*(\/\/|#)\s*(const |let |var |function |class |if 
 const COMPAT_RE = /@deprecated|兼容旧|临时兼容|legacy\s*[:：]|待删除|TODO\s*[:：]\s*删除/;
 for (const f of codeFiles) {
   const rel = path.relative(root, f).split(path.sep).join("/");
-  const lines = read(f).split("\n");
+  const lines = readFileText(f).split("\n");
   let run = 0;
   for (let i = 0; i < lines.length; i++) {
     if (COMMENTED_CODE_RE.test(lines[i])) {
@@ -107,17 +101,17 @@ for (const f of codeFiles) {
 const orphans = [];
 // 引用检索范围为全仓文本，含文档；带 shebang 的文件视为命令行入口，不算孤儿
 const corpus = codeFiles
-  .map((f) => ({ f, text: read(f) }))
+  .map((f) => ({ f, text: readFileText(f) }))
   .filter(({ text }) => !/^#!/.test(text));
 const REFERENCE_CORPUS = allFiles
   .filter((f) => !path.basename(f).startsWith("."))
-  .map((f) => read(f))
+  .map((f) => readFileText(f))
   .join(String.fromCharCode(10));
 for (const { f } of corpus) {
   const base = path.basename(f, path.extname(f));
   if (base.length < 3 || /^(index|main|app|mod|lib|cli|server|setup|conftest|__main__)$/i.test(base)) continue;
   if (/\.(test|spec)$/i.test(base) || /^test_/i.test(base)) continue;
-  const self = read(f);
+  const self = readFileText(f);
   const referenced = REFERENCE_CORPUS.split(self).join("").includes(base);
   if (!referenced) orphans.push(path.relative(root, f).split(path.sep).join("/"));
 }
@@ -130,7 +124,7 @@ const GENERIC = new Set(["read", "walk", "write", "parse", "format", "exists", "
 const declMap = new Map();
 for (const f of codeFiles) {
   const rel = path.relative(root, f).split(path.sep).join("/");
-  for (const m of read(f).matchAll(declRe)) {
+  for (const m of readFileText(f).matchAll(declRe)) {
     const name = m[1];
     if (name.length < 8 || GENERIC.has(name)) continue;
     if (!declMap.has(name)) declMap.set(name, new Set());
@@ -152,7 +146,7 @@ const BANNED = [
 ];
 for (const f of codeFiles) {
   const rel = path.relative(root, f).split(path.sep).join("/");
-  const text = read(f);
+  const text = readFileText(f);
   const lines = text.split("\n");
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -191,7 +185,7 @@ const metrics = {
 const healthPath = path.join(root, "docs", "health.json");
 let history = [];
 try {
-  const prev = JSON.parse(read(healthPath));
+  const prev = JSON.parse(readFileText(healthPath));
   history = Array.isArray(prev.history) ? prev.history : [];
 } catch (e) {
   history = [];

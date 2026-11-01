@@ -10,19 +10,20 @@
  * 退出码：0 通过，1 阻断。门禁地位：G5-INT 门槛证据，退出码非零即 blocked
  * 输出上限：12000 字节，按 UTF-8 字节计量；超限截断 reasons，并在 warnings 给出总数与已列数
  * 非目标项目：无 docs/design 目录时零考察，verdict 为 ok，确保对本方法论仓库自身等场景零误伤。
+ * 依赖：文本读取取 ./lib/text.js 的 readFileText，本脚本不再内联读取实现。
  * 规范依据：规范「质量门禁」节的 G5-INT 证据源行、「结构与注释的机械证据」节的脚本消费契约表，
  *   与「结构与契约的演进治理」节的指纹门槛条。
  */
 
 const fs = require("fs");
 const path = require("path");
+// 读取失败回空串而非中断：DESIGN 读不到时仍走指纹校验并给出结构化结论，消费端不以栈信息判读
+const { readFileText } = require("./lib/text.js");
 const { checkContractFingerprint } = require("./fingerprint");
 const { absoluteDesignDir } = require("./design-root");
 const { walk, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
 
 const root = process.argv[2] || process.cwd();
-
-const read = (p) => (fs.existsSync(p) ? fs.readFileSync(p, "utf8") : "");
 
 // 「变更记录」节是否存在至少一条数据行（表头与分隔行不计）
 function hasChangeRecordRow(text) {
@@ -50,7 +51,7 @@ function check() {
     checked.designs = designFiles.length;
     for (const f of designFiles) {
       const rel = path.relative(root, f).split(path.sep).join("/");
-      const text = read(f);
+      const text = readFileText(f);
       const issue = checkContractFingerprint(text);
       if (issue) reasons.push(`${rel} ${issue}`);
       else checked.fingerprints++;
@@ -62,7 +63,7 @@ function check() {
   if (fs.existsSync(healthPath)) {
     let history = [];
     try {
-      const parsed = JSON.parse(read(healthPath));
+      const parsed = JSON.parse(readFileText(healthPath));
       history = Array.isArray(parsed.history) ? parsed.history : [];
     } catch (e) {
       warnings.push("docs/health.json 无法解析，趋势未判");

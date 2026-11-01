@@ -8,6 +8,7 @@
  * 末行机读结论：通过输出 `RESULT: pass`，存在缺口输出 `RESULT: gap`
  * 退出码：0 通过，1 存在缺口。门禁地位：G4 与 G5 门禁的脚本证据源
  * 输出上限：12000 字节，按 UTF-8 计量；超限截断明细，末行机读结论与截断计数行保留
+ * 依赖：文本读取取 ./lib/text.js 的 readFileText，本脚本不再内联读取实现。
  * 规范依据：规范「结构与注释的机械证据」节的脚本消费契约表，与「质量门禁」节的证据源行
  *
  * 约定格式（与 templates.md 模板一致）：
@@ -18,6 +19,8 @@
 
 const fs = require("fs");
 const path = require("path");
+// 读取失败回空串而非中断：AC.md 与追溯文档读不到时仍给出结构化缺口结论，消费端不以栈信息判读
+const { readFileText } = require("./lib/text.js");
 const { checkContractFingerprint } = require("./fingerprint");
 const { absoluteDesignDir } = require("./design-root");
 const { walk, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
@@ -31,7 +34,6 @@ const warnings = [];
 // 否则 docs/design 下名为 build/dist 的子目录会被漏检；不存在的目录由 walk 回传空清单，扩展名筛选由本脚本自理
 const collectFiles = (dir, ext) => walk(dir, DOC_TREE_SKIP_DIR_NAMES).filter((f) => f.endsWith(ext));
 
-const read = (p) => (fs.existsSync(p) ? fs.readFileSync(p, "utf8") : "");
 const AC_RE = /\bAC-\d{3,}\b/g;      // 标准格式：三位及以上数字
 const AC_LOOSE_RE = /\bAC-\d{1,}\b/g; // 宽松格式：检测变体（AC-1、ac-001 等）
 const TRACE_LIMIT_BYTES = 12000;      // 与本脚本在脚本消费契约表中的输出上限一致
@@ -62,7 +64,7 @@ if (!fs.existsSync(acFile)) {
   console.log(message.join("\n"));
   process.exit(1);
 }
-const totalACs = [...new Set(read(acFile).match(AC_RE) || [])];
+const totalACs = [...new Set(readFileText(acFile).match(AC_RE) || [])];
 if (totalACs.length === 0) problems.push("AC.md 中未发现任何 AC-xxx 编号条目");
 
 // ---- 2. 模块级 AC（DESIGN.md）——锚定章节提取，避免变更记录等散文提及导致假通过 ----
@@ -85,7 +87,7 @@ const SECTION_RE = /##\s*(?:[一二三四五六七八九十\d]+[、.．]?\s*)?�
 const coveredByDesign = new Set(); // 被模块承接的总 AC
 const moduleACs = new Map();       // 模块文件 → 其引用的 AC
 for (const f of designFiles) {
-  const text = read(f);
+  const text = readFileText(f);
   let refs = extractSectionRefs(text, SECTION_RE);
   if (refs === null) {
     warnings.push(`${path.relative(root, f)} 未找到"## 模块级验收要点"章节，已降级为全文提取（请补齐章节以保证准确性）`);
@@ -102,7 +104,7 @@ if (testFiles.length === 0) problems.push(`测试树 ${path.relative(root, testD
 
 const coveredByTests = new Set();
 for (const f of testFiles) {
-  const text = read(f);
+  const text = readFileText(f);
   let refs = extractSectionRefs(text, /##\s*(?:[一二三四五六七八九十\d]+[、.．]?\s*)?用例清单[^\n]*([\s\S]*?)(?=\n## |$)/);
   if (refs === null) {
     warnings.push(`${path.relative(root, f)} 未找到"## 用例清单"章节，已降级为全文提取（请补齐章节以保证准确性）`);
@@ -122,7 +124,7 @@ function variantCheck(text, label) {
 let fingerprintsChecked = 0;
 for (const f of designFiles) {
   const rel = path.relative(root, f);
-  const text = read(f);
+  const text = readFileText(f);
   const issue = checkContractFingerprint(text);
   if (issue) problems.push(`${rel} ${issue}`);
   else fingerprintsChecked++;
@@ -142,7 +144,7 @@ for (const ac of coveredByDesign) {
   if (!coveredByTests.has(ac)) problems.push(`G5 缺口：${ac}（模块级验收要点）未被任何 TEST_PLAN.md 用例覆盖`);
 }
 // G2：AC.md 双向可追溯的基本检查（需求编号列存在性）
-if (!/\|?\s*需求编号|需求ID|对应需求/.test(read(acFile))) {
+if (!/\|?\s*需求编号|需求ID|对应需求/.test(readFileText(acFile))) {
   warnings.push("AC.md 未检测到需求编号追溯列（G2 双向追溯依据），建议模板补充");
 }
 // 提示
@@ -151,8 +153,8 @@ if (designFiles.length > 0 && totalACs.length > 0 && coveredByDesign.size === 0)
 }
 
 // 格式变体扫描
-variantCheck(read(acFile), "AC.md");
-for (const f of [...designFiles, ...testFiles]) variantCheck(read(f), path.relative(root, f));
+variantCheck(readFileText(acFile), "AC.md");
+for (const f of [...designFiles, ...testFiles]) variantCheck(readFileText(f), path.relative(root, f));
 
 // ---- 5. 输出 ----
 const head = [
