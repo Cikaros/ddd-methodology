@@ -27,7 +27,7 @@
 | 3 | G3 | 架构→分解 | 目录树完整；每目录有职责声明；横切规范集中定义；基础能力清单每条消费方非空；改造影响评估已写入且含存量债务承接列；设计文档树根路径已声明；项目级指令文件初版已产出 | 指名 ddd-architect 的自查，判据为上述七项逐项有对应文本；前六项在 ARCHITECTURE.md，项目级指令文件初版在项目根的 AGENTS.md |
 | 4 | G4 | 分解→接口冻结 | 文档树覆盖全部实现目录；模块级 AC 之和覆盖总 AC；无悬空接口引用；契约指纹已记录 | `node ~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js <项目根>` |
 | 5 | G4.5 | 接口冻结 | 接口评审结论行为 `VERDICT: pass`；必须修复项为零；契约指纹已记录 | 指名 ddd-interface-reviewer，判据为 VERDICT 行与反向抽查记录；冻结后接口只能经 B 级变更修改 |
-| 6 | G5 | 实现→测试执行 | 各接缝自测通过；TEST_PLAN 覆盖全部模块级 AC；高风险用例已桩化或已列入手动测试清单；约定遵循自检已写入完成报告；契约指纹变化时用例集合未逆向缩减 | `node ~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js <项目根>` |
+| 6 | G5 | 实现→测试执行 | 各接缝自测通过，且各接缝的失败项已按归属逐项拆分；TEST_PLAN 覆盖全部模块级 AC；高风险用例已桩化或已列入手动测试清单；约定遵循自检已写入完成报告；契约指纹变化时用例集合未逆向缩减 | `node ~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js <项目根>` |
 | 7 | G5-INT | 集成收口 | 构建通过；接缝自测报告与约定遵循自检均已写入完成报告；实现文件粒度与设计预判一致；被触碰的超限文件已完成治理或给出拒绝理由；**本阶段未执行全量测试** | `node ~/.pi/agent/skills/ddd-methodology/scripts/code-health.js <项目根>` 与 governance-check 脚本，另加指名 ddd-fixer |
 | 8 | G6 | 测试→交付 | 测试全绿，或未通过项已定级路由且未超轮次；声明面审计无待修剪项；审计报告已归档；契约指纹与变更类型声明一致；结构健康恶化项逐项给出接受理由或已定级改造；项目级指令文件已核验且无过时项与无消费方条目 | 指名 ddd-auditor，判据为审计报告；恶化项比对证据见「结构与注释的机械证据」节 |
 
