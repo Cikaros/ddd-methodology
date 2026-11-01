@@ -12,6 +12,7 @@ ddd-methodology/
 ├── CHANGELOG.md                  # 变更记录（v1.0 起）
 ├── docs/                         # 项目侧证据与归档
 │   ├── health.json              # 结构健康度量历史，入版本管理，上限 50 条
+│   ├── debts.json               # 存量债务登记簿，超期与未清上限由 debt-check.js 校验
 │   ├── audits/                  # 审计报告归档，作为下次修剪清单回验的输入
 │   ├── analysis/                # 方法论自身的改造设计文档，按版本目录归档
 │   ├── refactor/                # 定向重构的冻结契约与设计
@@ -28,6 +29,7 @@ ddd-methodology/
 │   │   ├── spec-govern.md        # 本仓库适用边界、状态文件、结构与契约的演进治理
 │   │   ├── spec-rebuild.md       # 存量重建
 │   │   ├── templates.md          # 产物模板库
+│   │   ├── templates-debts.md    # 存量债务登记簿模板
 │   │   └── templates-rebuild.md  # 存量重建与定向重构产物模板
 ├── skill/ddd-rebuild/            # 存量重建 skill，仅由用户显式调用
 │   └── SKILL.md                  # 存量重建流程入口
@@ -70,6 +72,7 @@ ddd-methodology/
     ├── ref-check.js              # 跨文档引用、常量与枚举一致性校验，本仓库文档同步链证据
     ├── roster-check.js           # 代理与 skill 清单一致性校验，供 ref-check 的 C5、C11 调用
     ├── spec-index-check.js       # 规范索引表与规范标题一致性校验，供 ref-check 的 C12 调用
+    ├── debt-check.js             # 存量债务登记簿超期与上限校验脚本，末行 pass 或 overdue
     └── lib/                      # 脚本共享层，供上述脚本复用
         ├── text.js               # 安全读文件、按行编号与漂移项构造三项纯函数
         └── walk.js               # 目录深度优先遍历，统一各脚本的排除集
