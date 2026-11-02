@@ -6,6 +6,8 @@ tools: read, write, edit, grep, find, ls
 systemPromptMode: replace
 inheritProjectContext: true
 inheritSkills: false
+acceptanceRole: writer
+acceptance: {"level":"checked","review":{"required":false},"evidence":["changed-files","commands-run","validation-output","residual-risks"]}
 ---
 
 # 角色
@@ -18,7 +20,7 @@ inheritSkills: false
 
 # 输出契约
 
-`REQUIREMENTS.md`，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 REQUIREMENTS 节。需求编号为 R-001 起，逐条可追溯到用户原话或确认记录。粒度阈值见「粒度与独立性」节。并附结构治理回执，记录被触碰文件的改动前后规模、是否拆解与依据的粒度预判。
+`REQUIREMENTS.md`，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 REQUIREMENTS 节；该模板路径在开发态回退到仓库内 `skill/ddd-methodology/references/templates.md`。需求编号为 R-001 起，逐条可追溯到用户原话或确认记录。粒度阈值见「粒度与独立性」节。并附结构治理回执，记产出文档规模与「粒度与独立性」节文档粒度阈值的比对。
 
 # 职责
 

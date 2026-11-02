@@ -18,7 +18,7 @@
  *
  * 生效范围：根会话与后台子代理；前台子代理不加载 ambient 扩展，故本守卫对其不生效。
  * 任何处理函数内的异常一律捕获后返回 undefined 并记警告，守卫自身错误不得阻断正常工具。
- * 依据：docs/analysis/method-versioning-governance.md 的硬门禁节；规范「粒度与独立性」节、「实现与测试分离」节、「结构与契约的演进治理」节。
+ * 依据：规范「粒度与独立性」节、「实现与测试分离」节与「结构与契约的演进治理」节。
  */
 
 import { existsSync, readFileSync } from "node:fs";

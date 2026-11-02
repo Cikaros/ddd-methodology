@@ -44,7 +44,7 @@ set "PROVIDER="
 if "%~1"=="" goto :parsed
 if /i "%~1"=="--check" ( set "CHECK_ONLY=1" & shift & goto :parse )
 if /i "%~1"=="--models" (
-    if "%~2"=="" ( echo [ERROR] --models needs a profile name: balanced, quality, economy & exit /b 1 )
+    if "%~2"=="" ( echo [ERROR] --models needs a profile name: balanced, quality & exit /b 1 )
     set "MODELS_PROFILE=%~2" & shift & shift & goto :parse
 )
 if /i "%~1"=="--set" (
@@ -84,9 +84,9 @@ if exist "%ROOT%workflows\ddd-workflow.js" (
     echo [WARN] missing %ROOT%workflows\ddd-workflow.js
 )
 
-rem Shared layer: scripts\lib holds text.js and walk.js, created before the whitelist copy
+rem Shared layer: scripts\lib holds the shared modules, created before the whitelist copy
 if not exist "%SKILL_DST%\scripts\lib" mkdir "%SKILL_DST%\scripts\lib"
-for %%S in (trace-check code-health governance-check fingerprint design-root decision-tables ref-check roster-check spec-index-check debt-check lib\text lib\walk) do (
+for %%S in (trace-check code-health governance-check fingerprint design-root decision-tables install-manifest-check ref-check roster-check spec-index-check debt-check lib\text lib\walk lib\spec-doc lib\ref-refs lib\ref-constants lib\ref-stages lib\ref-phrases) do (
     if exist "%ROOT%scripts\%%S.js" (
         copy /y "%ROOT%scripts\%%S.js" "%SKILL_DST%\scripts\%%S.js" >nul
         if errorlevel 1 ( echo [WARN] %%S copy failed ) else ( echo [OK] %%S )
@@ -158,7 +158,7 @@ for %%A in (%DDD_AGENTS%) do (
 )
 echo   Agents   : !N! / 12 installed
 if exist "%SKILL_DST%\workflows\ddd-workflow.js" ( echo   Workflow : installed ) else ( echo   Workflow : missing )
-for %%S in (trace-check code-health governance-check fingerprint design-root decision-tables ref-check roster-check spec-index-check debt-check lib\text lib\walk) do (
+for %%S in (trace-check code-health governance-check fingerprint design-root decision-tables install-manifest-check ref-check roster-check spec-index-check debt-check lib\text lib\walk lib\spec-doc lib\ref-refs lib\ref-constants lib\ref-stages lib\ref-phrases) do (
     if exist "%SKILL_DST%\scripts\%%S.js" ( echo   %%S : installed ) else ( echo   %%S : missing )
 )
 if exist "%PI_HOME%\extensions\ddd-governance.ts" ( echo   Extension: installed ) else ( echo   Extension: missing )

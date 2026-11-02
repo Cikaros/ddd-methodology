@@ -13,10 +13,7 @@ ddd-methodology/
 ├── docs/                         # 项目侧证据与归档
 │   ├── health.json              # 结构健康度量历史，入版本管理，上限 50 条
 │   ├── debts.json               # 存量债务登记簿，超期与未清上限由 debt-check.js 校验
-│   ├── audits/                  # 审计报告归档，作为下次修剪清单回验的输入
-│   ├── analysis/                # 方法论自身的改造设计文档，按版本目录归档
-│   ├── refactor/                # 定向重构的冻结契约与设计
-│   └── rebuild/                 # 存量重建的冻结锚点、设计与回溯记录
+│   └── refactor/                # 本轮改造设计的冻结契约
 ├── skill/ddd-methodology/        # pi Skill，规范权威源为 references/ 下的规范文件集
 │   ├── SKILL.md                  # 调度流程入口
 │   ├── references/
@@ -28,6 +25,7 @@ ddd-methodology/
 │   │   ├── spec-declare.md       # 声明面可验证与修剪、结构与注释的机械证据
 │   │   ├── spec-govern.md        # 本仓库适用边界、状态文件、结构与契约的演进治理
 │   │   ├── spec-rebuild.md       # 存量重建
+│   │   ├── spec-metrics.md       # 绩效度量
 │   │   ├── templates.md          # 产物模板库
 │   │   ├── templates-debts.md    # 存量债务登记簿模板
 │   │   └── templates-rebuild.md  # 存量重建与定向重构产物模板
@@ -72,10 +70,16 @@ ddd-methodology/
     ├── ref-check.js              # 跨文档引用、常量与枚举一致性校验，本仓库文档同步链证据
     ├── roster-check.js           # 代理与 skill 清单一致性校验，供 ref-check 的 C5、C11 调用
     ├── spec-index-check.js       # 规范索引表与规范标题一致性校验，供 ref-check 的 C12 调用
+    ├── install-manifest-check.js # 安装与卸载脚本清单一致性校验，供 ref-check 的 C13 调用
     ├── debt-check.js             # 存量债务登记簿超期与上限校验脚本，末行 pass 或 overdue
     └── lib/                      # 脚本共享层，供上述脚本复用
         ├── text.js               # 安全读文件、按行编号与漂移项构造三项纯函数
-        └── walk.js               # 目录深度优先遍历，统一各脚本的排除集
+        ├── walk.js               # 目录深度优先遍历，统一各脚本的排除集
+        ├── spec-doc.js           # 规范读取面：规范文件枚举、节标题索引与节定位
+        ├── ref-refs.js           # 引用形态域校验：C1 语义化节引用、C2 裸章节号、C7 脚本名
+        ├── ref-constants.js      # 常量枚举域校验：C3 阈值、C6 门号、C9 守卫编号
+        ├── ref-stages.js         # 阶段键域校验：C4 与 --fix 的注册表生成
+        └── ref-phrases.js        # 冻结短语域校验：C8 与锚点清单
 ```
 
 ## 安装与卸载
@@ -94,7 +98,7 @@ Linux、macOS 与 Git Bash 首次使用前执行 `chmod +x scripts/*.sh`。
 
 | 参数 | 取值 | 说明 |
 |---|---|---|
-| `--models` | `balanced`、`quality`、`economy` | 安装并按 `profiles/models.json` 的配比配置各代理模型 |
+| `--models` | `balanced`、`quality` | 安装并按 `profiles/models.json` 的配比配置各代理模型 |
 | `--models none` | 固定值 | 显式跳过模型配比，不读取配比文件 |
 | `--set` | `ddd-<代理名>=<模型名>` | 在配比基础上改单个代理，可重复 |
 | `--skip-verify` | 无 | 跳过可用性冒烟，仅在已确认模型可用时使用 |
@@ -110,7 +114,8 @@ Linux、macOS 与 Git Bash 首次使用前执行 `chmod +x scripts/*.sh`。
   - code-health 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/code-health.js`，度量结构健康并写入项目内 docs/health.json，仅报告不作门禁
   - governance-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/governance-check.js`，校验契约指纹与结构趋势，输出 verdict 作为 G5-INT 门槛证据
   - ref-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/ref-check.js`，校验跨文档引用、常量与枚举集合一致性，供文档同步链使用
-  - 共享层 `scripts/lib/`（`text.js`、`walk.js`）供上述校验脚本复用，随 Skill 装到 `~/.pi/agent/skills/ddd-methodology/scripts/lib/`，卸载时随固定清单一并移除
+  - 共享层与各域校验模块位于 `scripts/lib/`（`text.js`、`walk.js`、`spec-doc.js`、`ref-refs.js`、`ref-constants.js`、`ref-stages.js`、`ref-phrases.js`），供 `ref-check` 复用，随 Skill 装到 `~/.pi/agent/skills/ddd-methodology/scripts/lib/`，卸载时随固定清单一并移除
+  - install-manifest-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/install-manifest-check.js`，校验安装与卸载脚本的清单一致性，作为 ref-check 的 C13
 - 存量重建 skill `ddd-rebuild` 与定向重构 skill `ddd-refactor`，分别安装到 `~/.pi/agent/skills/ddd-rebuild/` 与 `~/.pi/agent/skills/ddd-refactor/`。三者同属一份固定清单，安装时一并复制、卸载时一并移除，随装随卸；卸载只删清单内目录，不影响用户自有 skill
 - 运行时守卫扩展 `~/.pi/agent/extensions/ddd-governance.ts`，仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默
 - 模型配比记录文件 `~/.pi/agent/.ddd-model-overrides.json`，记录本方法论写入的代理、配比名与写入前原值，供精确回退
@@ -136,7 +141,7 @@ Linux、macOS 与 Git Bash 首次使用前执行 `chmod +x scripts/*.sh`。
 /skill:ddd-refactor    定向重构
 ```
 
-流水线之外的任务同样按此判据派发。派发前先判任务类型。第一问是这个任务是只读的吗，是则一律派 scout。非只读任务按产出物查规范「角色与交接」节的派发表。承接者收到不符合自身职责的任务时停止并报告派发类型不匹配。
+流水线之外的任务同样按此判据派发。派发前先判任务性质。第一问是这个任务是只读的吗。目的只是获取信息、无专属产出物的探查型只读任务，派 scout，不再查表。产出接口评审报告、仲裁裁决单、巡检报告或审计报告等专属产物的职责型只读任务，按产出物查「角色与交接」节的派发表，派对应只读代理。非只读任务同样查表。承接者收到不符合自身职责的任务时停止并报告派发类型不匹配。
 
 只读的探查、调研、方案比选、环境勘察、资料检索，一律派 scout，不派给任何具备写权限的 ddd-* 代理。
 
@@ -158,7 +163,6 @@ Linux、macOS 与 Git Bash 首次使用前执行 `chmod +x scripts/*.sh`。
 |---|---|
 | balanced | 推荐。契约与编码角色用契约忠实度满分的一档，其余用同族更大输出上限的一档 |
 | quality | 质量优先，少量高风险角色换异构模型以降低同族共同盲区 |
-| economy | 成本优先，仅取消输出上限升档 |
 
 应用流程默认有两道校验，任一不通过的模型会被跳过并告警，不写入无法验证的声明。第二道可用 `--skip-verify` 跳过，仅在已确认模型可用时使用，跳过即等于放弃该道验证：
 

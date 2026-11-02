@@ -20,7 +20,7 @@ acceptance: {"level":"checked","review":{"required":false},"evidence":["changed-
 
 # 输出契约
 
-测试报告与缺陷路由单，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 TEST_PLAN 与缺陷路由单两节。报告含重构等价性节，记契约指纹比对结果与用例集合增减；报告含结构治理回执，记报告与路由单的规模。报告末尾必须含机读行 `DEFECTS: {"A":n,"B":n,"C":n,"D":n,"unresolved":bool}`，缺行或与正文矛盾将导致加速档中断。
+测试报告与缺陷路由单，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 TEST_PLAN 与缺陷路由单两节；该模板路径在开发态回退到仓库内 `skill/ddd-methodology/references/templates.md`。报告含重构等价性节，记契约指纹比对结果与用例集合增减；报告含结构治理回执，记产出文档规模与「粒度与独立性」节文档粒度阈值的比对。报告末尾必须含机读行 `DEFECTS: {"A":n,"B":n,"C":n,"D":n,"unresolved":bool}`，该行无论有无缺陷均须输出，零缺陷时计数全零；缺行或与正文矛盾将导致加速档中断。
 
 # 职责
 
@@ -46,12 +46,12 @@ acceptance: {"level":"checked","review":{"required":false},"evidence":["changed-
 
 四级判据：
 
-| 级别 | 定义 | 处理 |
-|---|---|---|
-| D 测试级 | 计划漏场景、断言错或覆盖缺口 | ddd-fixer 修计划；未桩化的高风险用例超时同取 D 级 |
-| C 实现级 | 实现偏离设计 | ddd-fixer 修码，不改设计；实现缺陷导致的死循环或超时同取 C 级 |
-| B 设计级 | 设计矛盾、边界不清、接口不可实现 | 回分解设计并同步 AC |
-| A 需求级 | 设计正确执行仍不满足总 AC | 回需求采集并经用户确认 |
+| 级别 | 定义 | 自检问题 | 处理 |
+|---|---|---|---|
+| D 测试级 | 计划漏场景、断言错或覆盖缺口 | 计划是否遗漏或断言错误 | ddd-fixer 修计划；未桩化的高风险用例超时同取 D 级 |
+| C 实现级 | 实现偏离设计 | 代码与就近 DESIGN 何处不一致 | ddd-fixer 修码，不改设计；实现缺陷导致的死循环或超时同取 C 级 |
+| B 设计级 | 设计矛盾、边界不清、接口不可实现 | 实现者是做不出来而非没做对 | 回分解设计并同步 AC |
+| A 需求级 | 设计正确执行仍不满足总 AC | 是否需求本身矛盾或缺口 | 回需求采集并经用户确认 |
 
 未命中任一级特征时，默认取最低适用级别。
 

@@ -9,7 +9,7 @@
  * 必须通过 args.root 传入项目根绝对路径——workflow 脚本运行在沙箱中，
  * 没有 process 全局，唯一合法的数据通道就是冻结的 args。
  *
- * 前置条件：12 个 ddd-* 代理须已安装于 ~/.pi/agent/agents/，未安装将导致派发失败，脚本不自建存在性校验。
+ * 前置条件：本脚本用到的 ddd-* 代理须已安装于 ~/.pi/agent/agents/，未安装将导致派发失败，脚本不自建存在性校验；安装状态可用 install.sh --check 或 install.bat --check 自检。
  *
  * 阶段键清单的权威源为 `references/spec-govern.md`「状态文件」节，本脚本的 stageRegistry 须与其一致，由 `scripts/ref-check.js` 的 C4 校验；
  * 阶段流的时序另由 `references/spec-role.md`「角色与交接」节的交接链定义。
@@ -17,7 +17,7 @@
  * 实现/测试硬分离：ddd-tester 与 ddd-implementer 永不同段；并行段仅为实现与测试规划。
  *
  * 断点续跑：状态文件由各阶段代理在任务中负责写入/更新 <root>/docs/.ddd-state.json（schema 见规范「状态文件」节）；
- * 本脚本启动时由 ddd-requirements 只读检查状态文件并按契约输出 DONE: <stageKey> 机读行，已完成阶段自动跳过。
+ * 本脚本启动时由 scout 只读检查状态文件并按契约输出 DONE: <stageKey> 机读行，已完成阶段自动跳过。
  *
  * 缺陷路由策略：
  *   - C（实现级）：派发 ddd-fixer 修复 → 重测
@@ -45,17 +45,17 @@ const stageRegistry = [
 ];
 
 /**
- * 读取断点状态：由 ddd-requirements 执行只读检查。
+ * 读取断点状态：由 scout 执行只读检查。
  * 契约：报告必须逐行输出机读行 "DONE: <stageKey>"（每个已完成阶段一行），
  * 便于 parseDoneStages 可靠解析；JSON 损坏时输出 "STATE_CORRUPT" 并停止。
  */
 async function readResumeState() {
   const r = await runStage("ddd-resume-check", {
     label: "读取断点状态",
-    agent: "ddd-requirements",
+    agent: "scout",
     task: `只读检查 ${stateFile}（断点状态文件，字段 schema：doneStages 数组 / lastStage / status）。
 规则：
-1. 若文件存在且 JSON 有效：对 doneStages 数组中每个阶段键，输出一行机读行 "DONE: <阶段键>"（格式严格为 DONE: 空格 阶段键，如 "DONE: architect"）；并报告 lastStage 与 status 字段值、缺陷摘要。然后停止，不写 REQUIREMENTS.md。
+1. 若文件存在且 JSON 有效：对 doneStages 数组中每个阶段键，输出一行机读行 "DONE: <阶段键>"（格式严格为 DONE: 空格 阶段键，如 "DONE: architect"）；并报告 lastStage 与 status 字段值、缺陷摘要。然后停止，不写任何文件。
 2. 若文件存在但 JSON 损坏/不可解析：输出 "STATE_CORRUPT" 并停止，不得当全新启动处理。
 3. 若文件不存在：输出 "NO_STATE_FILE"，报告全新启动。
 禁止修改任何文件。`,
@@ -79,7 +79,7 @@ function parseDoneStages(reportText) {
 }
 
 // 从报告文本解析缺陷级别。
-// 优先机读行 "DEFECTS: {...}"；机读行存在但解析失败、或计数全 0 但散文含失败语义词 → 视为格式缺陷，抛错交根会话，不猜测。
+// 优先机读行 "DEFECTS: {...}"；机读行存在但解析失败、或计数全 0 但散文给出明确的未解决/未通过声明 → 视为格式缺陷，抛错交根会话，不猜测。
 function extractDefects(reportText) {
   const text = String(reportText || "");
   const found = { A: 0, B: 0, C: 0, D: 0, unresolved: false };
@@ -93,12 +93,16 @@ function extractDefects(reportText) {
     for (const k of ["A", "B", "C", "D"]) found[k] = Number(j[k]) || 0;
     const sum = found.A + found.B + found.C + found.D;
     if (sum > 0) { found.unresolved = true; return found; }
-    // 计数全 0：核对散文（先剔除机读行），若明确存在失败语义词则机读与散文矛盾 → 中断
+    // 计数全 0：机读行为准，散文仅用于捕获明确矛盾——仅当散文出现明确的未解决/未通过声明（且未被否定/清零）
+    // 或带非零计数的失败声明时才判矛盾。合规的零缺陷表述（「本轮无阻塞缺陷」「测试未见失败」「失败项：0」）
+    // 语义即无缺陷，不匹配本模式，不触发中断。
     const prose = text.replace(/DEFECTS:\s*\{[\s\S]*?\}\s*(?:\n|$)/g, "");
-    const hasFailWord = /(未通过|未解决|存在失败|有失败|修复未果|FAIL(ED)?\b|defect\b)/i.test(prose);
-    const negated = /(失败项|失败)\s*[:：]?\s*(无|0|零)\s*(项|个)?|\b(0|zero|no)\s+(failed|defects?)\b|FAILED\s*[:：]\s*0|回归未通过项已清零|无失败/i.test(prose);
-    if (hasFailWord && !negated) {
-      throw new Error("测试报告机读计数全 0 但正文存在失败表述，二者矛盾：按格式缺陷中断，请人工核对报告。");
+    const unresolvedClaim =
+      /未解决|未通过/.test(prose) &&
+      !/(?:无|未见|未见有|不存在|未发现|未有)\s*(?:任何\s*)?(?:未解决|未通过)|(?:未解决|未通过)(?:项|缺陷|用例|问题)?\s*(?:[:：=为是])?\s*(?:0|零|无)|回归未通过项已清零/.test(prose);
+    const explicitFailCount = /[1-9]\d*\s*(?:项|个|条|处)\s*失败|失败\s*[:：]\s*[1-9]\d*|\bFAIL(?:ED)?\b\s*[:：]\s*[1-9]\d*/.test(prose);
+    if (unresolvedClaim || explicitFailCount) {
+      throw new Error("测试报告机读计数全 0 但正文声明存在未解决/未通过项，二者矛盾：按格式缺陷中断，请人工核对报告。");
     }
     found.unresolved = j.unresolved === true;
     return found;
@@ -108,7 +112,8 @@ function extractDefects(reportText) {
 }
 
 // 状态更新指令：注入到阶段任务末尾。
-// 并行段竞写防护：仅实现者写状态（writer 唯一），测试规划者不写。
+// 并行段竞写防护：并行段内仅实现者写状态（writer 唯一），测试规划者不写；
+// 并行段自身的完成（implement-plan）由其后继写入者 g5-int 合并记录，使任一子任务未完成时整段不被记为已完成。
 function stateNote(stageKey, alsoDone) {
   const keys = [stageKey].concat(alsoDone || []);
   const list = keys.map((k) => `"${k}"`).join(", ");
@@ -145,12 +150,32 @@ async function runStage(key, params, meta) {
   }
 }
 
+// 缺陷摘要：从测试报告的缺陷路由单区段按条目提取，取代按关键词过滤整篇报告行。
+// 先切条目再按上限截断，截断时显式标注，避免含「失败」的合规行被带入或真缺陷条目被前十五条截掉。
+function defectSummaryFrom(reportText) {
+  const text = String(reportText || "");
+  // 定位缺陷路由单区段：标题行或加粗行含「缺陷路由」
+  const head = text.match(/^#{1,6}\s*[^\n]*缺陷路由[^\n]*$/m) || text.match(/^\*\*[^\n]*缺陷路由[^\n]*\*\*\s*$/m);
+  if (!head) return text.slice(-1500);
+  const body = text.slice(head.index + head[0].length);
+  // 区段止于下一节标题（不含「缺陷」的标题行）；缺陷条目自身的标题不构成边界
+  const boundary = body.match(/^#{1,6}\s+(?!缺陷)[^\n]*$/m);
+  const section = (boundary ? body.slice(0, boundary.index) : body).trim();
+  if (!section) return text.slice(-1500);
+  // 条目：模板中每条以「# 缺陷 {ID}」标题开启，按标题行切分；无标题时退化为空行分块
+  let items = section.split(/\n(?=#{1,6}\s)/).map((s) => s.trim()).filter(Boolean);
+  if (items.length <= 1) items = section.split(/\n{2,}/).map((s) => s.trim()).filter(Boolean);
+  const cap = 15; // 保持原关键词过滤阶段的条目上限
+  const kept = items.slice(0, cap);
+  const note = items.length > cap ? `\n（已截断：共 ${items.length} 条，仅列前 ${cap} 条）` : "";
+  return kept.join("\n\n") + note;
+}
+
 // 演进上下文：从上轮修复输出中提取"已尝试方案"，从测试报告中提取缺陷条目，注入下轮任务防失忆打转
 function buildFixCtx(round, reportText, fixText) {
   const text = String(reportText || "");
-  // 缺陷条目：优先取路由单缺陷清单行，备选整个报告尾部
-  const defectLines = text.split(/\n/).filter(l => /缺陷|BUG-|BUGPLAN|路由|失败/.test(l)).slice(0, 15).join("\n");
-  const defectSummary = defectLines || text.slice(-1500);
+  // 缺陷条目：从缺陷路由单区段按条目提取，不再按关键词过滤整篇报告行
+  const defectSummary = defectSummaryFrom(text);
   // 已尝试方案：来自上轮修复者的输出 fixText，而非测试报告
   const fixOut = String(fixText || "");
   const triedMatch = fixOut.match(/已尝试方案[：:]*([\s\S]{0,1200}?)(?=\n#{1,6} |$)/);
@@ -313,14 +338,27 @@ for (const s of stages) {
 }
 
 // —— 并行段：实现与测试规划（均为产出类，无进程执行） ——
-// 竞写防护：仅实现者写状态文件（writer 唯一），测试规划者不写状态。
+// 段内不记录本段完成：仅实现者写其只读前驱 interface-review（writer 唯一），本段自身（implement-plan）的完成由后继写入者 g5-int 合并记录。
+// 这样 implement-plan 与 test-plan 中任一未成功完成时，doneStages 都不会出现 implement-plan，续跑必重跑整段，避免 test-plan 被永久跳过。
 if (!doneStages.includes("implement-plan")) {
-  await runs.all(parallelStages.map(p => ({
+  const parallelResults = await runs.all(parallelStages.map(p => ({
     key: p.key,
     label: p.label,
     agent: p.agent,
-    task: p.key === "implement-plan" ? p.task + stateNote("implement-plan", ["interface-review"]) : p.task,
+    task: p.key === "implement-plan" ? p.task + stateNote("interface-review") : p.task,
   })));
+  // runs.all 收集失败而不抛错：任一子任务回执 ok 为 false 即整段未完成，直接返回结构化失败且不写状态
+  const failedParallel = Array.isArray(parallelResults) ? parallelResults.find((r) => r && r.ok === false) : null;
+  if (failedParallel) {
+    return {
+      __failed: true,
+      status: "failed",
+      failedStage: "implement-plan",
+      stateFile,
+      error: "并行段子任务未成功完成：" + (failedParallel.error || "未知错误"),
+      hint: "并行段未写入 doneStages，重新启动 workflow 将重跑整段（实现与测试规划）。",
+    };
+  }
 } else {
   skippedStages.push({ stage: "implement-plan", reason: "断点记录该阶段已完成，本轮跳过" });
 }
@@ -332,7 +370,7 @@ if (!doneStages.includes("g5-int")) {
   const r = await runStage("ddd-int-check", {
     label: "G5-INT 集成收口检查",
     agent: "ddd-fixer",
-    task: `在项目根 ${root} 执行集成收口检查（G5-INT 门）：1) 全项目构建通过；2) 检查各接缝自测报告齐备且 TEST_PLAN 对齐说明完整，声明测试就绪；3) 运行 node ~/.pi/agent/skills/ddd-methodology/scripts/code-health.js <项目根> 并将输出附入门禁记录；4) 运行 node ~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js <项目根> 与 node ~/.pi/agent/skills/ddd-methodology/scripts/governance-check.js <项目根>，将两者输出附入门禁记录，作为 G5 与 G5-INT 证据，governance-check 的退出码非零即视为阻断；5) 核对实现文件粒度与 DESIGN 预判一致，应拆未拆报告 C 级，同时核对各接缝实现者的约定遵循自检齐备；6) 修复因多接缝合并产生的集成问题，仅实现级修改。**禁止执行全量测试套件，全量测试由 ddd-tester 负责**。若发现设计级矛盾（集成暴露接口不匹配），停止并报告 B 级缺陷。` + stateNote("g5-int"),
+    task: `在项目根 ${root} 执行集成收口检查（G5-INT 门）：1) 全项目构建通过；2) 检查各接缝自测报告齐备且 TEST_PLAN 对齐说明完整，声明测试就绪；3) 运行 node ~/.pi/agent/skills/ddd-methodology/scripts/code-health.js <项目根> 并将输出附入门禁记录，作为 G5-INT 证据；4) 运行 node ~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js <项目根> 并将输出附入门禁记录，作为 G5 证据；运行 node ~/.pi/agent/skills/ddd-methodology/scripts/governance-check.js <项目根> 并将输出附入门禁记录，作为 G5-INT 证据，governance-check 的退出码非零即视为阻断；5) 核对实现文件粒度与 DESIGN 预判一致，应拆未拆报告 C 级，同时核对各接缝实现者的约定遵循自检齐备；6) 修复因多接缝合并产生的集成问题，仅实现级修改。**禁止执行全量测试套件，全量测试由 ddd-tester 负责**。若发现设计级矛盾（集成暴露接口不匹配），停止并报告 B 级缺陷。` + stateNote("g5-int", ["implement-plan"]),
   }, { stage: "g5-int" });
   if (r && r.__failed) return r;
 } else {
@@ -395,12 +433,16 @@ while (round <= maxFixRounds) {
     if (r && r.__failed) return r;
     lastFixOutput = typeof r === "string" ? r : JSON.stringify(r);
   } else if (fixes.length === 2) {
-    await runs.all(fixes.map(f => ({
+    const fixResults = await runs.all(fixes.map(f => ({
       key: f.key,
       label: f.label + `（第${round}轮）`,
       agent: f.agent,
       task: f.task(buildFixCtx(round, lastReport, lastFixOutput)),
     })));
+    // 并行 C/D 混合修复：两路输出都要留存（与单修复分支同样保存），否则下一轮 buildFixCtx 的「已尝试方案」为空，反重复机制在混合场景失效
+    lastFixOutput = (Array.isArray(fixResults) ? fixResults : [])
+      .map((r) => (typeof r === "string" ? r : JSON.stringify(r)))
+      .join("\n\n");
   }
   // 循环继续 → 重测
 }

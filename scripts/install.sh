@@ -42,7 +42,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --check) CHECK_ONLY=1; shift ;;
         --models)
-            [[ -z "${2:-}" ]] && { echo "[错误] --models 需要配比名，可用：balanced、quality、economy" >&2; exit 1; }
+            [[ -z "${2:-}" ]] && { echo "[错误] --models 需要配比名，可用：balanced、quality" >&2; exit 1; }
             MODELS_PROFILE="$2"; shift 2 ;;
         --models=*) MODELS_PROFILE="${1#*=}"; shift ;;
         --set)
@@ -77,7 +77,7 @@ if [[ "$CHECK_ONLY" == "1" ]]; then
     else
         echo "  Workflow : 未安装"
     fi
-    for s in trace-check code-health governance-check fingerprint design-root decision-tables ref-check roster-check spec-index-check debt-check lib/text lib/walk; do
+    for s in trace-check code-health governance-check fingerprint design-root decision-tables install-manifest-check ref-check roster-check spec-index-check debt-check lib/text lib/walk lib/spec-doc lib/ref-refs lib/ref-constants lib/ref-stages lib/ref-phrases; do
         if [[ -f "$SKILL_DST/scripts/$s.js" ]]; then
             echo "  $s : 已安装"
         else
@@ -132,7 +132,7 @@ fi
 
 # 1.6 安装门禁证据脚本与共享层：逐个白名单复制，lib/ 子目录随列表项一并建出
 mkdir -p "$SKILL_DST/scripts/lib"
-for s in trace-check code-health governance-check fingerprint design-root decision-tables ref-check roster-check spec-index-check debt-check lib/text lib/walk; do
+for s in trace-check code-health governance-check fingerprint design-root decision-tables install-manifest-check ref-check roster-check spec-index-check debt-check lib/text lib/walk lib/spec-doc lib/ref-refs lib/ref-constants lib/ref-stages lib/ref-phrases; do
     if [[ -f "$ROOT/scripts/$s.js" ]]; then
         cp -f "$ROOT/scripts/$s.js" "$SKILL_DST/scripts/$s.js"
         echo "[完成] $s -> $SKILL_DST/scripts/$s.js"

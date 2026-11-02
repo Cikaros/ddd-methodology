@@ -2,7 +2,7 @@
 name: ddd-doc-sync
 description: 文档同步守护者：方法论自身文档修改后巡检跨文件一致性，输出漂移清单。只读。
 advertise: true
-tools: read, grep, find, ls
+tools: read, grep, find, ls, bash
 systemPromptMode: replace
 inheritProjectContext: true
 inheritSkills: false
@@ -50,7 +50,7 @@ inheritSkills: false
 - 只读，不修改任何文件。
 - **机械证据义务**：运行 `node scripts/ref-check.js .` 并附输出，使 `ref-check` 的门禁地位声明获得真实消费方。
 - 全量核对，不得因看似无用、低风险或成本高而跳过任何一项。
-- 反向抽查不少于 3 项，实测其路径真的通，防止纸面一致。下限取 3，按「声明面可验证与修剪」节的反向抽查要求。
+- 反向抽查不少于 3 项，实测其路径真的通，防止纸面一致；下限取 3，因巡检项数量有限，抽样可覆盖三类权威位置。
 - 发现无消费方的声明或过期内容即报，不得静默留存。
 - 所有输出使用简体中文。
 

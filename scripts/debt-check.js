@@ -2,7 +2,8 @@
 /**
  * 目标：把存量债务登记簿的结构齐备、总量上限与时效判定收敛为单个可机的文本结论，作为债务清偿门禁的独立证据源。
  * 范围：下列机械可判定事项——docs/debts.json 存在且 JSON 合法；顶层含 currentVersion、maxOpen、defaultDueSpan 与 debts 数组；
- *   id 在仓库内唯一；每条含 id、desc、registeredAt、owner、status、reason 且 owner 具名非空；registeredAt 形如 v主.次；
+ *   id 在仓库内唯一；每条含 id、desc、registeredAt、owner、status、reason、rootCause、recurrence 且 owner 具名非空；registeredAt 形如 v主.次；
+ *   rootCause 取根因分类之一；recurrence 含非负整数 count 与最近一次复发的版本 lastVersion，count 为零时 lastVersion 须为 null，否则形如 v主.次；
  *   dueBy 可省，省略时按 registeredAt 加 defaultDueSpan 推导应清版本，给出时须形如 v主.次；
  *   status 仅取 open 或 closed；未清项数不超 maxOpen；每个未清项的应清版本不早于 currentVersion。
  * 不包含：债务是否真被清偿、desc 与 reason 的合理性、连续两轮超期后的用户升级裁决，交由审计代理与根会话判定。
@@ -14,7 +15,7 @@
  * 未启用取向：docs/debts.json 不存在时视为未启用，输出说明并判通过，不报错，兼容既有项目
  * 版本比较：按 v主.次 解析为数值后比较，不做字符串比较，避免 v2.10 与 v2.9 误判
  * 依赖：文本读取取 ./lib/text.js 的 readFileText，本脚本不再内联读取实现
- * 规范依据：docs/analysis/v2.11-debt-governance.md 的登记、超期校验与上限三节
+ * 规范依据：规范「存量债务的登记与清偿」节的登记、超期校验与上限三节
  */
 
 const fs = require("fs");
@@ -28,8 +29,10 @@ const debtsPath = path.join(root, ...DEBTS_REL.split("/"));
 
 const REQUIRED_TOP = ["currentVersion", "maxOpen", "defaultDueSpan"];
 // dueBy 可省：省略时由校验脚本按 registeredAt 加 defaultDueSpan 推导，故不入必填清单
-const REQUIRED_ENTRY = ["id", "desc", "registeredAt", "owner", "status", "reason"];
+const REQUIRED_ENTRY = ["id", "desc", "registeredAt", "owner", "status", "reason", "rootCause", "recurrence"];
 const STATUSES = ["open", "closed"];
+// 根因分类：与规范「存量债务的登记与清偿」节及债务模板的字段表同源，同一分类连续两版未清即须升级用户
+const ROOT_CAUSES = ["声明与事实脱节", "单一权威被违背", "机械校验有盲区", "规则演进后消费方未同步", "反复修补同一处"];
 
 // 版本解析：仅接受 v主.次，比较主次两段数值；缺失或不合形回 null
 function parseVersion(value) {
@@ -113,6 +116,24 @@ function check() {
     }
     if (!isBlank(entry.status) && !STATUSES.includes(entry.status)) {
       reasons.push(`${DEBTS_REL} ${label} status 非法（仅取 open 或 closed）：${JSON.stringify(entry.status)}`);
+    }
+    if (!isBlank(entry.rootCause) && !ROOT_CAUSES.includes(entry.rootCause)) {
+      reasons.push(`${DEBTS_REL} ${label} rootCause 非法（须取根因分类之一）：${JSON.stringify(entry.rootCause)}`);
+    }
+    // 复发记录：count 为零时无复发版本，lastVersion 须为 null；count 大于零时须给出形如 v主.次 的最近复发版本
+    if (!isBlank(entry.recurrence)) {
+      const rec = entry.recurrence;
+      if (typeof rec !== "object" || rec === null || Array.isArray(rec)) {
+        reasons.push(`${DEBTS_REL} ${label} recurrence 非法（须为含 count 与 lastVersion 的对象）：${JSON.stringify(rec)}`);
+      } else {
+        if (!Number.isInteger(rec.count) || rec.count < 0) {
+          reasons.push(`${DEBTS_REL} ${label} recurrence.count 非法（须为非负整数）：${JSON.stringify(rec.count)}`);
+        } else if (rec.count === 0) {
+          if (rec.lastVersion !== null) reasons.push(`${DEBTS_REL} ${label} recurrence.lastVersion 在复发次数为零时须为 null：${JSON.stringify(rec.lastVersion)}`);
+        } else if (parseVersion(rec.lastVersion) === null) {
+          reasons.push(`${DEBTS_REL} ${label} recurrence.lastVersion 非法（复发次数大于零时须形如 v主.次）：${JSON.stringify(rec.lastVersion)}`);
+        }
+      }
     }
     const registered = parseVersion(entry.registeredAt);
     if (!isBlank(entry.registeredAt) && registered === null) {

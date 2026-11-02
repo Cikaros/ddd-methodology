@@ -77,26 +77,6 @@
       "rationale": {
         "审查与仲裁三类": "换异构模型以降低与实现者同族的共同盲区，代价为延迟与输出价上升"
       }
-    },
-    "economy": {
-      "_说明": "成本优先。可用模型中最省的一档即 DeepSeek-V4.1-Flash，故与推荐配比一致。",
-      "roles": {
-        "ddd-requirements": "DeepSeek-V4.1-Flash",
-        "ddd-acceptance": "DeepSeek-V4.1-Flash",
-        "ddd-architect": "DeepSeek-V4.1-Flash",
-        "ddd-decomposer": "DeepSeek-V4.1-Flash",
-        "ddd-interface-reviewer": "DeepSeek-V4.1-Flash",
-        "ddd-implementer": "DeepSeek-V4.1-Flash",
-        "ddd-test-planner": "DeepSeek-V4.1-Flash",
-        "ddd-tester": "DeepSeek-V4.1-Flash",
-        "ddd-fixer": "DeepSeek-V4.1-Flash",
-        "ddd-arbiter": "DeepSeek-V4.1-Flash",
-        "ddd-doc-sync": "DeepSeek-V4.1-Flash",
-        "ddd-auditor": "DeepSeek-V4.1-Flash"
-      },
-      "rationale": {
-        "全角色": "无更低成本档可用"
-      }
     }
   }
 }

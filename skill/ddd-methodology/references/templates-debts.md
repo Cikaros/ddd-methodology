@@ -1,6 +1,6 @@
 # 存量债务登记簿模板
 
-`templates.md` 的配套文件，承载存量债务登记簿的骨架与字段说明。设计依据见 `docs/analysis/v2.11-debt-governance.md`；规范条款见 `spec-declare.md` 的声明面可验证与修剪节 12.1 子节。
+`templates.md` 的配套文件，承载存量债务登记簿的骨架与字段说明。设计依据见规范「存量债务的登记与清偿」节；规范条款见 `spec-declare.md` 的声明面可验证与修剪节 12.1 子节。
 
 登记簿置于 `<项目根>/docs/debts.json`，是存量债务的唯一登记处，替代散落在正文句子中的登记。校验由 `node ~/.pi/agent/skills/ddd-methodology/scripts/debt-check.js <项目根>` 承担，末行给出机读结论并据此置退出码。
 
@@ -19,7 +19,9 @@
       "owner": "根会话",
       "dueBy": "v2.13",
       "status": "open",
-      "reason": "登记理由，例如范围外、需先补设计预判"
+      "reason": "登记理由，例如范围外、需先补设计预判",
+      "rootCause": "机械校验有盲区",
+      "recurrence": { "count": 0, "lastVersion": null }
     }
   ]
 }
@@ -47,5 +49,9 @@
 | dueBy | 应清版本 | 未清项不得早于 currentVersion，否则判超期 |
 | status | 状态 | 仅取 open 或 closed |
 | reason | 登记理由 | 非空 |
+| rootCause | 根因分类 | 取五类之一，由债务文本归纳 |
+| recurrence | 复发记录 | 含 count 与 lastVersion；count 为非负整数，lastVersion 在 count 为零时为 null，否则形如 v主.次 |
 
-字段与规范 12.1 逐项对应，不得增删；超出 maxOpen 或存在超期未清项即触发阻断，连续两轮超期则升级用户。
+根因分类五类：声明与事实脱节、单一权威被违背、机械校验有盲区、规则演进后消费方未同步、反复修补同一处。
+
+字段与规范 12.1 逐项对应，不得增删；超出 maxOpen 或存在超期未清项即触发阻断，连续两轮超期则升级用户；同一根因分类连续两版登记为未清，须在下一轮升级用户并登记为结构性问题。

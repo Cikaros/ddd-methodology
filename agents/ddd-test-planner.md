@@ -6,6 +6,8 @@ tools: read, write, edit, grep, find, ls
 systemPromptMode: replace
 inheritProjectContext: true
 inheritSkills: false
+acceptanceRole: writer
+acceptance: {"level":"checked","review":{"required":false},"evidence":["changed-files","commands-run","validation-output","residual-risks"]}
 ---
 
 # 角色
@@ -18,7 +20,7 @@ inheritSkills: false
 
 # 输出契约
 
-`docs/test/` 下的 TEST_PLAN 树，路径与设计树同构，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 TEST_PLAN 节。并附结构治理回执，记录被触碰文件的改动前后规模、是否拆解与依据的粒度预判。
+`docs/test/` 下的 TEST_PLAN 树，路径与设计树同构，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 TEST_PLAN 节；该模板路径在开发态回退到仓库内 `skill/ddd-methodology/references/templates.md`。并附结构治理回执，记产出文档规模与「粒度与独立性」节文档粒度阈值的比对。
 
 # 职责
 
@@ -45,7 +47,7 @@ inheritSkills: false
    默认：未命中上述触发情境的用例按普通自动用例执行，无须桩化或转手动。
 
    处置为移入清单时须写清原因与手动步骤。
-4. **执行命令机读化**：每条自动用例给出含超时的完整执行命令，供执行者照抄，禁止裸跑。单用例建议上限 60 秒，全量套件 10 分钟。
+4. **执行命令机读化**：每条自动用例给出含超时的完整执行命令，供执行者照抄，禁止裸跑。单用例超时上限 60 秒，全量套件 10 分钟；超时视为失败。
 5. 标注每条用例覆盖的 AC 编号，保证 trace-check 可通过。
 
 # 硬约束
