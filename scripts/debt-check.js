@@ -6,6 +6,7 @@
  *   rootCause 取根因分类之一；recurrence 含非负整数 count 与最近一次复发的版本 lastVersion，count 为零时 lastVersion 须为 null，否则形如 v主.次；
  *   dueBy 可省，省略时按 registeredAt 加 defaultDueSpan 推导应清版本，给出时须形如 v主.次；
  *   status 仅取 open 或 closed；未清项数不超 maxOpen；每个未清项的应清版本不早于 currentVersion。
+ *   并在登记簿合法且当前版本可解析时按当前版本维护 docs/debt-history.json 快照、以独立段落输出根因复发；该段落不改变末行结论与退出码。
  * 不包含：债务是否真被清偿、desc 与 reason 的合理性、连续两轮超期后的用户升级裁决，交由审计代理与根会话判定。
  * 用法：node debt-check.js <项目根>
  * 输出形态：文本正文，无空行；末行为机读结论
@@ -14,7 +15,7 @@
  * 输出上限：12000 字节，按 UTF-8 字节计量；超限截断明细，末行结论保留完整
  * 未启用取向：docs/debts.json 不存在时视为未启用，输出说明并判通过，不报错，兼容既有项目
  * 版本比较：按 v主.次 解析为数值后比较，不做字符串比较，避免 v2.10 与 v2.9 误判
- * 依赖：文本读取取 ./lib/text.js 的 readFileText，版本比较取 ./lib/version.js，本脚本不再内联这两处实现
+ * 依赖：文本读取取 ./lib/text.js 的 readFileText，版本比较取 ./lib/version.js，债务快照与复发检测取 ./lib/debt-history.js，本脚本不再内联这些实现
  * 规范依据：规范「存量债务的登记与清偿」节的登记、超期校验与上限三节
  */
 
@@ -24,6 +25,8 @@ const path = require("path");
 const { readFileText } = require("./lib/text.js");
 // 版本标识的解析、比较、加跨度与格式化取共享层，与 metrics-report 共用，避免第三处实现
 const { parseVersion, compareVersion, addSpan, formatVersion } = require("./lib/version.js");
+// 债务历史快照与根因复发检测取共享层，本脚本只负责按登记簿构建摘要并落盘、输出段落
+const { readHistory, summarize, upsertSnapshot, capHistory, saveHistory, detectRecurrence } = require("./lib/debt-history.js");
 
 const root = process.argv[2] || process.cwd();
 const DEBTS_REL = "docs/debts.json";
@@ -87,6 +90,7 @@ function check() {
     if (count > 1) reasons.push(`${DEBTS_REL} id 不唯一：${JSON.stringify(id)} 出现 ${count} 次，仓库内须唯一`);
   }
   let openCount = 0;
+  const summaries = [];
   debts.forEach((entry, index) => {
     const label = entry && typeof entry === "object" && entry.id ? entry.id : `第 ${index + 1} 条`;
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
@@ -132,6 +136,8 @@ function check() {
       due = parseVersion(entry.dueBy);
       if (due === null) reasons.push(`${DEBTS_REL} ${label} dueBy 非法（须形如 v主.次）：${JSON.stringify(entry.dueBy)}`);
     }
+    // 快照摘要取全部条目，含已清项：复发检测按上一版本快照的未清项与当前版本新增登记项比对
+    summaries.push(summarize(entry, !isBlank(entry.dueBy) ? entry.dueBy : (derived ? formatVersion(derived) : null)));
     if (entry.status !== "open") return;
     openCount++;
     const effectiveDue = due || derived;
@@ -144,7 +150,7 @@ function check() {
   if (maxOpen !== null && openCount > maxOpen) {
     reasons.push(`${DEBTS_REL} 未清项 ${openCount} 项，超过 maxOpen ${maxOpen}`);
   }
-  return { enabled: true, reasons, openCount, currentVersion: data.currentVersion, maxOpen };
+  return { enabled: true, reasons, openCount, currentVersion: data.currentVersion, maxOpen, summaries, current };
 }
 
 const LIMIT_BYTES = 12000;
@@ -169,12 +175,25 @@ function emit(detailLines, resultLine) {
   return pack(lo).join("\n");
 }
 
-const { enabled, reasons, openCount, currentVersion, maxOpen } = check();
+const { enabled, reasons, openCount, currentVersion, maxOpen, summaries, current } = check();
 const blocked = enabled && reasons.length > 0;
 let lines;
 if (!enabled) lines = [`未启用债务登记簿：未找到 ${DEBTS_REL}，视为未启用该机制`];
 else if (blocked) lines = reasons.map((r) => `[缺口] ${r}`);
 else lines = [`债务登记簿校验通过：${DEBTS_REL}，currentVersion ${currentVersion}，未清 ${openCount} 项，上限 ${maxOpen}`];
+
+// 债务历史快照与根因复发：登记簿启用且当前版本合法时按版本 upsert 快照并输出复发段落；不改末行结论与退出码
+if (enabled && current !== null && Array.isArray(summaries)) {
+  const history = readHistory(root);
+  const recurrences = detectRecurrence(history, currentVersion, summaries);
+  saveHistory(root, capHistory(upsertSnapshot(history, currentVersion, summaries, new Date().toISOString())));
+  if (recurrences.length) {
+    lines.push(`[根因复发] ${recurrences.length} 项，升级由根会话与审计代理裁决，本段不改变末行结论`);
+    for (const r of recurrences) lines.push(`  ✗ ${r.rootCause}：牵涉 ${r.entries.join("、")}，涉及版本 ${r.fromVersion} → ${r.toVersion}`);
+  } else {
+    lines.push("[根因复发] 无");
+  }
+}
 
 process.stdout.write(emit(lines, blocked ? "RESULT: overdue" : "RESULT: pass") + "\n");
 process.exit(blocked ? 1 : 0);

@@ -14,6 +14,8 @@ ddd-methodology/
 │   ├── health.json              # 结构健康度量历史，入版本管理，上限 50 条
 │   ├── metrics.json             # 绩效度量聚合产物，由 metrics-report.js 生成
 │   ├── debts.json               # 存量债务登记簿，超期与未清上限由 debt-check.js 校验
+│   ├── debt-history.json        # 债务历史快照，由 debt-check.js 按版本维护，上限 50 条
+│   ├── check-coverage.json      # 根因到已建立校验项的映射，由 ref-check 的 C15 校验
 │   └── refactor/                # 本轮改造设计的冻结契约
 ├── skill/ddd-methodology/        # pi Skill，规范权威源为 references/ 下的规范文件集
 │   ├── SKILL.md                  # 调度流程入口
@@ -82,6 +84,8 @@ ddd-methodology/
         ├── ref-constants.js      # 常量枚举域校验：C3 阈值、C6 门号、C9 守卫编号
         ├── ref-stages.js         # 阶段键域校验：C4 与 --fix 的注册表生成
         ├── ref-phrases.js        # 冻结短语域校验：C8 与锚点清单
+        ├── ref-coverage.js       # 校验项映射一致性校验：C15
+        ├── debt-history.js       # 债务历史快照与根因复发检测
         └── version.js            # 版本标识工具：v主.次 的解析、比较、加跨度与格式化
 ```
 
