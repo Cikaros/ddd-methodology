@@ -77,9 +77,10 @@ pi 运行时契约类声明，如 worktree、control 字段与 frontmatter 字�
 | governance-check.js | 单 JSON | `verdict` 字段 | 0 通过，1 阻断 | G5-INT 门槛 | 12000 字节 |
 | ref-check.js | 文本正文 | 末行 `RESULT: pass` 或 `RESULT: drift` | 0 通过，1 存在漂移 | 本仓库文档同步链 | 12000 字节 |
 | debt-check.js | 文本正文 | 末行 `RESULT: pass` 或 `RESULT: overdue` | 0 通过，1 存在缺口（超期、超上限或字段不全） | 交付门前置校验 | 12000 字节 |
+| metrics-report.js | 文本正文 | 末行 `RESULT: report` | 恒 0 | 仅报告，不作门禁 | 12000 字节 |
 
 默认：未列入本表的脚本不构成任何门的证据。
 
 脚本的调用形式默认为 `node ~/.pi/agent/skills/ddd-methodology/scripts/<脚本名>.js <项目根>`，属仓库内运行的脚本改用仓库相对路径，该边界见 `SKILL.md` 的机械门禁；输出上限按 UTF-8 字节计量，超限时截断明细，末行机读结论必须保留且完整。
 
-`node ~/.pi/agent/skills/ddd-methodology/scripts/governance-check.js <项目根>` 输出单项 JSON verdict：每份 DESIGN.md 的契约指纹已记录且与契约段实算值相同，`docs/health.json` 最新一条的超阈值文件数不高于上一条，且存在设计文档树时其根路径已在 ARCHITECTURE 声明，三者同时成立时 verdict 为 `ok`，否则为 `blocked`；无设计文档树时零考察，verdict 为 `ok`。它作为 G5-INT 的门槛证据，退出码非零即 blocked；命令路径可确定时可经 typed gate 挂载。
+`node ~/.pi/agent/skills/ddd-methodology/scripts/governance-check.js <项目根>` 输出单项 JSON verdict：每份 DESIGN.md 的契约指纹已记录且与契约段实算值相同，`docs/health.json` 最新一条相对上一条问题类计数未上升，且存在设计文档树时其根路径已在 ARCHITECTURE 声明，三者同时成立时 verdict 为 `ok`，否则为 `blocked`；无设计文档树时零考察，verdict 为 `ok`。问题类计数指超限类、死代码类与注释质量类，其键集合以该脚本内的单一常量为唯一权威，本节只作抽象描述而不另行罗列键名；接近上限类属预警阈值、未构成问题，弱信号重复类需语义判定，二者不参与阻断，只在脚本输出的报告中列出；`docs/health.json` 不存在时不判趋势。它作为 G5-INT 的门槛证据，退出码非零即 blocked；命令路径可确定时可经 typed gate 挂载。

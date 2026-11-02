@@ -3,7 +3,8 @@
  * 目标：把契约指纹与结构趋势的门禁判定收敛为单个 JSON 文档，作为 G4、G4.5、G5、G5-INT 与 G6 的 typed gate 证据源。
  * 范围：四项机械可判定事项——各 DESIGN.md 契约指纹齐备且与契约段实算值一致；存在设计文档树时其根路径已在
  *   ARCHITECTURE.md 声明（未声明即阻断，不得回退 docs/design 而放行）；docs/health.json 最新一条相对上一条
- *   超阈值文件数未增加；已记录指纹的 DESIGN 其「变更记录」节是否有数据行（无则仅告警不阻断）。
+ *   问题类计数未增加（问题类计数的键集合以本脚本内的 TREND_BLOCKING_KEYS 常量为唯一权威，规范只作抽象描述并指向本脚本）；
+ *   已记录指纹的 DESIGN 其「变更记录」节是否有数据行（无则仅告警不阻断）。
  * 不包含：行为等价性、用例集合增减方向、变更类型声明与产物是否相符等需语义判断的事项，交由 ddd-tester 与 ddd-auditor。
  * 用法：node governance-check.js <项目根>
  * 输出形态：单个 JSON 文档，且仅此一个；字段 limitBytes 给出输出上限，供消费端自证口径。
@@ -26,6 +27,22 @@ const { absoluteDesignDir } = require("./design-root");
 const { walk, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
 
 const root = process.argv[2] || process.cwd();
+
+// 趋势阻断面：问题类计数键集合，本常量为唯一权威，规范只作抽象描述并指向本脚本。
+// 超限类、死代码类与注释质量类属问题类计数，最新一条相对上一条上升即阻断。
+const TREND_BLOCKING_KEYS = [
+  "oversized", // 超限类：源码与基础能力超阈值文件数
+  "oversizedBase", // 超限类：基础能力超 300 行
+  "docOversized", // 超限类：文档超阈值
+  "contractOversized", // 超限类：设计文档契约数超上限
+  "commentedCode", // 死代码类：连续注释代码块
+  "compatMarkers", // 死代码类：兼容层标记
+  "orphans", // 死代码类：无引用文件
+  "bannedComments", // 注释质量类：违禁模式
+  "staleComments", // 注释质量类：过时引用
+];
+// 非阻断项：接近上限类属预警阈值、未构成问题，弱信号重复类需语义判定，二者不阻断，只在报告中列出
+const TREND_NON_BLOCKING_KEYS = ["nearLimit", "docNearLimit", "contractNearLimit", "duplicates"];
 
 // 「变更记录」节是否存在至少一条数据行（表头与分隔行不计）
 function hasChangeRecordRow(text) {
@@ -78,15 +95,25 @@ function check() {
     if (history.length < 2) {
       checked.trend = "insufficient";
     } else {
-      const prev = num(history[history.length - 2].oversized);
-      const last = num(history[history.length - 1].oversized);
-      const prevBase = num(history[history.length - 2].oversizedBase);
-      const lastBase = num(history[history.length - 1].oversizedBase);
-      if (last > prev || lastBase > prevBase) {
+      const prev = history[history.length - 2];
+      const last = history[history.length - 1];
+      // 阻断面为问题类计数：任一键上升即阻断；非阻断项仅随报告列出
+      const risen = [];
+      for (const key of TREND_BLOCKING_KEYS) {
+        const before = num(prev[key]);
+        const after = num(last[key]);
+        if (after > before) risen.push({ key, before, after });
+      }
+      checked.trendBlockingKeys = TREND_BLOCKING_KEYS;
+      checked.trendNonBlockingKeys = TREND_NON_BLOCKING_KEYS;
+      checked.trendNonBlocking = Object.fromEntries(TREND_NON_BLOCKING_KEYS.map((key) => [key, { prev: num(prev[key]), last: num(last[key]) }]));
+      if (risen.length) {
         checked.trend = "up";
-        reasons.push(`超阈值文件数由 ${prev} 升至 ${last}，其中基础能力超 300 行由 ${prevBase} 升至 ${lastBase}（docs/health.json 最新一条相对上一条）`);
+        checked.trendRisenKeys = risen.map((item) => item.key);
+        reasons.push(`问题类计数上升（docs/health.json 最新一条相对上一条）：${risen.map((item) => `${item.key} 由 ${item.before} 升至 ${item.after}`).join("；")}`);
       } else {
         checked.trend = "ok";
+        checked.trendRisenKeys = [];
       }
     }
   }

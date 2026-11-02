@@ -14,7 +14,7 @@
  * 输出上限：12000 字节，按 UTF-8 字节计量；超限截断明细，末行结论保留完整
  * 未启用取向：docs/debts.json 不存在时视为未启用，输出说明并判通过，不报错，兼容既有项目
  * 版本比较：按 v主.次 解析为数值后比较，不做字符串比较，避免 v2.10 与 v2.9 误判
- * 依赖：文本读取取 ./lib/text.js 的 readFileText，本脚本不再内联读取实现
+ * 依赖：文本读取取 ./lib/text.js 的 readFileText，版本比较取 ./lib/version.js，本脚本不再内联这两处实现
  * 规范依据：规范「存量债务的登记与清偿」节的登记、超期校验与上限三节
  */
 
@@ -22,6 +22,8 @@ const fs = require("fs");
 const path = require("path");
 // 读取失败回空串而非中断：登记簿读不到时仍走无效 JSON 分支给出结构化结论，消费端不以栈信息判读
 const { readFileText } = require("./lib/text.js");
+// 版本标识的解析、比较、加跨度与格式化取共享层，与 metrics-report 共用，避免第三处实现
+const { parseVersion, compareVersion, addSpan, formatVersion } = require("./lib/version.js");
 
 const root = process.argv[2] || process.cwd();
 const DEBTS_REL = "docs/debts.json";
@@ -37,28 +39,6 @@ const STATUSES = ["open", "closed"];
 // 根因分类：与规范「存量债务的登记与清偿」节及债务模板的字段表同源，同一分类连续两版未清即须升级用户。
 // 上列字段与根因分类集合同时作为 ref-check 的 C14 比对源，三处集合一致性由机械校验承接。
 const ROOT_CAUSES = ["声明与事实脱节", "单一权威被违背", "机械校验有盲区", "规则演进后消费方未同步", "反复修补同一处"];
-
-// 版本解析：仅接受 v主.次，比较主次两段数值；缺失或不合形回 null
-function parseVersion(value) {
-  const m = /^v(\d+)\.(\d+)$/.exec(String(value == null ? "" : value).trim());
-  return m ? { major: Number(m[1]), minor: Number(m[2]) } : null;
-}
-
-// 数值比较，避免字符串比较把 v2.10 误判为小于 v2.9
-function compareVersion(a, b) {
-  if (a.major !== b.major) return a.major < b.major ? -1 : 1;
-  if (a.minor !== b.minor) return a.minor < b.minor ? -1 : 1;
-  return 0;
-}
-
-// 版本推进：仅在次段加跨度，与既有两轮语义同源，不引入新的阈值体系
-function addSpan(v, span) {
-  return { major: v.major, minor: v.minor + span };
-}
-
-function formatVersion(v) {
-  return `v${v.major}.${v.minor}`;
-}
 
 const isBlank = (v) => v === undefined || v === null || v === "";
 
