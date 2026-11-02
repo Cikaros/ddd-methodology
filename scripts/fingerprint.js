@@ -3,6 +3,7 @@
  *
  * 算法权威在规范「结构与契约的演进治理」节的契约指纹条，本文件只是其可执行形态；
  * 三处口径若不一致即为漂移缺陷，故禁止在调用方重复实现。
+ * CONTRACT_SECTION_RE 同时导出供文档契约数度量复用，使「对外接口与约定」节的定位只此一处。
  * 不包含：契约内容的语义校验、变更类型判定与用例集合方向判定。
  */
 
@@ -44,4 +45,4 @@ function checkContractFingerprint(text) {
   return null;
 }
 
-module.exports = { checkContractFingerprint };
+module.exports = { checkContractFingerprint, CONTRACT_SECTION_RE };

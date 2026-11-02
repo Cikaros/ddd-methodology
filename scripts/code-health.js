@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 /**
  * 目标：把代码树的结构健康外化为可复现的机械证据，作为 G5-INT 与 G6 的证据源。
- * 范围：文件规模（源码与活文档）、死代码、重复嫌疑、注释质量、结构趋势五类事实的输出与度量留盘。
+ * 范围：文件规模（源码与文档）、死代码、重复嫌疑、注释质量、结构趋势五类事实的输出与度量留盘；
+ *   其中文档规模与设计文档契约数共用同一度量面，即活文档加经 design-root.js 解析出的设计树内设计文档。
  * 归属：文件规模与注释质量可由写入者按规范「结构与契约的演进治理」节的治理义务处理；无引用文件属仓库级属性，归审计代理。
  * 不包含：语义级判断。注释是否解释为什么、分支是否真不可达需 AST，本脚本不做，交由审计代理抽检。
- * 依赖：文本读取取 ./lib/text.js 的 readFileText，目录遍历与不可读收集取 ./lib/walk.js 的 walk。
+ * 依赖：文本读取取 ./lib/text.js 的 readFileText，目录遍历与不可读收集取 ./lib/walk.js 的 walk，设计树根解析取 ./design-root.js，
+ *   「对外接口与约定」节的定位取 ./fingerprint.js 导出的 CONTRACT_SECTION_RE，与该节定位保持单一权威。
  *
  * 用法：node code-health.js <项目根>
  * 输出形态：文本正文，末行机读结论 `RESULT: report`
@@ -16,15 +18,31 @@
 const fs = require("fs");
 const path = require("path");
 const { readFileText } = require("./lib/text.js");
-const { walk, SOURCE_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
+const { walk, SOURCE_TREE_SKIP_DIR_NAMES, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
+const { absoluteDesignDir } = require("./design-root.js");
+const { CONTRACT_SECTION_RE } = require("./fingerprint.js");
 
 const root = process.argv[2] || process.cwd();
 const CODE_EXT = new Set([".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx", ".py", ".java", ".kt", ".go", ".rs", ".rb", ".php", ".cs", ".swift", ".c", ".h", ".cpp", ".sh", ".bat", ".ps1"]);
 const LINE_LIMIT = 500;
 const BASE_LINE_LIMIT = 300;
 const DOC_LINE_LIMIT = 200;
+const CONTRACT_LIMIT = 10;
 // 活文档扫描根：规范、代理定义与全局系统提示；docs 目录与 CHANGELOG.md 不在其内，天然不入度量
 const DOC_ROOTS = ["skill", "agents", "global"];
+
+// 文档契约数：设计文档「对外接口与约定」节自标题后至下一个二级标题前，以表格数据行数为准，表头与分隔行不计；该节无表格时取列表项数
+function countContracts(text) {
+  const m = text.match(CONTRACT_SECTION_RE);
+  if (!m) return 0;
+  const lines = m[2].split("\n");
+  const tableRows = lines.filter((l) => /^\s*\|/.test(l));
+  if (tableRows.length) {
+    const dataRows = tableRows.filter((l) => !/^\s*\|[\s:|-]+\|?\s*$/.test(l)); // 去分隔行
+    return Math.max(0, dataRows.length - 1); // 再去表头
+  }
+  return lines.filter((l) => /^\s*(?:[-*+]|\d+[.)、])\s+\S/.test(l)).length;
+}
 
 // 扫描面告警收集器：遍历时记入不可读目录与文件，供输出末段的 [告警] 段列出
 const unreadableEntries = [];
@@ -64,11 +82,16 @@ for (const f of codeFiles) {
   } else if (lines > limit * 0.8) nearLimit.push({ file: rel, lines, limit });
 }
 
-// 活文档规模：规范拆分后各文件与代理定义同受 200 行阈值管辖，消除「规范不受阈值管辖」的缺口
-const docCandidates = DOC_ROOTS.flatMap((dir) => walk(path.join(root, dir), SOURCE_TREE_SKIP_DIR_NAMES, [], unreadableEntries));
+// 文档规模：规范拆分后各文件、代理定义与被开发项目的设计文档同受 200 行阈值管辖，消除「规范不受阈值管辖」与「设计面不入度量」两处缺口
+const liveDocCandidates = DOC_ROOTS.flatMap((dir) => walk(path.join(root, dir), SOURCE_TREE_SKIP_DIR_NAMES, [], unreadableEntries));
 const rootReadme = path.join(root, "README.md");
-if (fs.existsSync(rootReadme)) docCandidates.push(rootReadme);
-const docFiles = docCandidates.filter((f) => path.extname(f).toLowerCase() === ".md");
+if (fs.existsSync(rootReadme)) liveDocCandidates.push(rootReadme);
+const liveDocFiles = liveDocCandidates.filter((f) => path.extname(f).toLowerCase() === ".md");
+// 设计文档取自 design-root.js 解析的设计树：存在设计树时纳入同一度量面，无设计树的项目零变更
+const designRoot = absoluteDesignDir(root);
+const designDocCandidates = fs.existsSync(designRoot.dir) ? walk(designRoot.dir, DOC_TREE_SKIP_DIR_NAMES, [], unreadableEntries) : [];
+const designDocs = designDocCandidates.filter((f) => path.extname(f).toLowerCase() === ".md");
+const docFiles = [...new Set([...liveDocFiles, ...designDocs])];
 const docOversized = [];
 const docNearLimit = [];
 for (const f of docFiles) {
@@ -76,6 +99,16 @@ for (const f of docFiles) {
   const lines = readFileText(f).split("\n").length;
   if (lines > DOC_LINE_LIMIT) docOversized.push({ file: rel, lines, limit: DOC_LINE_LIMIT });
   else if (lines > DOC_LINE_LIMIT * 0.8) docNearLimit.push({ file: rel, lines, limit: DOC_LINE_LIMIT });
+}
+
+// 设计文档契约数：上限十项，接近上限按上限的零点八倍判定，与代码文件的接近上限口径一致
+const contractOversized = [];
+const contractNearLimit = [];
+for (const f of designDocs) {
+  const rel = path.relative(root, f).split(path.sep).join("/");
+  const contracts = countContracts(readFileText(f));
+  if (contracts > CONTRACT_LIMIT) contractOversized.push({ file: rel, contracts, limit: CONTRACT_LIMIT });
+  else if (contracts > CONTRACT_LIMIT * 0.8) contractNearLimit.push({ file: rel, contracts, limit: CONTRACT_LIMIT });
 }
 
 // ---- 2. 死代码 ----
@@ -176,8 +209,11 @@ const metrics = {
   oversizedBase,
   nearLimit: nearLimit.length,
   docFiles: docFiles.length,
+  designFiles: designDocs.length,
   docOversized: docOversized.length,
   docNearLimit: docNearLimit.length,
+  contractOversized: contractOversized.length,
+  contractNearLimit: contractNearLimit.length,
   commentedCode: commentedCode.length,
   compatMarkers: compatMarkers.length,
   orphans: orphans.length,
@@ -198,7 +234,7 @@ if (history.length) {
   const last = history[history.length - 1];
   for (const key of Object.keys(metrics)) {
     // 文件总数随增删自然波动，不构成恶化；其余计数项上升均为信号
-    if (key === "at" || key === "files" || key === "docFiles") continue;
+    if (key === "at" || key === "files" || key === "docFiles" || key === "designFiles") continue;
     if (typeof last[key] === "number" && metrics[key] > last[key]) degraded.push(`${key} 由 ${last[key]} 升至 ${metrics[key]}`);
   }
 }
@@ -221,9 +257,14 @@ say(`[文件规模] 超限 ${oversized.length}（其中基础能力超 300 行 $
 for (const o of oversized) say(`  ✗ ${o.file}  ${o.lines} 行，上限 ${o.limit}`, true);
 for (const o of nearLimit) say(`  ! ${o.file}  ${o.lines} 行，上限 ${o.limit}`, true);
 say("");
-say(`[文档规模] 活文档 ${docFiles.length} 份，超限 ${docOversized.length}（上限 ${DOC_LINE_LIMIT} 行），接近上限 ${docNearLimit.length}`);
+const designClause = designDocs.length ? `，设计文档 ${designDocs.length} 份` : "";
+say(`[文档规模] 活文档 ${liveDocFiles.length} 份${designClause}，超限 ${docOversized.length}（上限 ${DOC_LINE_LIMIT} 行），接近上限 ${docNearLimit.length}`);
 for (const o of docOversized) say(`  ✗ ${o.file}  ${o.lines} 行，上限 ${o.limit}`, true);
 for (const o of docNearLimit) say(`  ! ${o.file}  ${o.lines} 行，上限 ${o.limit}`, true);
+say("");
+say(`[文档契约数] 超限 ${contractOversized.length}（上限 ${CONTRACT_LIMIT} 项），接近上限 ${contractNearLimit.length}`);
+for (const o of contractOversized) say(`  ✗ ${o.file}  ${o.contracts} 项，上限 ${o.limit}`, true);
+for (const o of contractNearLimit) say(`  ! ${o.file}  ${o.contracts} 项，上限 ${o.limit}`, true);
 say("");
 say(`[死代码] 注释代码块 ${commentedCode.length}，兼容层标记 ${compatMarkers.length}，无引用文件 ${orphans.length}`);
 for (const o of commentedCode) say(`  ✗ ${o.file}:${o.lines} ${o.note}`, true);
@@ -246,9 +287,9 @@ const unreadableList = [...new Set(unreadableEntries)];
 say(`[告警] ${unreadableList.length ? `${unreadableList.length} 处不可读` : "无"}`);
 for (const u of unreadableList) say(`  ✗ ${path.relative(root, u).split(path.sep).join("/")} 不可读`, true);
 
-// 结论行只累加「问题项」：超限（源码与活文档）与违禁/死代码/无引用均属问题，故一并计入；
-// 接近上限（nearLimit/docNearLimit）只是预警阈值，未构成问题，故不计入 total——与末行「未发现超限项」的语义一致，避免把预警误报成超限。
-const total = oversized.length + docOversized.length + commentedCode.length + compatMarkers.length + orphans.length + bannedComments.length;
+// 结论行只累加「问题项」：超限（源码、文档与设计文档契约数）与违禁/死代码/无引用均属问题，故一并计入；
+// 接近上限（nearLimit/docNearLimit/contractNearLimit）只是预警阈值，未构成问题，故不计入 total——与末行「未发现超限项」的语义一致，避免把预警误报成超限。
+const total = oversized.length + docOversized.length + contractOversized.length + commentedCode.length + compatMarkers.length + orphans.length + bannedComments.length;
 say("");
 say("本脚本恒退出 0，仅报告，不作门禁");
 say(total ? `结论：存在 ${total} 项结构健康问题，本版仅报告不阻断` : "结论：结构健康未发现超限项");

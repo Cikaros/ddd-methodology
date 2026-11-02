@@ -1,15 +1,17 @@
 #!/usr/bin/env node
 /**
  * 目标：把契约指纹与结构趋势的门禁判定收敛为单个 JSON 文档，作为 G4、G4.5、G5、G5-INT 与 G6 的 typed gate 证据源。
- * 范围：三项机械可判定事项——各 DESIGN.md 契约指纹齐备且与契约段实算值一致；docs/health.json 最新一条
- *   相对上一条超阈值文件数未增加；已记录指纹的 DESIGN 其「变更记录」节是否有数据行（无则仅告警不阻断）。
+ * 范围：四项机械可判定事项——各 DESIGN.md 契约指纹齐备且与契约段实算值一致；存在设计文档树时其根路径已在
+ *   ARCHITECTURE.md 声明（未声明即阻断，不得回退 docs/design 而放行）；docs/health.json 最新一条相对上一条
+ *   超阈值文件数未增加；已记录指纹的 DESIGN 其「变更记录」节是否有数据行（无则仅告警不阻断）。
  * 不包含：行为等价性、用例集合增减方向、变更类型声明与产物是否相符等需语义判断的事项，交由 ddd-tester 与 ddd-auditor。
  * 用法：node governance-check.js <项目根>
  * 输出形态：单个 JSON 文档，且仅此一个；字段 limitBytes 给出输出上限，供消费端自证口径。
  * 末行机读结论：`verdict` 字段，取值 ok 或 blocked
  * 退出码：0 通过，1 阻断。门禁地位：G5-INT 门槛证据，退出码非零即 blocked
  * 输出上限：12000 字节，按 UTF-8 字节计量；超限截断 reasons，并在 warnings 给出总数与已列数
- * 非目标项目：无 docs/design 目录时零考察，verdict 为 ok，确保对本方法论仓库自身等场景零误伤。
+ * 非目标项目：无设计文档树时零考察，verdict 为 ok，确保对本方法论仓库自身等场景零误伤；未声明根路径的阻断仅在
+ *   设计文档树实际存在时生效，无树的项目不受影响。
  * 依赖：文本读取取 ./lib/text.js 的 readFileText，本脚本不再内联读取实现。
  * 规范依据：规范「质量门禁」节的 G5-INT 证据源行、「结构与注释的机械证据」节的脚本消费契约表，
  *   与「结构与契约的演进治理」节的指纹门槛条。
@@ -43,8 +45,9 @@ function check() {
 
   const designRoot = absoluteDesignDir(root);
   const hasDesignDir = fs.existsSync(designRoot.dir);
-  // 无设计树时不告警：非 DDD 项目零考察，避免噪音。
-  if (hasDesignDir && !designRoot.declared) warnings.push("ARCHITECTURE.md 未声明设计树根路径，已回退 docs/design");
+  // 存在设计文档树却未声明根路径即阻断：回退 docs/design 会绕过「根路径须在 ARCHITECTURE 声明」的要求，机械门不得据此放行。
+  if (hasDesignDir && !designRoot.declared) reasons.push("ARCHITECTURE.md 未声明设计文档树根路径，存在设计文档树却无法确认其权威根路径");
+  // 无设计文档树时不判定：非 DDD 项目零考察，避免误伤。
   if (hasDesignDir) {
     // 设计树是待校验对象，须用不排除 docs/build 等命名的口径，否则 docs/design 下名为 build/dist 的子目录会被漏检
     const designFiles = walk(designRoot.dir, DOC_TREE_SKIP_DIR_NAMES).filter((f) => /DESIGN.*\.md$/i.test(path.basename(f)));
