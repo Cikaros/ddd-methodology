@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
  * 目标：把本仓库跨文档引用、常量、清单与冻结短语的一致性外化为可复现的机械证据，供文档同步链在提交前校验。
- * 范围：C1 至 C13 十三项校验；默认只读不落盘，仅 --fix 写盘，写盘范围限 workflow 的阶段注册表块。
+ * 范围：C1 至 C14 十四项校验；默认只读不落盘，仅 --fix 写盘，写盘范围限 workflow 的阶段注册表块。
  * 校验实现按域外置于 ./lib/：规范读取面见 spec-doc.js，引用形态见 ref-refs.js，常量集合见 ref-constants.js，
- *   阶段键见 ref-stages.js，冻结短语见 ref-phrases.js；安装清单校验见顶层 ./install-manifest-check.js。本脚本只作装配与输出。
+ *   阶段键见 ref-stages.js，冻结短语见 ref-phrases.js，登记簿字段集合见 ref-debt-fields.js；安装清单校验见顶层 ./install-manifest-check.js。本脚本只作装配与输出。
  * 清单类校验 C5 与 C11 由 ./roster-check.js 提供，本脚本只作调用。
  * 索引表校验 C12 由 ./spec-index-check.js 提供，本脚本只作调用并注入已枚举的规范文件清单与索引入口路径。
  * 用法：node ref-check.js <仓库根> [--fix]；--fix 从 spec 键清单生成 workflow 阶段注册表并输出改动清单。
@@ -25,6 +25,7 @@ const { createRefChecks } = require("./lib/ref-refs.js");
 const { createConstantChecks } = require("./lib/ref-constants.js");
 const { createStageChecks } = require("./lib/ref-stages.js");
 const { createPhraseChecks } = require("./lib/ref-phrases.js");
+const { createDebtFieldChecks } = require("./lib/ref-debt-fields.js");
 const installManifestCheck = require("./install-manifest-check.js");
 const decisionTables = require("./decision-tables.js");
 const rosterCheck = require("./roster-check.js");
@@ -66,6 +67,7 @@ const refChecks = createRefChecks(env);
 const constantChecks = createConstantChecks(env);
 const stageChecks = createStageChecks(env);
 const phraseChecks = createPhraseChecks(env);
+const debtFieldChecks = createDebtFieldChecks(env);
 
 // --fix 唯一写盘点：只重写 workflow 的阶段注册表块，写盘前先比对，无差异不写盘；guard 只校验不写
 function runFix(src) {
@@ -95,6 +97,7 @@ const CHECKS = [
   ["C11", "skill 清单一致性", () => rosterCheck.checkSkillRoster(root)],
   ["C12", "规范索引表一致性", () => specIndexCheck.checkSpecIndex(root, specDocs.map((doc) => doc.rel), SPEC_INDEX_REL)],
   ["C13", "安装清单一致性", () => installManifestCheck.checkInstallManifest(root)],
+  ["C14", "登记簿字段集合一致性", debtFieldChecks.checkDebtFieldSets],
 ];
 
 // --fix 先于校验写盘，使报告与末行结论反映修复后状态；默认模式不触盘

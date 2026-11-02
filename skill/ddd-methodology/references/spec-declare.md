@@ -52,7 +52,7 @@ pi 运行时契约类声明，如 worktree、control 字段与 frontmatter 字�
 
 ## 13. 结构与注释的机械证据
 
-`node ~/.pi/agent/skills/ddd-methodology/scripts/code-health.js <项目根>` 输出五类事实，作为 G5-INT 的证据源与 G6 审计的输入。度量写入 `<项目根>/docs/health.json`，**该文件入版本管理作为趋势证据，历史上限 50 条**，超出由脚本截断。
+`node ~/.pi/agent/skills/ddd-methodology/scripts/code-health.js <项目根>` 输出五类事实，作为 G5-INT 的证据源与 G6 审计的输入。度量写入 `<项目根>/docs/health.json`，**该文件入版本管理作为趋势证据，历史上限 50 条**，超出由脚本截断。输出含 `[告警]` 段，列出扫描面内不可读的目录与文件，无不可读条目时输出 `[告警] 无`；该段与末行结论同为固定行，输出超限截断明细时保留。
 
 | 类别 | 覆盖的事实 | 机械程度 |
 |---|---|---|

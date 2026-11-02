@@ -4,19 +4,19 @@
  * 范围：文件规模（源码与活文档）、死代码、重复嫌疑、注释质量、结构趋势五类事实的输出与度量留盘。
  * 归属：文件规模与注释质量可由写入者按规范「结构与契约的演进治理」节的治理义务处理；无引用文件属仓库级属性，归审计代理。
  * 不包含：语义级判断。注释是否解释为什么、分支是否真不可达需 AST，本脚本不做，交由审计代理抽检。
- * 依赖：文本读取取 ./lib/text.js 的 readFileText，本脚本不再内联读取实现。
+ * 依赖：文本读取取 ./lib/text.js 的 readFileText，目录遍历与不可读收集取 ./lib/walk.js 的 walk。
  *
  * 用法：node code-health.js <项目根>
  * 输出形态：文本正文，末行机读结论 `RESULT: report`
  * 退出码：始终 0，仅报告，不作门禁；阻断地位由 G5-INT 的治理条件承接，消费方不得以退出码判定通过
- * 输出上限：12000 字节，按 UTF-8 计量；超限截断明细项，`[相对上次恶化]` 段与末行机读结论保留
+ * 输出上限：12000 字节，按 UTF-8 计量；超限截断明细项，`[告警]` 段、`[相对上次恶化]` 段与末行机读结论保留
  * 规范依据：规范「结构与注释的机械证据」节的脚本消费契约表
  */
 
 const fs = require("fs");
 const path = require("path");
 const { readFileText } = require("./lib/text.js");
-const { walk } = require("./lib/walk");
+const { walk, SOURCE_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
 
 const root = process.argv[2] || process.cwd();
 const CODE_EXT = new Set([".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx", ".py", ".java", ".kt", ".go", ".rs", ".rb", ".php", ".cs", ".swift", ".c", ".h", ".cpp", ".sh", ".bat", ".ps1"]);
@@ -25,6 +25,9 @@ const BASE_LINE_LIMIT = 300;
 const DOC_LINE_LIMIT = 200;
 // 活文档扫描根：规范、代理定义与全局系统提示；docs 目录与 CHANGELOG.md 不在其内，天然不入度量
 const DOC_ROOTS = ["skill", "agents", "global"];
+
+// 扫描面告警收集器：遍历时记入不可读目录与文件，供输出末段的 [告警] 段列出
+const unreadableEntries = [];
 
 // 基础能力文件取自 ARCHITECTURE 的能力清单，这些文件按更严上限评估
 function readBaseCapabilityFiles() {
@@ -42,7 +45,7 @@ function readBaseCapabilityFiles() {
   return files;
 }
 
-const allFiles = walk(root);
+const allFiles = walk(root, SOURCE_TREE_SKIP_DIR_NAMES, [], unreadableEntries);
 const codeFiles = allFiles.filter((f) => CODE_EXT.has(path.extname(f).toLowerCase()));
 const baseFiles = readBaseCapabilityFiles();
 
@@ -62,7 +65,7 @@ for (const f of codeFiles) {
 }
 
 // 活文档规模：规范拆分后各文件与代理定义同受 200 行阈值管辖，消除「规范不受阈值管辖」的缺口
-const docCandidates = DOC_ROOTS.flatMap((dir) => walk(path.join(root, dir)));
+const docCandidates = DOC_ROOTS.flatMap((dir) => walk(path.join(root, dir), SOURCE_TREE_SKIP_DIR_NAMES, [], unreadableEntries));
 const rootReadme = path.join(root, "README.md");
 if (fs.existsSync(rootReadme)) docCandidates.push(rootReadme);
 const docFiles = docCandidates.filter((f) => path.extname(f).toLowerCase() === ".md");
@@ -237,6 +240,11 @@ for (const o of staleComments) say(`  ✗ ${o.file}:${o.line} 提及已不存在
 say("");
 say(degraded.length ? `[相对上次恶化] ${degraded.length} 项` : "[相对上次恶化] 无");
 for (const d of degraded) say(`  ✗ ${d}`);
+say("");
+// 告警段：列出扫描面内不可读的目录与文件，无条目时输出无；属固定行，输出超限时保留
+const unreadableList = [...new Set(unreadableEntries)];
+say(`[告警] ${unreadableList.length ? `${unreadableList.length} 处不可读` : "无"}`);
+for (const u of unreadableList) say(`  ✗ ${path.relative(root, u).split(path.sep).join("/")} 不可读`, true);
 
 // 结论行只累加「问题项」：超限（源码与活文档）与违禁/死代码/无引用均属问题，故一并计入；
 // 接近上限（nearLimit/docNearLimit）只是预警阈值，未构成问题，故不计入 total——与末行「未发现超限项」的语义一致，避免把预警误报成超限。

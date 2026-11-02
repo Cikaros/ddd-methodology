@@ -2,7 +2,18 @@
 
 ---
 
-## v2.12.0（2026-11-03）自洽性收敛与 Agent 规范对齐
+## v2.13.0（2026-11-02）存量债务清偿与告警通道恢复
+
+- **背景**：清偿应清版本为 v2.13 的四项存量债务，即 D-002、D-004、D-006、D-007。四项均为范围外登记项，本轮逐项给出实现与判据。
+- **告警通道恢复**：`lib/walk.js` 新增可选的不可读收集器，不传时行为与三个既有调用方不变；`code-health.js` 据此输出 `[告警]` 段，列出扫描面内不可读的目录与文件，无条目时输出 `[告警] 无`，该段为固定行、超限截断时保留；规范「结构与注释的机械证据」节同步声明该段。构造不可读目录实测可被列出。
+- **读取收敛**：`design-root.js` 改用 `lib/text.js` 的 `readFileText`，删除内联的 `fs.existsSync` 加 `readFileSync` 形态，读取失败仍回空串，脚本不再直接依赖 `fs`。
+- **前置检查补齐**：`ddd-refactor` 的前置检查补齐工作区状态、记录时间与产物持久化三项，与规范「存量重建」节 17.2 及 `ddd-rebuild` 的前置检查逐条对齐。
+- **字段单一来源机械比对**：新增 `ref-check` 第十四项 C14，比对规范 12.1、债务模板与 `debt-check` 常量三处的顶层字段、条目字段与根因分类集合，任一不一致即判漂移；实现外置为 `lib/ref-debt-fields.js`，`ref-check` 只留装配，新模块已注册进两份安装脚本白名单。构造字段漂移实测可被检出。
+- **校验面扩展**：`ref-check` 校验项由十三扩为十四。
+- **锚点与验证**：对外契约不变；`ref-check` 十四项通过，`code-health` 输出含 `[告警]` 段且无新增超限，`governance-check` verdict 为 ok；债务登记簿 `currentVersion` 升至 v2.13，D-002、D-004、D-006、D-007 置 closed，未清项由八降至四。
+- **部署面**：已重装并同步新模块与白名单。
+
+## v2.12.0（2026-11-02）自洽性收敛与 Agent 规范对齐
 
 - **归档清理**：删除 `docs/analysis/` 十七份、`docs/rebuild/` 四份、`docs/audits/` 九份三目录与 `docs/refactor/` 的上一轮收尾产物，`docs/` 只留 `health.json`、`debts.json` 与 `refactor/DESIGN.md`；规范与模板中对已删路径 `docs/analysis` 与 `docs/rebuild` 的引用同步改正为 CHANGELOG，`docs/audits` 为被开发项目的通用归档机制，引用保持不变。
 - **声明与事实一致**：四个写入类代理补 `acceptanceRole` 与 `acceptance`；文档同步守护者的 `tools` 补 `bash`，解除硬约束与工具冲突；删除全局规则中的 oracle 幽灵引用；删除模型配比的 economy 档，消除与 balanced 逐字相同造成的档位错觉；workflow 前置条件措辞与实际消费面校准。

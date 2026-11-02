@@ -3,15 +3,16 @@
  *
  * 口径权威在规范「质量门禁」节的 G3 退出条件与 templates 的 ARCHITECTURE 节：
  * 优先读 ARCHITECTURE.md 的根路径声明，读不到回退 docs/design 并由调用方告警。
+ * 文本读取取同层共享的 ./lib/text.js 的 readFileText，读取失败回空串，本脚本不内联读取实现。
  * 不包含：DESIGN 文件遍历与内容校验。
  */
 
-const fs = require("fs");
 const path = require("path");
+const { readFileText } = require("./lib/text.js");
 
 function resolveDesignRoot(projectRoot) {
   const archPath = path.join(projectRoot, "ARCHITECTURE.md");
-  const arch = fs.existsSync(archPath) ? fs.readFileSync(archPath, "utf8") : "";
+  const arch = readFileText(archPath);
   let m = arch.match(/设计文档树根路径为[：:]*\s*`([^`]+)`/);
   if (!m) m = arch.match(/设计文档树根路径为[：:]*\s*([^\n\s。]+)/);
   if (m) return { dir: m[1].trim(), declared: true };
