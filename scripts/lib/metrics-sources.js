@@ -8,9 +8,8 @@
 const fs = require("fs");
 const path = require("path");
 const { readFileText } = require("./text.js");
-
-const HEALTH_REL = "docs/health.json";
-const DEBT_BOOK_REL = "docs/debts.json";
+// 产物路径取共享层单一常量，本模块只转发入参，不再复写路径字面量
+const { HEALTH_REL, DEBT_BOOK_REL } = require("./paths.js");
 
 // 缺省取向：非有限数值一律视为零，使早期条目缺字段时不判失败
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
@@ -85,4 +84,4 @@ function firstTableAfter(lines, headingRe) {
   return rows.length >= 2 ? rows : null;
 }
 
-module.exports = { HEALTH_REL, DEBT_BOOK_REL, num, isMissingNumber, isBlank, readHealth, readDebts, readDirFiles, readJsonLine, splitTableRow, isTableSeparator, firstTableAfter };
+module.exports = { HEALTH_REL, DEBT_BOOK_REL, num, isMissingNumber, isBlank, readHealth, readDebts, readDirFiles, readJsonLine, isTableSeparator, firstTableAfter };

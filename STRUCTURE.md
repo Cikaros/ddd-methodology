@@ -17,7 +17,8 @@ ddd-methodology/
 │   ├── debts.json               # 存量债务登记簿，超期与未清上限由 debt-check.js 校验
 │   ├── debt-history.json        # 债务历史快照，由 debt-check.js 按版本维护，上限 50 条
 │   ├── check-coverage.json      # 根因到已建立校验项的映射，由 ref-check 的 C15 校验
-│   └── refactor/                # 本轮改造设计的冻结契约
+│   └── refactor/                # 改造设计文档目录，本仓库自我迭代的冻结契约来源
+│       └── DESIGN.md            # 已执行完毕的改造设计冻结契约正文，版本 v2.12
 ├── skill/ddd-methodology/        # pi Skill，规范权威源为 references/ 下的规范文件集
 │   ├── SKILL.md                  # 调度流程入口
 │   ├── references/
@@ -79,6 +80,7 @@ ddd-methodology/
     ├── metrics-report.js         # 绩效度量聚合脚本，读 health.json、debts.json、gates/ 与 reports/，写 docs/metrics.json，末行 RESULT: report
     └── lib/                      # 脚本共享层，供上述脚本复用
         ├── text.js               # 安全读文件、按行编号与漂移项构造三项纯函数
+        ├── paths.js              # 产物路径与变更记录排除名的单一常量，供各消费脚本引用
         ├── walk.js               # 目录深度优先遍历，统一各脚本的排除集
         ├── spec-doc.js           # 规范读取面：规范文件枚举、节标题索引与节定位
         ├── ref-refs.js           # 引用形态域校验：C1 语义化节引用、C2 裸章节号、C7 脚本名
@@ -88,6 +90,8 @@ ddd-methodology/
         ├── ref-debt-fields.js    # 登记簿字段集合一致性校验：C14
         ├── ref-coverage.js       # 校验项映射一致性校验：C15
         ├── ref-line-endings.js   # 工作区行尾一致性校验：C16
+        ├── ref-structure.js      # 结构树与安装内容明细一致性校验：C17
+        ├── ref-install-params.js # 安装参数表与安装脚本参数一致性校验：C18
         ├── debt-history.js       # 债务历史快照与根因复发检测
         ├── version.js            # 版本标识工具：v主.次 的解析、比较、加跨度与格式化
         ├── metrics-sources.js    # 度量来源读取面：健康与登记簿读取、目录取文件、机读行与表格解析、缺省数值归一
@@ -105,8 +109,9 @@ ddd-methodology/
   - code-health 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/code-health.js`，度量结构健康并写入项目内 docs/health.json，仅报告不作门禁
   - governance-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/governance-check.js`，校验契约指纹与结构趋势，输出 verdict 作为 G5-INT 门槛证据
   - ref-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/ref-check.js`，校验跨文档引用、常量与枚举集合一致性，供文档同步链使用
-  - 共享层与各域校验模块位于 `scripts/lib/`（`text.js`、`walk.js`、`spec-doc.js`、`ref-refs.js`、`ref-constants.js`、`ref-stages.js`、`ref-phrases.js`、`ref-debt-fields.js`、`ref-coverage.js`、`ref-line-endings.js`、`debt-history.js`、`version.js`、`metrics-sources.js`、`metrics-structure.js`、`metrics-delivery.js`），供 `ref-check`、`debt-check` 与 `metrics-report` 复用，随 Skill 装到 `~/.pi/agent/skills/ddd-methodology/scripts/lib/`，卸载时随固定清单一并移除
+  - 共享层与各域校验模块位于 `scripts/lib/`（`text.js`、`walk.js`、`paths.js`、`spec-doc.js`、`ref-refs.js`、`ref-constants.js`、`ref-stages.js`、`ref-phrases.js`、`ref-debt-fields.js`、`ref-coverage.js`、`ref-line-endings.js`、`ref-structure.js`、`ref-install-params.js`、`debt-history.js`、`version.js`、`metrics-sources.js`、`metrics-structure.js`、`metrics-delivery.js`），供本仓库各门禁、校验与度量脚本复用，随 Skill 装到 `~/.pi/agent/skills/ddd-methodology/scripts/lib/`，卸载时随固定清单一并移除
   - install-manifest-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/install-manifest-check.js`，校验安装与卸载脚本的清单一致性，作为 ref-check 的 C13
+  - 其余门禁脚本 `fingerprint.js`、`design-root.js`、`decision-tables.js`、`roster-check.js`、`spec-index-check.js`、`debt-check.js` 与 `metrics-report.js` 同属该脚本清单，随 Skill 装到 `~/.pi/agent/skills/ddd-methodology/scripts/`
 - 存量重建 skill `ddd-rebuild` 与定向重构 skill `ddd-refactor`，分别安装到 `~/.pi/agent/skills/ddd-rebuild/` 与 `~/.pi/agent/skills/ddd-refactor/`。三者同属一份固定清单，安装时一并复制、卸载时一并移除，随装随卸；卸载只删清单内目录，不影响用户自有 skill
 - 运行时守卫扩展 `~/.pi/agent/extensions/ddd-governance.ts`，仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默
 - 模型配比记录文件 `~/.pi/agent/.ddd-model-overrides.json`，记录本方法论写入的代理、配比名与写入前原值，供精确回退

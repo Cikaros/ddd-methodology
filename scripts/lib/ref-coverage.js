@@ -1,6 +1,8 @@
 /**
- * 目标：把 ref-check 中「教训回写映射」这一域的校验外置为单一模块，检出 docs/check-coverage.json 映射里不存在的校验项。
- * 范围：C15 校验项映射一致性——逐条核对映射中的校验项真实存在，脚本类须有对应脚本文件，仓库内校验项须属 ref-check 的校验清单。
+ * 目标：把 ref-check 中「教训回写映射」这一域的校验外置为单一模块，检出 docs/check-coverage.json 映射中不存在或不一致的条目。
+ * 范围：C15 校验项映射一致性——逐条核对三项：映射中的校验项真实存在（脚本类须有对应脚本文件，仓库内校验项须属 ref-check 的校验清单）；
+ *   条目所引债务在登记簿中存在且状态为已清偿；条目的根因分类与该债务登记的根因分类一致。
+ *   反向完整性，即以新增或扩展机械校验清偿的债务须有条目，无机械判据，由审计代理核验，本模块不承担。
  * 不包含：引用形态（见 ref-refs.js）、常量集合（见 ref-constants.js）、冻结短语（见 ref-phrases.js）、阶段键（见 ref-stages.js）、
  *   规范读取面（见 spec-doc.js）、命令行入口。不引入第三方依赖。
  */
@@ -8,6 +10,7 @@
 const fs = require("fs");
 const path = require("path");
 const { readFileText, drift } = require("./text.js");
+const { DEBT_BOOK_REL } = require("./paths.js");
 
 const COVERAGE_REL = "docs/check-coverage.json";
 const REF_CHECK_REL = "scripts/ref-check.js";
@@ -22,6 +25,17 @@ function createCoverageChecks(env) {
   function readCheckIds() {
     const text = readFileText(path.join(root, ...REF_CHECK_REL.split("/")));
     return [...text.matchAll(CHECK_ID_RE)].map((m) => m[1]);
+  }
+
+  // 登记簿条目表：编号到条目的映射，供债务存在性、已清偿与根因一致三项断言查询
+  function readDebtBook() {
+    const text = readFileText(path.join(root, ...DEBT_BOOK_REL.split("/")));
+    try {
+      const data = JSON.parse(text);
+      return Array.isArray(data && data.debts) ? data.debts : null;
+    } catch (e) {
+      return null;
+    }
   }
 
   function checkCheckCoverage() {
@@ -44,10 +58,13 @@ function createCoverageChecks(env) {
       return found;
     }
     const checkIds = new Set(readCheckIds());
+    const debts = readDebtBook();
+    const byId = new Map();
+    if (debts) for (const entry of debts) if (entry && entry.id) byId.set(entry.id, entry);
     list.forEach((item, index) => {
       const label = item && item.check ? item.check : `第 ${index + 1} 条`;
       if (!item || typeof item !== "object" || Array.isArray(item)) {
-        found.push(drift("C15", COVERAGE_REL, 0, "映射条目须为对象", "含 rootCause 与 check 的对象", label));
+        found.push(drift("C15", COVERAGE_REL, 0, "映射条目须为对象", "含 rootCause、check 与 debt 的对象", label));
         return;
       }
       if (typeof item.rootCause !== "string" || item.rootCause.trim() === "") {
@@ -55,15 +72,33 @@ function createCoverageChecks(env) {
       }
       if (typeof item.check !== "string" || item.check.trim() === "") {
         found.push(drift("C15", COVERAGE_REL, 0, "校验项须以名字标识", "非空 check", label));
-        return;
-      }
-      // 脚本类给脚本文件名，核对仓库内脚本文件存在；其余视为校验编号，核对属于 ref-check 的校验清单
-      if (SCRIPT_NAME_RE.test(item.check)) {
+      } else if (SCRIPT_NAME_RE.test(item.check)) {
+        // 脚本类给脚本文件名，核对仓库内脚本文件存在；其余视为校验编号，核对属于 ref-check 的校验清单
         if (!fs.existsSync(path.join(root, "scripts", item.check))) {
           found.push(drift("C15", COVERAGE_REL, 0, "脚本类校验项须在仓库中真实存在", `scripts/${item.check} 存在`, item.check));
         }
       } else if (!checkIds.has(item.check)) {
         found.push(drift("C15", COVERAGE_REL, 0, "仓库内校验项须属 ref-check 的校验清单", `校验清单含 ${item.check}`, item.check));
+      }
+      // 债务引用三项：编号非空、在登记簿中存在、已清偿、根因分类与登记一致
+      if (typeof item.debt !== "string" || item.debt.trim() === "") {
+        found.push(drift("C15", COVERAGE_REL, 0, "映射条目须给出所引来源债务编号", "debt 非空", label));
+        return;
+      }
+      if (!debts) {
+        found.push(drift("C15", COVERAGE_REL, 0, "登记簿须可解析以核对债务引用", `${DEBT_BOOK_REL} 可解析`, "未解析到"));
+        return;
+      }
+      const debt = byId.get(item.debt);
+      if (!debt) {
+        found.push(drift("C15", COVERAGE_REL, 0, "映射条目所引债务须在登记簿中存在", `登记簿含 ${item.debt}`, item.debt));
+        return;
+      }
+      if (debt.status !== "closed") {
+        found.push(drift("C15", COVERAGE_REL, 0, "映射条目所引债务须已清偿", `${item.debt} 状态为 closed`, debt.status));
+      }
+      if (item.rootCause !== debt.rootCause) {
+        found.push(drift("C15", COVERAGE_REL, 0, "映射条目的根因分类须与该债务登记一致", `${item.debt} 根因为 ${debt.rootCause}`, item.rootCause));
       }
     });
     return found;

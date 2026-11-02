@@ -20,17 +20,18 @@
  */
 
 const fs = require("fs");
-const path = require("path");
 // 读取失败回空串而非中断：登记簿读不到时仍走无效 JSON 分支给出结构化结论，消费端不以栈信息判读
 const { readFileText } = require("./lib/text.js");
 // 版本标识的解析、比较、加跨度与格式化取共享层，与 metrics-report 共用，避免第三处实现
 const { parseVersion, compareVersion, addSpan, formatVersion } = require("./lib/version.js");
 // 债务历史快照与根因复发检测取共享层，本脚本只负责按登记簿构建摘要并落盘、输出段落
 const { readHistory, summarize, upsertSnapshot, capHistory, saveHistory, detectRecurrence } = require("./lib/debt-history.js");
+// 产物路径取共享层单一常量，登记簿路径不再复写字面量
+const { DEBT_BOOK_REL, resolveRel } = require("./lib/paths.js");
 
 const root = process.argv[2] || process.cwd();
-const DEBTS_REL = "docs/debts.json";
-const debtsPath = path.join(root, ...DEBTS_REL.split("/"));
+const DEBTS_REL = DEBT_BOOK_REL;
+const debtsPath = resolveRel(root, DEBTS_REL);
 
 const REQUIRED_TOP = ["currentVersion", "maxOpen", "defaultDueSpan"];
 // 条目数组字段单列：其齐备性另须数组形态判定，故不与三标量字段混列

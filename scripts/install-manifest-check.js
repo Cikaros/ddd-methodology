@@ -58,6 +58,12 @@ function collectShippedScripts(root) {
   return out;
 }
 
+// 随装脚本白名单：两份安装脚本字面量清单的并集，供本模块 C13 与结构文档一致性校验 C17 共用同一解析
+function parseShippedScripts(root) {
+  const read = (rel) => readFileText(path.join(root, ...rel.split("/")));
+  return new Set([...literalForTokens(read("scripts/install.sh")), ...literalForTokens(read("scripts/install.bat"))]);
+}
+
 function checkInstallManifest(root) {
   const found = [];
   const read = (rel) => readFileText(path.join(root, ...rel.split("/")));
@@ -96,4 +102,4 @@ function checkInstallManifest(root) {
   return found;
 }
 
-module.exports = { checkInstallManifest };
+module.exports = { checkInstallManifest, parseShippedScripts };

@@ -9,7 +9,7 @@
 const fs = require("fs");
 const path = require("path");
 const { readFileText } = require("./text.js");
-const { HEALTH_REL, num, isMissingNumber, readDirFiles, readJsonLine, splitTableRow, isTableSeparator, firstTableAfter } = require("./metrics-sources.js");
+const { HEALTH_REL, num, isMissingNumber, readDirFiles, readJsonLine, isTableSeparator, firstTableAfter } = require("./metrics-sources.js");
 
 // 交付质量类来源目录：门禁记录与测试报告归档；门的总数固定为八，即 G1、G2、G3、G4、G4.5、G5、G5-INT、G6
 const GATES_DIR_REL = "docs/gates";

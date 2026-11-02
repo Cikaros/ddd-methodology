@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
  * 目标：把本仓库跨文档引用、常量、清单与冻结短语的一致性外化为可复现的机械证据，供文档同步链在提交前校验。
- * 范围：C1 至 C16 十六项校验；默认只读不落盘，仅 --fix 写盘，写盘范围限 workflow 的阶段注册表块。
+ * 范围：C1 至 C18 十八项校验；默认只读不落盘，仅 --fix 写盘，写盘范围限 workflow 的阶段注册表块。
  * 校验实现按域外置于 ./lib/：规范读取面见 spec-doc.js，引用形态见 ref-refs.js，常量集合见 ref-constants.js，
  *   阶段键见 ref-stages.js，冻结短语见 ref-phrases.js，登记簿字段集合见 ref-debt-fields.js，校验项映射见 ref-coverage.js，
- *   工作区行尾见 ref-line-endings.js；安装清单校验见顶层 ./install-manifest-check.js。本脚本只作装配与输出。
+ *   工作区行尾见 ref-line-endings.js，结构树与安装内容明细见 ref-structure.js，安装参数表见 ref-install-params.js；安装清单校验见顶层 ./install-manifest-check.js。本脚本只作装配与输出。
  * 清单类校验 C5 与 C11 由 ./roster-check.js 提供，本脚本只作调用。
  * 索引表校验 C12 由 ./spec-index-check.js 提供，本脚本只作调用并注入已枚举的规范文件清单与索引入口路径。
  * 用法：node ref-check.js <仓库根> [--fix]；--fix 从 spec 键清单生成 workflow 阶段注册表并输出改动清单。
@@ -21,6 +21,7 @@
 const fs = require("fs");
 const path = require("path");
 const { readFileText, drift } = require("./lib/text.js");
+const { CHANGELOG_NAME } = require("./lib/paths.js");
 const { createSpecReader, relPath: toRelPath, SPEC_INDEX_REL } = require("./lib/spec-doc.js");
 const { createRefChecks } = require("./lib/ref-refs.js");
 const { createConstantChecks } = require("./lib/ref-constants.js");
@@ -29,6 +30,8 @@ const { createPhraseChecks } = require("./lib/ref-phrases.js");
 const { createDebtFieldChecks } = require("./lib/ref-debt-fields.js");
 const { createCoverageChecks } = require("./lib/ref-coverage.js");
 const { createLineEndingChecks } = require("./lib/ref-line-endings.js");
+const { createStructureChecks } = require("./lib/ref-structure.js");
+const { createInstallParamChecks } = require("./lib/ref-install-params.js");
 const installManifestCheck = require("./install-manifest-check.js");
 const decisionTables = require("./decision-tables.js");
 const rosterCheck = require("./roster-check.js");
@@ -38,7 +41,7 @@ const argv = process.argv.slice(2);
 const fixMode = argv.includes("--fix");
 const root = path.resolve(argv.find((a) => !a.startsWith("--")) || process.cwd());
 const REF_LIMIT_BYTES = 12000; // 与本脚本在脚本消费契约表中的输出上限一致
-const SKIP_FILE_NAMES = new Set(["CHANGELOG.md"]);
+const SKIP_FILE_NAMES = new Set([CHANGELOG_NAME]);
 // workflow 与守卫扩展的固定路径：C4 与 C9 的受控副本载体，只在装配处定义一次
 const WORKFLOW_REL = ["workflows", "ddd-workflow.js"];
 const GUARD_REL = ["extensions", "ddd-governance.ts"];
@@ -64,8 +67,10 @@ const liveDocPaths = walkRefDocs(root).filter((file) => file.endsWith(".md") && 
 // 规范读取面：规范文件集合与节标题索引，一次性建立后供各校验项复用
 const spec = createSpecReader(root);
 const specDocs = spec.docs;
-// 各域校验项的装配环境：仓库根、路径归一、活文档清单、规范读取器与两处固定路径
-const env = { root, relPath, liveDocPaths, spec, workflowRel: WORKFLOW_REL, guardRel: GUARD_REL };
+// 随装脚本白名单由安装清单校验解析，经装配注入结构文档校验，避免两处各写一份安装脚本解析
+const shippedScripts = installManifestCheck.parseShippedScripts(root);
+// 各域校验项的装配环境：仓库根、路径归一、活文档清单、规范读取器、两处固定路径与随装脚本白名单
+const env = { root, relPath, liveDocPaths, spec, workflowRel: WORKFLOW_REL, guardRel: GUARD_REL, shippedScripts };
 const refChecks = createRefChecks(env);
 const constantChecks = createConstantChecks(env);
 const stageChecks = createStageChecks(env);
@@ -73,6 +78,8 @@ const phraseChecks = createPhraseChecks(env);
 const debtFieldChecks = createDebtFieldChecks(env);
 const coverageChecks = createCoverageChecks(env);
 const lineEndingChecks = createLineEndingChecks(env);
+const structureChecks = createStructureChecks(env);
+const installParamChecks = createInstallParamChecks(env);
 
 // --fix 唯一写盘点：只重写 workflow 的阶段注册表块，写盘前先比对，无差异不写盘；guard 只校验不写
 function runFix(src) {
@@ -105,6 +112,8 @@ const CHECKS = [
   ["C14", "登记簿字段集合一致性", debtFieldChecks.checkDebtFieldSets],
   ["C15", "校验项映射一致性", coverageChecks.checkCheckCoverage],
   ["C16", "工作区行尾一致性", lineEndingChecks.checkLineEndings],
+  ["C17", "结构与安装内容明细一致性", structureChecks.checkStructureDoc],
+  ["C18", "安装参数表一致性", installParamChecks.checkInstallParams],
 ];
 
 // --fix 先于校验写盘，使报告与末行结论反映修复后状态；默认模式不触盘

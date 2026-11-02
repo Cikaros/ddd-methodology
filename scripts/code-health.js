@@ -18,6 +18,7 @@
 const fs = require("fs");
 const path = require("path");
 const { readFileText } = require("./lib/text.js");
+const { HEALTH_REL, resolveRel, CHANGELOG_NAME } = require("./lib/paths.js");
 const { walk, SOURCE_TREE_SKIP_DIR_NAMES, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
 const { absoluteDesignDir } = require("./design-root.js");
 const { CONTRACT_SECTION_RE } = require("./fingerprint.js");
@@ -31,7 +32,7 @@ const CONTRACT_LIMIT = 10;
 // 活文档扫描根：规范、代理定义与全局系统提示；docs 目录为项目侧证据与归档，不入活文档度量
 const DOC_ROOTS = ["skill", "agents", "global"];
 // 根目录 Markdown 活文档：除变更记录外全部纳入；变更记录按当时版本的章节编号记述，其规模不作活文档度量
-const ROOT_DOC_SKIP_NAMES = new Set(["CHANGELOG.md"]);
+const ROOT_DOC_SKIP_NAMES = new Set([CHANGELOG_NAME]);
 
 // 根目录 Markdown 枚举：只取本层，跳过点开头条目与变更记录，供活文档度量纳入
 function readRootMarkdown(root) {
@@ -234,7 +235,7 @@ const metrics = {
   bannedComments: bannedComments.length,
   staleComments: staleComments.length,
 };
-const healthPath = path.join(root, "docs", "health.json");
+const healthPath = resolveRel(root, HEALTH_REL);
 let history = [];
 try {
   const prev = JSON.parse(readFileText(healthPath));
@@ -264,7 +265,7 @@ const entries = [];
 const say = (text, droppable) => entries.push({ text, droppable: Boolean(droppable) });
 
 say("=== 代码结构健康检查 ===");
-say(`源码文件 ${metrics.files} 个，共 ${metrics.sourceLines} 行；度量已写入 docs/health.json`);
+say(`源码文件 ${metrics.files} 个，共 ${metrics.sourceLines} 行；度量已写入 ${HEALTH_REL}`);
 say("");
 say(`[文件规模] 超限 ${oversized.length}（其中基础能力超 300 行 ${oversizedBase}），接近上限 ${nearLimit.length}`);
 for (const o of oversized) say(`  ✗ ${o.file}  ${o.lines} 行，上限 ${o.limit}`, true);

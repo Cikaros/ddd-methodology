@@ -22,6 +22,7 @@ const fs = require("fs");
 const path = require("path");
 // 读取失败回空串而非中断：DESIGN 读不到时仍走指纹校验并给出结构化结论，消费端不以栈信息判读
 const { readFileText } = require("./lib/text.js");
+const { HEALTH_REL, resolveRel } = require("./lib/paths.js");
 const { checkContractFingerprint } = require("./fingerprint");
 const { absoluteDesignDir } = require("./design-root");
 const { walk, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
@@ -79,14 +80,14 @@ function check() {
     }
   }
 
-  const healthPath = path.join(root, "docs", "health.json");
+  const healthPath = resolveRel(root, HEALTH_REL);
   if (fs.existsSync(healthPath)) {
     let history = [];
     try {
       const parsed = JSON.parse(readFileText(healthPath));
       history = Array.isArray(parsed.history) ? parsed.history : [];
     } catch (e) {
-      warnings.push("docs/health.json 无法解析，趋势未判");
+      warnings.push(`${HEALTH_REL} 无法解析，趋势未判`);
     }
     if (history.length >= 1) {
       checked.thresholdFiles = num(history[history.length - 1].oversized);
@@ -110,7 +111,7 @@ function check() {
       if (risen.length) {
         checked.trend = "up";
         checked.trendRisenKeys = risen.map((item) => item.key);
-        reasons.push(`问题类计数上升（docs/health.json 最新一条相对上一条）：${risen.map((item) => `${item.key} 由 ${item.before} 升至 ${item.after}`).join("；")}`);
+        reasons.push(`问题类计数上升（${HEALTH_REL} 最新一条相对上一条）：${risen.map((item) => `${item.key} 由 ${item.before} 升至 ${item.after}`).join("；")}`);
       } else {
         checked.trend = "ok";
         checked.trendRisenKeys = [];

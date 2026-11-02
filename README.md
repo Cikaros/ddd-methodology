@@ -27,6 +27,7 @@ Linux、macOS 与 Git Bash 首次使用前执行 `chmod +x scripts/*.sh`。
 | `--models none` | 固定值 | 显式跳过模型配比，不读取配比文件 |
 | `--set` | `ddd-<代理名>=<模型名>` | 在配比基础上改单个代理，可重复 |
 | `--skip-verify` | 无 | 跳过可用性冒烟，仅在已确认模型可用时使用 |
+| `--provider` | provider 名 | 指定模型 provider，默认取配比文件值 |
 | `--check` | 无 | 只检查安装状态，不写入 |
 | `--repo` | 仓库根路径 | 指定仓库位置，供 `apply-models.js` 定位 `profiles/models.json` |
 
