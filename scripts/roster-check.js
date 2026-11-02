@@ -2,13 +2,14 @@
  * 目标：把仓库清单类校验（代理清单、skill 清单）收敛为可单独复核的库文件，控制单脚本的行数规模。
  * 范围：代理清单校验与 skill 清单校验两项——文件系统枚举、声明文件解析、集合双向比对与漂移项产出。
  * 不包含：文件遍历之外的语义判断（代理定义正文、skill 正文等）、其他校验项、命令行入口。
- * 声明文件集合：代理清单为 skill/ddd-methodology/SKILL.md、skill/ddd-methodology/references/spec-role.md、README.md、
+ * 声明文件集合：代理清单为 skill/ddd-methodology/SKILL.md、skill/ddd-methodology/references/spec-role.md、STRUCTURE.md、
  *   scripts/install.sh、scripts/install.bat、scripts/uninstall.sh、scripts/uninstall.bat、workflows/ddd-workflow.js，
- *   另加 profiles/models.json 的配比档位；skill 清单为前述安装脚本、卸载脚本与 README.md。
- * 代理名载体：规范与仓库说明用通用 ddd- 前缀 token 扫描，注释行不参与；workflow 的 key、runKey、stateNote 参数
+ *   另加 profiles/models.json 的配比档位；skill 清单为前述安装脚本、卸载脚本与 STRUCTURE.md。
+ * 代理名载体：规范与结构与安装内容明细文档用 ddd- 前缀 token 扫描，注释行不参与；结构树内的代理条目形如 ddd-某名.md，
+ *   扫描时剥去 .md 后缀取代理名，使树内条目计入声明集合；workflow 的 key、runKey、stateNote 参数
  *   与状态键是运行标识而非代理名，故只取 agent 字段的字符串字面量；配比档位取各档 roles 的键集合，按档与
  *   agents/ 集合比对，缺角色与幽灵角色均报漂移。
- * skill 名载体：安装脚本取变量名含 skill 的清单赋值与 skill 路径引用；README 取结构树围栏内的 skill/<名>/ 目录项。
+ * skill 名载体：安装脚本取变量名含 skill 的清单赋值与 skill 路径引用；STRUCTURE.md 取结构树围栏内的 skill/<名>/ 目录项。
  * 代理名排除集：与代理名同形的 skill 目录名由 enumerateSkillDirs 动态取得，与 C11 共用同一枚举，
  *   不得硬编码 skill 名；skill 目录的枚举定义以含 SKILL.md 为准，两处共用以免各自遍历漂移。
  * 调用形态：checkAgentRoster(root)、checkSkillRoster(root)；root 为仓库根；两者回传漂移项数组，
@@ -21,13 +22,15 @@ const fs = require("fs");
 const path = require("path");
 const { readFileText, withLineNumbers, drift } = require("./lib/text.js");
 
-// 声明代理集合的入口：规范入口、仓库说明与安装脚本；卸载脚本持有同名清单副本，一并校验以免悄悄漂移。
+// 声明代理集合的入口：规范入口、结构与安装内容明细文档与安装脚本；卸载脚本持有同名清单副本，一并校验以免悄悄漂移。
 // 规范角色表与沙箱 workflow 无生成通道，只能内联，故同样列入受控声明面
 const WORKFLOW_REL = "workflows/ddd-workflow.js";
-const AGENT_DECLARATION_FILES = [["skill", "ddd-methodology", "SKILL.md"], ["skill", "ddd-methodology", "references", "spec-role.md"], ["README.md"], ["scripts", "install.sh"], ["scripts", "install.bat"], ["scripts", "uninstall.sh"], ["scripts", "uninstall.bat"], WORKFLOW_REL.split("/")];
+// 仓库结构与安装内容明细文档：承载仓库结构树，是代理名与 skill 名的声明载体之一
+const STRUCTURE_DOC_REL = ["STRUCTURE.md"];
+const AGENT_DECLARATION_FILES = [["skill", "ddd-methodology", "SKILL.md"], ["skill", "ddd-methodology", "references", "spec-role.md"], STRUCTURE_DOC_REL, ["scripts", "install.sh"], ["scripts", "install.bat"], ["scripts", "uninstall.sh"], ["scripts", "uninstall.bat"], WORKFLOW_REL.split("/")];
 const MODELS_REL = ["profiles", "models.json"];
-// skill 清单的声明文件：安装脚本与卸载脚本、仓库说明；实际目录集合由 skill/*/SKILL.md 枚举
-const SKILL_DECLARATION_FILES = [["scripts", "install.sh"], ["scripts", "install.bat"], ["scripts", "uninstall.sh"], ["scripts", "uninstall.bat"], ["README.md"]];
+// skill 清单的声明文件：安装脚本与卸载脚本、仓库结构与安装内容明细文档；实际目录集合由 skill/*/SKILL.md 枚举
+const SKILL_DECLARATION_FILES = [["scripts", "install.sh"], ["scripts", "install.bat"], ["scripts", "uninstall.sh"], ["scripts", "uninstall.bat"], STRUCTURE_DOC_REL];
 const SKILL_NAME = /^ddd-[a-z][a-z0-9-]*$/; // skill 目录名形态，与安装脚本清单取值一致
 
 // skill 目录集合的唯一枚举入口：C5 的代理名排除集与 C11 的实际集合共用，避免两处各自遍历 skill 目录
@@ -62,7 +65,8 @@ function collectDeclaredAgents(root, rel, nonAgentTokens) {
       for (const m of row.line.matchAll(/^\s*agent:\s*"(ddd-[a-z][a-z0-9-]*)"/g)) add(m[1], row.no);
       continue;
     }
-    for (const m of row.line.matchAll(/(?<![\w./-])ddd-[a-z][a-z0-9-]*(?![\w./-])/g)) add(m[0], row.no);
+    // 树内代理条目形如 ddd-某名.md：裸 token 扫描把句点当作词内字符，故 .md 后缀并入匹配后再剥去，落回代理名
+    for (const m of row.line.matchAll(/(?<![\w./-])(ddd-[a-z][a-z0-9-]*)(?:\.md)?(?![\w./-])/g)) add(m[1], row.no);
   }
   return declared;
 }
@@ -133,12 +137,12 @@ function checkAgentRoster(root) {
   return found.concat(checkModelProfiles(root, roster));
 }
 
-// 单个声明文件的 skill 名集合：安装脚本取清单赋值与路径引用，README 取结构树围栏内的目录项
+// 单个声明文件的 skill 名集合：安装脚本取清单赋值与路径引用，结构与安装内容明细文档取结构树围栏内的目录项
 function collectDeclaredSkills(root, rel) {
   const text = readFileText(path.join(root, ...rel));
   const names = new Map();
   const add = (name, no) => { if (SKILL_NAME.test(name) && !names.has(name)) names.set(name, no); };
-  if (rel[rel.length - 1] === "README.md") {
+  if (rel.join("/") === STRUCTURE_DOC_REL.join("/")) {
     let fenced = false;
     for (const row of withLineNumbers(text)) {
       if (/^\s*```/.test(row.line)) { fenced = !fenced; continue; }

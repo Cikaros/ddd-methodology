@@ -28,8 +28,19 @@ const LINE_LIMIT = 500;
 const BASE_LINE_LIMIT = 300;
 const DOC_LINE_LIMIT = 200;
 const CONTRACT_LIMIT = 10;
-// 活文档扫描根：规范、代理定义与全局系统提示；docs 目录与 CHANGELOG.md 不在其内，天然不入度量
+// 活文档扫描根：规范、代理定义与全局系统提示；docs 目录为项目侧证据与归档，不入活文档度量
 const DOC_ROOTS = ["skill", "agents", "global"];
+// 根目录 Markdown 活文档：除变更记录外全部纳入；变更记录按当时版本的章节编号记述，其规模不作活文档度量
+const ROOT_DOC_SKIP_NAMES = new Set(["CHANGELOG.md"]);
+
+// 根目录 Markdown 枚举：只取本层，跳过点开头条目与变更记录，供活文档度量纳入
+function readRootMarkdown(root) {
+  let entries;
+  try { entries = fs.readdirSync(root, { withFileTypes: true }); } catch (e) { return []; }
+  return entries
+    .filter((entry) => entry.isFile() && !entry.name.startsWith(".") && path.extname(entry.name).toLowerCase() === ".md" && !ROOT_DOC_SKIP_NAMES.has(entry.name))
+    .map((entry) => entry.name);
+}
 
 // 文档契约数：设计文档「对外接口与约定」节自标题后至下一个二级标题前，以表格数据行数为准，表头与分隔行不计；该节无表格时取列表项数
 function countContracts(text) {
@@ -86,8 +97,7 @@ for (const f of codeFiles) {
 
 // 文档规模：规范拆分后各文件、代理定义与被开发项目的设计文档同受 200 行阈值管辖，消除「规范不受阈值管辖」与「设计面不入度量」两处缺口
 const liveDocCandidates = DOC_ROOTS.flatMap((dir) => walk(path.join(root, dir), SOURCE_TREE_SKIP_DIR_NAMES, [], unreadableEntries));
-const rootReadme = path.join(root, "README.md");
-if (fs.existsSync(rootReadme)) liveDocCandidates.push(rootReadme);
+for (const name of readRootMarkdown(root)) liveDocCandidates.push(path.join(root, name));
 const liveDocFiles = liveDocCandidates.filter((f) => path.extname(f).toLowerCase() === ".md");
 // 设计文档取自 design-root.js 解析的设计树：存在设计树时纳入同一度量面，无设计树的项目零变更
 const designRoot = absoluteDesignDir(root);

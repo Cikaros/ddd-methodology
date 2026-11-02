@@ -13,7 +13,7 @@ const fs = require("fs");
 const path = require("path");
 const { readFileText, drift } = require("./lib/text.js");
 
-// 仓库内部专用脚本：应用模型配比与合并全局规则，依赖仓库在场运行，按 README 不随安装复制
+// 仓库内部专用脚本：应用模型配比与合并全局规则，依赖仓库在场运行，不入安装脚本的随装白名单
 const REPO_ONLY_SCRIPTS = new Set(["apply-models.js", "merge-append-system.js"]);
 const SCRIPT_ENTRY_RE = /^[A-Za-z0-9][A-Za-z0-9._/-]*$/;
 const SKILL_NAME_RE = /^ddd-[a-z][a-z0-9-]*$/;
