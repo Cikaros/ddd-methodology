@@ -71,9 +71,11 @@ const baseFiles = readBaseCapabilityFiles();
 const oversized = [];
 const nearLimit = [];
 let oversizedBase = 0; // 基础能力文件超 300 行的单列计数，供超阈值趋势细分
+let sourceLines = 0; // 源码总行数，缺陷密度的分母来源；触碰行数无机械来源，故按全量源码计
 for (const f of codeFiles) {
   const rel = path.relative(root, f).split(path.sep).join("/");
   const lines = readFileText(f).split("\n").length;
+  sourceLines += lines;
   const isBase = baseFiles.has(rel) || [...baseFiles].some((b) => rel.endsWith(b));
   const limit = isBase ? BASE_LINE_LIMIT : LINE_LIMIT;
   if (lines > limit) {
@@ -205,6 +207,7 @@ for (const f of codeFiles) {
 const metrics = {
   at: new Date().toISOString(),
   files: codeFiles.length,
+  sourceLines,
   oversized: oversized.length,
   oversizedBase,
   nearLimit: nearLimit.length,
@@ -233,8 +236,8 @@ const degraded = [];
 if (history.length) {
   const last = history[history.length - 1];
   for (const key of Object.keys(metrics)) {
-    // 文件总数随增删自然波动，不构成恶化；其余计数项上升均为信号
-    if (key === "at" || key === "files" || key === "docFiles" || key === "designFiles") continue;
+    // 文件总数与源码总行数随项目增删自然波动，不构成恶化；其余计数项上升均为信号
+    if (key === "at" || key === "files" || key === "sourceLines" || key === "docFiles" || key === "designFiles") continue;
     if (typeof last[key] === "number" && metrics[key] > last[key]) degraded.push(`${key} 由 ${last[key]} 升至 ${metrics[key]}`);
   }
 }
@@ -251,7 +254,7 @@ const entries = [];
 const say = (text, droppable) => entries.push({ text, droppable: Boolean(droppable) });
 
 say("=== 代码结构健康检查 ===");
-say(`源码文件 ${metrics.files} 个；度量已写入 docs/health.json`);
+say(`源码文件 ${metrics.files} 个，共 ${metrics.sourceLines} 行；度量已写入 docs/health.json`);
 say("");
 say(`[文件规模] 超限 ${oversized.length}（其中基础能力超 300 行 ${oversizedBase}），接近上限 ${nearLimit.length}`);
 for (const o of oversized) say(`  ✗ ${o.file}  ${o.lines} 行，上限 ${o.limit}`, true);

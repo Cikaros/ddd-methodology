@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 /**
- * 目标：把结构趋势、债务时效、根因复发与交付质量四类度量从既有产物机械聚合为文本报告与结构化产物，作为绩效度量的机械采集入口。
+ * 目标：把结构趋势、债务时效、根因复发、交付质量与声明面五类度量从既有产物机械聚合为文本报告与结构化产物，作为绩效度量的机械采集入口。
  * 范围：读 docs/health.json 与 docs/debts.json，按规范「绩效度量」节 18.2 口径计算三项——超阈值文件数趋势、债务未清数与超期率、
- *   同一根因复发次数；读 docs/gates/ 与 docs/reports/，按 18.1 口径计算三项——八道门一次通过率与过门轮次、返工轮次分布、缺陷四级分布；
+ *   同一根因复发次数；读 docs/gates/ 与 docs/reports/，按 18.1 口径计算四项——八道门一次通过率与过门轮次、返工轮次分布、缺陷四级分布与缺陷密度；
+ *   读 docs/audits/ 与规范「质量门禁」节门禁表，按 18.3 口径计算两项——无消费方声明占比与机械证据覆盖率；
  *   文本报告末行为机读结论，结构化产物写入 docs/metrics.json，根会话据其输出写入 CHANGELOG。
  * 交付质量来源：门禁记录取各记录内的 GATE 机读行，缺陷路由单取轮回计数与判定级别字段，测试报告取末行 DEFECTS 机读行；来源目录缺失或字段不全时相应度量记空并说明。
+ * 声明面来源：无消费方声明占比取 docs/audits/ 下最新一份审计报告的逐项审计表，机械证据覆盖率取规范「质量门禁」节门禁表的证据源列；两者来源缺失或不可解析时记空并说明。
  * 不包含：门禁判定（本脚本恒退出 0，仅报告）、源产物本身的生成、语义级判断。
  * 用法：node metrics-report.js <项目根>
  * 输出形态：文本正文，末行机读结论
@@ -14,7 +16,7 @@
  * 未启用取向：docs/health.json 或 docs/debts.json 缺失时相应度量记空并输出说明，判通过，兼容未启用项目
  * 缺省取向：health.json 早期条目缺字段时按缺省值零处理，并在产物中标注，不判失败
  * 依赖：文本读取取 ./lib/text.js 的 readFileText，版本比较取 ./lib/version.js，本脚本不再内联这两处实现
- * 规范依据：规范「绩效度量」节的 18.1 交付质量类与 18.2 结构与债务类度量
+ * 规范依据：规范「绩效度量」节的 18.1 交付质量类、18.2 结构与债务类与 18.3 声明面类度量
  */
 
 const fs = require("fs");
@@ -30,7 +32,13 @@ const METRICS_LIMIT_BYTES = 12000;
 // 交付质量类来源目录：门禁记录与测试报告归档；门的总数固定为八，即 G1、G2、G3、G4、G4.5、G5、G5-INT、G6
 const GATES_DIR_REL = "docs/gates";
 const REPORTS_DIR_REL = "docs/reports";
+const AUDITS_DIR_REL = "docs/audits";
 const GATE_TOTAL = 8;
+// 规范门禁表的两种解析布局：仓库内布局与安装后布局，相对调用脚本自身定位
+const SPEC_GATE_REL = ["skill", "ddd-methodology", "references", "spec-gate.md"];
+const SPEC_GATE_ABS = path.resolve(__dirname, "..", "references", "spec-gate.md");
+// 无消费方声明占比的分子：逐项审计表结论中的三类问题取值，其余取值视为有效不计入分子
+const PROBLEMATIC_CONCLUSIONS = ["无消费方", "纸面消费方", "消费不正确"];
 
 // 缺省取向：非有限数值一律视为零，使早期条目缺字段时不判失败
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
@@ -239,6 +247,127 @@ function computeDefectLevels(reportFiles) {
   return { status: "ok", source: "测试报告 DEFECTS 机读行", distribution, notes };
 }
 
+// 表格行拆分：去首尾竖线后按竖线切分并逐格去空白，供审计表与门禁表共用
+function splitTableRow(line) {
+  return String(line).trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((cell) => cell.trim());
+}
+
+// 表分隔行：各格为若干短横可与冒号组成的对齐标记
+function isTableSeparator(cells) {
+  return cells.length > 0 && cells.every((cell) => cell === "" || /^:?-{2,}:?$/.test(cell));
+}
+
+// 定位首个满足条件的节标题后首张表，回传其全部行（首行为表头）；审计表与门禁表共用同一收表口径
+function firstTableAfter(lines, headingRe) {
+  let start = -1;
+  for (let i = 0; i < lines.length; i++) if (headingRe.test(lines[i])) { start = i; break; }
+  if (start < 0) return null;
+  let tableStart = -1;
+  for (let i = start + 1; i < lines.length; i++) {
+    if (/^##\s/.test(lines[i])) break;
+    if (/^\s*\|/.test(lines[i])) { tableStart = i; break; }
+  }
+  if (tableStart < 0) return null;
+  const rows = [];
+  for (let i = tableStart; i < lines.length; i++) {
+    if (!/^\s*\|/.test(lines[i])) break;
+    rows.push(splitTableRow(lines[i]));
+  }
+  return rows.length >= 2 ? rows : null;
+}
+
+// 度量七：缺陷密度。缺陷四级分布之和除以项目源码千行数，单位为每千行缺陷数；
+// 分母取健康度量最新条的源码总行数 sourceLines，触碰行数无机械来源故不作分母
+function computeDefectDensity(health, defectLevels) {
+  const unit = "每千行缺陷数";
+  const empty = { status: "unavailable", total: null, sourceKloc: null, density: null, unit, notes: [] };
+  if (!health.available) return { ...empty, notes: [`${HEALTH_REL} 缺失，缺陷密度不可采集`] };
+  if (health.parseError) return { ...empty, notes: [health.parseError] };
+  if (!health.history.length) return { ...empty, notes: [`${HEALTH_REL} 无历史条目，缺陷密度不可采集`] };
+  const latest = health.history[health.history.length - 1];
+  if (!latest || typeof latest !== "object" || isMissingNumber(latest.sourceLines) || latest.sourceLines <= 0) return { ...empty, notes: [`${HEALTH_REL} 最新条目缺源码总行数 sourceLines，缺陷密度不可采集`] };
+  const sourceKloc = Number((latest.sourceLines / 1000).toFixed(4));
+  if (defectLevels.status !== "ok") {
+    return { status: "unavailable", total: null, sourceKloc, density: null, unit, notes: [`${REPORTS_DIR_REL}/ 缺陷四级分布不可采集，缺陷密度不可采集`] };
+  }
+  const total = ["A", "B", "C", "D"].reduce((sum, k) => sum + num(defectLevels.distribution[k]), 0);
+  const density = Number((total / (latest.sourceLines / 1000)).toFixed(4));
+  return { status: "ok", total, sourceKloc, density, unit, notes: [] };
+}
+
+// 逐项审计表解析：结论列按表头名称定位，表头未命名结论列时回退末列，列数变化时越界再回退末格，避免因列位移而误算
+function parseAuditTable(text) {
+  const rows = firstTableAfter(String(text || "").split("\n"), /逐项审计表/);
+  if (!rows) return null;
+  const header = rows[0];
+  let col = header.indexOf("结论");
+  if (col < 0) col = header.length - 1;
+  let total = 0, problematic = 0;
+  for (let i = 1; i < rows.length; i++) {
+    const cells = rows[i];
+    if (isTableSeparator(cells)) continue;
+    const conclusion = cells[col] !== undefined ? cells[col] : cells[cells.length - 1];
+    total++;
+    if (PROBLEMATIC_CONCLUSIONS.some((value) => String(conclusion || "").includes(value))) problematic++;
+  }
+  return { total, problematic };
+}
+
+// 度量八：无消费方声明占比。取 docs/audits/ 下最新一份审计报告，归档名形如 G6-序号-版本，序号最大者为最新；
+// 统计无消费方、纸面消费方与消费不正确三类之和除以声明总数，报告目录或表格缺失时记空并说明，不判失败
+function computeUnconsumedDeclarations() {
+  const empty = { status: "unavailable", total: null, problematic: null, ratio: null, source: null, notes: [] };
+  const dir = path.join(root, ...AUDITS_DIR_REL.split("/"));
+  let names;
+  try { names = fs.readdirSync(dir); } catch (e) { return { ...empty, notes: [`${AUDITS_DIR_REL}/ 缺失，无消费方声明占比不可采集`] }; }
+  const reports = names.filter((name) => /\.md$/i.test(name));
+  if (!reports.length) return { ...empty, notes: [`${AUDITS_DIR_REL}/ 下无审计报告，无消费方声明占比不可采集`] };
+  const seqOf = (name) => { const m = name.match(/G6-(\d+)-/); return m ? Number(m[1]) : null; };
+  // 序号最大者为最新；序号不可解析时按文件名字典序末位
+  const latest = reports.slice().sort((a, b) => ((seqOf(a) ?? Infinity) - (seqOf(b) ?? Infinity)) || (a < b ? -1 : a > b ? 1 : 0)).pop();
+  const source = `${AUDITS_DIR_REL}/${latest}`;
+  const parsed = parseAuditTable(readFileText(path.join(dir, latest)));
+  if (!parsed) return { ...empty, source, notes: [`${source} 未找到逐项审计表，无消费方声明占比不可采集`] };
+  if (!parsed.total) return { ...empty, source, notes: [`${source} 逐项审计表无数据行，无消费方声明占比不可采集`] };
+  return { status: "ok", source, total: parsed.total, problematic: parsed.problematic, ratio: Number((parsed.problematic / parsed.total).toFixed(4)), notes: [] };
+}
+
+// 门禁表解析：定位规范「质量门禁」节首张表，证据源列按表头名称定位，越界回退末列；缺证据源列或门列即判不可解析
+function parseGateTable(text) {
+  const rows = firstTableAfter(String(text || "").split("\n"), /^##\s+.*质量门禁/);
+  if (!rows) return null;
+  const header = rows[0];
+  if (!header.includes("证据源") || !header.includes("门")) return null;
+  const col = header.indexOf("证据源");
+  const gates = [];
+  for (let i = 1; i < rows.length; i++) {
+    const cells = rows[i];
+    if (isTableSeparator(cells)) continue;
+    const evidence = cells[col] !== undefined ? cells[col] : cells[cells.length - 1];
+    gates.push(String(evidence || ""));
+  }
+  return gates;
+}
+
+// 机械型证据判定：脚本命令与运行时守卫为机械型，指名代理为判断型；含任一机械型来源即计该门
+function isMechanicalEvidence(evidence) {
+  return /\bnode\b/.test(evidence) || /运行时守卫/.test(evidence);
+}
+
+// 度量九：机械证据覆盖率。从规范「质量门禁」节门禁表的证据源列判各门，含机械型证据源的门数除以门的总数，计门不计项；
+// 规范文件按仓库内布局与安装后布局两处解析，两处均找不到时记空并说明
+function computeMechanicalEvidenceCoverage() {
+  const empty = { status: "unavailable", total: null, mechanical: null, ratio: null, source: null, notes: [] };
+  const candidates = [path.join(root, ...SPEC_GATE_REL), SPEC_GATE_ABS];
+  const file = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!file) return { ...empty, source: SPEC_GATE_REL.join("/"), notes: [`规范门禁表未找到，已查仓库内布局 ${SPEC_GATE_REL.join("/")} 与安装后布局 references/spec-gate.md，机械证据覆盖率不可采集`] };
+  const shown = file.split(path.sep).join("/");
+  const gates = parseGateTable(readFileText(file));
+  if (!gates) return { ...empty, source: shown, notes: [`${shown} 未解析到门禁表，机械证据覆盖率不可采集`] };
+  const mechanical = gates.filter(isMechanicalEvidence).length;
+  return { status: "ok", source: shown, total: gates.length, mechanical, ratio: Number((mechanical / gates.length).toFixed(4)), notes: [] };
+}
+
 const health = readHealth();
 const debts = readDebts();
 const trend = computeTrend(health);
@@ -248,15 +377,25 @@ const reportFiles = readDirFiles(REPORTS_DIR_REL, /\.md$/);
 const gates = computeGates();
 const reworkRounds = computeReworkRounds(reportFiles);
 const defectLevels = computeDefectLevels(reportFiles);
+const defectDensity = computeDefectDensity(health, defectLevels);
+const unconsumedDeclarations = computeUnconsumedDeclarations();
+const mechanicalEvidenceCoverage = computeMechanicalEvidenceCoverage();
 const deliveryQuality = {
   status: gates.status === "ok" || reworkRounds.status === "ok" || defectLevels.status === "ok" ? "ok" : "unavailable",
   gates,
   reworkRounds,
   defectLevels,
-  notes: [...gates.notes, ...reworkRounds.notes, ...defectLevels.notes],
+  defectDensity,
+  notes: [...gates.notes, ...reworkRounds.notes, ...defectLevels.notes, ...defectDensity.notes],
+};
+const declarationAudit = {
+  status: unconsumedDeclarations.status === "ok" || mechanicalEvidenceCoverage.status === "ok" ? "ok" : "unavailable",
+  unconsumedDeclarations,
+  mechanicalEvidenceCoverage,
+  notes: [...unconsumedDeclarations.notes, ...mechanicalEvidenceCoverage.notes],
 };
 const currentVersion = debts.available && !debts.invalid && !isBlank(debts.data.currentVersion) ? debts.data.currentVersion : null;
-const notes = [...trend.notes, ...debt.notes, ...recurrence.notes, ...deliveryQuality.notes];
+const notes = [...trend.notes, ...debt.notes, ...recurrence.notes, ...deliveryQuality.notes, ...declarationAudit.notes];
 
 const payload = {
   at: new Date().toISOString(),
@@ -265,6 +404,7 @@ const payload = {
   debt,
   recurrence,
   deliveryQuality,
+  declarationAudit,
   notes,
 };
 
@@ -287,6 +427,9 @@ const gateRateText = (g) => (g.status === "unavailable" ? "不可采集" : `${(g
 const gateRoundsText = (g) => (g.status === "unavailable" ? "不可采集" : Object.keys(g.rounds).sort().map((id) => `${id} 第 ${g.rounds[id] === null ? "?" : g.rounds[id]} 轮`).join("，"));
 const roundsText = (r) => (r.status === "unavailable" ? "不可采集" : Object.keys(r.distribution).sort((a, b) => Number(a) - Number(b)).map((k) => `${k} 轮 ${r.distribution[k]} 项`).join("，"));
 const defectLevelsText = (d) => (d.status === "unavailable" ? "不可采集" : `A ${d.distribution.A}，B ${d.distribution.B}，C ${d.distribution.C}，D ${d.distribution.D}`);
+const defectDensityText = (d) => (d.status === "ok" ? `${d.density} ${d.unit}（${d.total} / 源码 ${d.sourceKloc} 千行）` : "不可采集");
+const unconsumedText = (d) => (d.status === "ok" ? `${(d.ratio * 100).toFixed(2)}%（${d.problematic} / ${d.total}）` : "不可采集");
+const mechCoverageText = (d) => (d.status === "ok" ? `${(d.ratio * 100).toFixed(2)}%（含机械型证据源 ${d.mechanical} / 门 ${d.total}）` : "不可采集");
 
 const entries = [];
 const say = (text, droppable) => entries.push({ text, droppable: Boolean(droppable) });
@@ -307,6 +450,11 @@ say(`  八道门一次通过率：${gateRateText(gates)}`);
 say(`  过门轮次：${gateRoundsText(gates)}`);
 say(`  返工轮次分布：${roundsText(reworkRounds)}`);
 say(`  缺陷四级分布：${defectLevelsText(defectLevels)}`);
+say(`  缺陷密度：${defectDensityText(defectDensity)}`);
+say("");
+say("[声明面类 18.3]");
+say(`  无消费方声明占比：${unconsumedText(unconsumedDeclarations)}`);
+say(`  机械证据覆盖率：${mechCoverageText(mechanicalEvidenceCoverage)}`);
 if (notes.length) {
   say("");
   say("[标注]");
