@@ -75,7 +75,7 @@ ddd-methodology/
     ├── spec-index-check.js       # 规范索引表与规范标题一致性校验，供 ref-check 的 C12 调用
     ├── install-manifest-check.js # 安装与卸载脚本清单一致性校验，供 ref-check 的 C13 调用
     ├── debt-check.js             # 存量债务登记簿超期与上限校验脚本，末行 pass 或 overdue
-    ├── metrics-report.js         # 绩效度量聚合脚本，读 health.json 与 debts.json，写 docs/metrics.json，末行 RESULT: report
+    ├── metrics-report.js         # 绩效度量聚合脚本，读 health.json、debts.json、gates/ 与 reports/，写 docs/metrics.json，末行 RESULT: report
     └── lib/                      # 脚本共享层，供上述脚本复用
         ├── text.js               # 安全读文件、按行编号与漂移项构造三项纯函数
         ├── walk.js               # 目录深度优先遍历，统一各脚本的排除集
@@ -85,6 +85,7 @@ ddd-methodology/
         ├── ref-stages.js         # 阶段键域校验：C4 与 --fix 的注册表生成
         ├── ref-phrases.js        # 冻结短语域校验：C8 与锚点清单
         ├── ref-coverage.js       # 校验项映射一致性校验：C15
+        ├── ref-line-endings.js   # 工作区行尾一致性校验：C16
         ├── debt-history.js       # 债务历史快照与根因复发检测
         └── version.js            # 版本标识工具：v主.次 的解析、比较、加跨度与格式化
 ```

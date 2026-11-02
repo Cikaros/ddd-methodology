@@ -34,6 +34,8 @@
 
 过门时按 templates 的门禁检查单填写，其检查项与证据源列同源，不得各写一遍。
 
+门禁记录由根会话写入 `<项目根>/docs/gates/G{门号}-记录.md`，记录须含机读行 `GATE: {"id":"G{门号}","round":<过门轮次>,"verdict":"<pass|fail>"}`：`round` 为过门轮次，首次过门为一、因退回而重过递增；`verdict` 取 `pass`（通过）或 `fail`（退回）。该机读行是八道门一次通过率与过门轮次的来源，由度量聚合脚本读取 `docs/gates/` 目录采集。
+
 脚本类证据的规范调用形式为 `node ~/.pi/agent/skills/ddd-methodology/scripts/<脚本名>.js <项目根>`，脚本随 skill 安装在固定位置，不由目标项目提供。
 
 **结构健康度量首版仅报告**，不作为阻断条件；G6 要求的是恶化项逐项给出接受理由或已定级改造，而非恶化项为零。G5-INT 的证据源中，`code-health.js` 恒退出零、仅报告不阻断，真正阻断者为 governance-check 的 verdict 与集成收口的治理条件；governance-check 的 verdict 含设计文档树根路径声明与契约指纹两项判据。

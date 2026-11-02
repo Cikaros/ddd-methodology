@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /**
- * 目标：把结构趋势、债务时效与根因复发三类度量从既有产物机械聚合为文本报告与结构化产物，作为绩效度量中结构与债务类的采集入口。
+ * 目标：把结构趋势、债务时效、根因复发与交付质量四类度量从既有产物机械聚合为文本报告与结构化产物，作为绩效度量的机械采集入口。
  * 范围：读 docs/health.json 与 docs/debts.json，按规范「绩效度量」节 18.2 口径计算三项——超阈值文件数趋势、债务未清数与超期率、
- *   同一根因复发次数；文本报告末行为机读结论，结构化产物写入 docs/metrics.json，根会话据其输出写入 CHANGELOG。
+ *   同一根因复发次数；读 docs/gates/ 与 docs/reports/，按 18.1 口径计算三项——八道门一次通过率与过门轮次、返工轮次分布、缺陷四级分布；
+ *   文本报告末行为机读结论，结构化产物写入 docs/metrics.json，根会话据其输出写入 CHANGELOG。
+ * 交付质量来源：门禁记录取各记录内的 GATE 机读行，缺陷路由单取轮回计数与判定级别字段，测试报告取末行 DEFECTS 机读行；来源目录缺失或字段不全时相应度量记空并说明。
  * 不包含：门禁判定（本脚本恒退出 0，仅报告）、源产物本身的生成、语义级判断。
  * 用法：node metrics-report.js <项目根>
  * 输出形态：文本正文，末行机读结论
@@ -12,7 +14,7 @@
  * 未启用取向：docs/health.json 或 docs/debts.json 缺失时相应度量记空并输出说明，判通过，兼容未启用项目
  * 缺省取向：health.json 早期条目缺字段时按缺省值零处理，并在产物中标注，不判失败
  * 依赖：文本读取取 ./lib/text.js 的 readFileText，版本比较取 ./lib/version.js，本脚本不再内联这两处实现
- * 规范依据：规范「绩效度量」节的 18.2 结构与债务类度量
+ * 规范依据：规范「绩效度量」节的 18.1 交付质量类与 18.2 结构与债务类度量
  */
 
 const fs = require("fs");
@@ -25,6 +27,10 @@ const HEALTH_REL = "docs/health.json";
 const DEBT_BOOK_REL = "docs/debts.json";
 const METRICS_REL = "docs/metrics.json";
 const METRICS_LIMIT_BYTES = 12000;
+// 交付质量类来源目录：门禁记录与测试报告归档；门的总数固定为八，即 G1、G2、G3、G4、G4.5、G5、G5-INT、G6
+const GATES_DIR_REL = "docs/gates";
+const REPORTS_DIR_REL = "docs/reports";
+const GATE_TOTAL = 8;
 
 // 缺省取向：非有限数值一律视为零，使早期条目缺字段时不判失败
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
@@ -151,13 +157,106 @@ function computeRecurrence(debts) {
   return { status: "ok", total, max, maxRootCause, byRootCause, notes: [] };
 }
 
+// 目录读取：回传目录下匹配后缀的文件名与文本；目录缺失回 null，视为未启用，供交付质量类各度量共享
+function readDirFiles(relDir, suffixRe) {
+  const dir = path.join(root, ...relDir.split("/"));
+  let names; try { names = fs.readdirSync(dir); } catch (e) { return null; }
+  return names.filter((name) => suffixRe.test(name)).map((name) => ({ name, text: readFileText(path.join(dir, name)) }));
+}
+
+// 机读 JSON 行：形如 NAME: {...}，解析失败回 null；门禁记录取 GATE，缺陷四级分布回退取 DEFECTS
+function readJsonLine(text, name) {
+  const m = String(text || "").match(new RegExp(`${name}:\\s*\\{([\\s\\S]*?)\\}`));
+  if (!m) return null;
+  try { return JSON.parse(`{${m[1]}}`); } catch (e) { return null; }
+}
+
+// 度量四：八道门一次通过率与过门轮次。读 docs/gates/ 各记录的 GATE 机读行；首轮即通过的门数除以八
+function computeGates() {
+  const files = readDirFiles(GATES_DIR_REL, /\.md$/);
+  if (files === null) return { status: "unavailable", total: GATE_TOTAL, firstPass: null, firstPassRate: null, rounds: {}, notes: [`${GATES_DIR_REL}/ 缺失，门禁记录未落盘，一次通过率与过门轮次不可采集`] };
+  const notes = [];
+  const rounds = {};
+  const verdicts = {};
+  for (const file of files) {
+    const rec = readJsonLine(file.text, "GATE");
+    if (!rec || typeof rec.id !== "string" || rec.id === "") { notes.push(`${GATES_DIR_REL}/${file.name} 缺 GATE 机读行，跳过`); continue; }
+    const round = Number(rec.round);
+    rounds[rec.id] = Number.isFinite(round) ? round : null;
+    verdicts[rec.id] = rec.verdict === "pass" || rec.verdict === "fail" ? rec.verdict : null;
+  }
+  const ids = Object.keys(rounds);
+  if (!ids.length) return { status: "unavailable", total: GATE_TOTAL, firstPass: null, firstPassRate: null, rounds, notes: notes.concat([`${GATES_DIR_REL}/ 下无有效 GATE 机读行，一次通过率与过门轮次不可采集`]) };
+  const firstPass = ids.filter((id) => rounds[id] === 1 && verdicts[id] === "pass").length;
+  return { status: "ok", total: GATE_TOTAL, firstPass, firstPassRate: Number((firstPass / GATE_TOTAL).toFixed(4)), rounds, verdicts, notes };
+}
+
+// 度量五：返工轮次分布。逐条取 docs/reports/ 下缺陷路由单的轮回计数，按计数分档
+function computeReworkRounds(reportFiles) {
+  if (reportFiles === null) return { status: "unavailable", distribution: {}, notes: [`${REPORTS_DIR_REL}/ 缺失，返工轮次分布不可采集`] };
+  const distribution = {};
+  const notes = [];
+  let counted = 0;
+  for (const file of reportFiles) {
+    if (!/^defect-/.test(file.name)) continue;
+    const m = file.text.match(/^\s*[-*]?\s*轮回计数\s*[:：]\s*(\d+)/m);
+    if (!m) { notes.push(`${REPORTS_DIR_REL}/${file.name} 无轮回计数字段，跳过`); continue; }
+    const key = String(Number(m[1]));
+    distribution[key] = (distribution[key] || 0) + 1;
+    counted++;
+  }
+  if (!counted) return { status: "unavailable", distribution: {}, notes: notes.concat([`${REPORTS_DIR_REL}/ 下无带轮回计数的缺陷路由单，返工轮次分布不可采集`]) };
+  return { status: "ok", distribution, notes };
+}
+
+// 度量六：缺陷四级分布。优先取缺陷路由单的判定级别；无带级别的路由单时回退取测试报告 DEFECTS 机读行，按版本取轮次最大的一份
+function computeDefectLevels(reportFiles) {
+  const empty = { A: 0, B: 0, C: 0, D: 0 };
+  if (reportFiles === null) return { status: "unavailable", distribution: empty, notes: [`${REPORTS_DIR_REL}/ 缺失，缺陷四级分布不可采集`] };
+  const distribution = { A: 0, B: 0, C: 0, D: 0 };
+  const notes = [];
+  let counted = 0;
+  for (const file of reportFiles) {
+    if (!/^defect-/.test(file.name)) continue;
+    const m = file.text.match(/^\s*[-*]?\s*判定级别[^\n:：]*[:：]\s*([ABCD])\b/m);
+    if (!m) { notes.push(`${REPORTS_DIR_REL}/${file.name} 无判定级别字段，跳过`); continue; }
+    distribution[m[1]]++;
+    counted++;
+  }
+  if (counted) return { status: "ok", source: "缺陷路由单", distribution, notes };
+  const byVersion = new Map();
+  for (const file of reportFiles) {
+    const rm = file.name.match(/^test-(.+)-r(\d+)\.md$/);
+    if (!rm) continue;
+    const rec = readJsonLine(file.text, "DEFECTS");
+    if (!rec) continue;
+    const round = Number(rm[2]);
+    const prev = byVersion.get(rm[1]);
+    if (!prev || round > prev.round) byVersion.set(rm[1], { round, rec });
+  }
+  if (!byVersion.size) return { status: "unavailable", distribution: empty, notes: notes.concat([`${REPORTS_DIR_REL}/ 下无判定级别字段与 DEFECTS 机读行，缺陷四级分布不可采集`]) };
+  for (const { rec } of byVersion.values()) for (const k of ["A", "B", "C", "D"]) distribution[k] += num(rec[k]);
+  return { status: "ok", source: "测试报告 DEFECTS 机读行", distribution, notes };
+}
+
 const health = readHealth();
 const debts = readDebts();
 const trend = computeTrend(health);
 const debt = computeDebt(debts);
 const recurrence = computeRecurrence(debts);
+const reportFiles = readDirFiles(REPORTS_DIR_REL, /\.md$/);
+const gates = computeGates();
+const reworkRounds = computeReworkRounds(reportFiles);
+const defectLevels = computeDefectLevels(reportFiles);
+const deliveryQuality = {
+  status: gates.status === "ok" || reworkRounds.status === "ok" || defectLevels.status === "ok" ? "ok" : "unavailable",
+  gates,
+  reworkRounds,
+  defectLevels,
+  notes: [...gates.notes, ...reworkRounds.notes, ...defectLevels.notes],
+};
 const currentVersion = debts.available && !debts.invalid && !isBlank(debts.data.currentVersion) ? debts.data.currentVersion : null;
-const notes = [...trend.notes, ...debt.notes, ...recurrence.notes];
+const notes = [...trend.notes, ...debt.notes, ...recurrence.notes, ...deliveryQuality.notes];
 
 const payload = {
   at: new Date().toISOString(),
@@ -165,6 +264,7 @@ const payload = {
   thresholdFilesTrend: trend,
   debt,
   recurrence,
+  deliveryQuality,
   notes,
 };
 
@@ -183,6 +283,10 @@ const recurrenceText = (r) => {
   if (r.total === null) return "不可采集";
   return `合计 ${r.total}，最大 ${r.max}${r.maxRootCause ? `（${r.maxRootCause}）` : ""}`;
 };
+const gateRateText = (g) => (g.status === "unavailable" ? "不可采集" : `${(g.firstPassRate * 100).toFixed(2)}%（首轮通过 ${g.firstPass} / ${g.total}）`);
+const gateRoundsText = (g) => (g.status === "unavailable" ? "不可采集" : Object.keys(g.rounds).sort().map((id) => `${id} 第 ${g.rounds[id] === null ? "?" : g.rounds[id]} 轮`).join("，"));
+const roundsText = (r) => (r.status === "unavailable" ? "不可采集" : Object.keys(r.distribution).sort((a, b) => Number(a) - Number(b)).map((k) => `${k} 轮 ${r.distribution[k]} 项`).join("，"));
+const defectLevelsText = (d) => (d.status === "unavailable" ? "不可采集" : `A ${d.distribution.A}，B ${d.distribution.B}，C ${d.distribution.C}，D ${d.distribution.D}`);
 
 const entries = [];
 const say = (text, droppable) => entries.push({ text, droppable: Boolean(droppable) });
@@ -197,6 +301,12 @@ say(`  同一根因复发次数：${recurrenceText(recurrence)}`);
 if (recurrence.total !== null && Object.keys(recurrence.byRootCause).length) {
   for (const [key, value] of Object.entries(recurrence.byRootCause)) say(`    · ${key}：${value}`, true);
 }
+say("");
+say("[交付质量类 18.1]");
+say(`  八道门一次通过率：${gateRateText(gates)}`);
+say(`  过门轮次：${gateRoundsText(gates)}`);
+say(`  返工轮次分布：${roundsText(reworkRounds)}`);
+say(`  缺陷四级分布：${defectLevelsText(defectLevels)}`);
 if (notes.length) {
   say("");
   say("[标注]");
