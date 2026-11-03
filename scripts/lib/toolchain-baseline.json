@@ -7,6 +7,7 @@
     "scripts/governance-check.js": 0,
     "scripts/metrics-report.js": 0,
     "scripts/ref-check.js": 0,
+    "scripts/span-check.js": 0,
     "scripts/trace-check.js": 0
   }
 }

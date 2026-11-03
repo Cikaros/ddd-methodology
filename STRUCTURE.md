@@ -77,6 +77,7 @@ ddd-methodology/
     ├── design-root.js            # 设计树根路径解析唯一实现，供同上两者共用
     ├── decision-tables.js        # 判定表默认分支校验库，供 ref-check 调用
     ├── ref-check.js              # 跨文档引用、常量与枚举一致性校验，本仓库文档同步链证据
+    ├── span-check.js             # 签名级符合性校验：提取代码侧导出符号与 DESIGN 契约签名三态比对
     ├── roster-check.js           # 代理与 skill 清单一致性校验，供 ref-check 的 C5、C11 调用
     ├── spec-index-check.js       # 规范索引表与规范标题一致性校验，供 ref-check 的 C12 调用
     ├── install-manifest-check.js # 安装与卸载脚本职责一致性校验，供 ref-check 的 C13 调用
@@ -103,6 +104,12 @@ ddd-methodology/
         ├── metrics-sources.js    # 度量来源读取面：健康与登记簿读取、目录取文件、机读行与表格解析、缺省数值归一
         ├── metrics-structure.js  # 结构与债务类度量：超阈值文件数趋势、债务未清数与超期率、同一根因复发次数
         └── metrics-delivery.js   # 交付质量与声明面类度量：门禁一次通过率与过门轮次、返工轮次分布、缺陷四级分布与密度、无消费方声明占比、机械证据覆盖率
+        ├── span-ast.js           # 各语言判据共享的 AST 遍历与取值工具
+        ├── span-parser.js        # 解析器按需供给：固定位置解析、grammar 加载与缺失信号
+        ├── span-langs.js         # 显式导出标记语言与装配：TypeScript、JavaScript、Java、Rust 的判据与分派
+        ├── span-langs-convention.js # 约定式导出语言：Python 的 __all__ 与 _ 前缀、Go 的首字母大写
+        ├── span-extract.js       # 提取驱动：文件与签名片段走同一提取器的规范化
+        ├── span-compare.js       # 契约表读取、语言推导与三态比对
         ├── convergence-baseline.json # 收敛度基线：仓库文件数与目录数、各活文档标题数、已复核的跨文件重复
         └── toolchain-baseline.json   # 工具链自测基线：各入口脚本在本仓库的预期退出码
 ```
@@ -117,8 +124,9 @@ ddd-methodology/
   - code-health 脚本位于 `scripts/code-health.js`，度量结构健康并写入项目内 docs/health.json，仅报告不作门禁
   - governance-check 脚本位于 `scripts/governance-check.js`，校验契约指纹与结构趋势，输出 verdict 作为 G5-INT 门槛证据
   - ref-check 脚本位于 `scripts/ref-check.js`，校验跨文档引用、常量与枚举集合一致性，供文档同步链使用
+  - span-check 脚本位于 `scripts/span-check.js`，比对 DESIGN 契约签名与代码侧导出符号，输出一致、不一致、无法判定三态，仅不一致计入缺口
   - toolchain-selftest 脚本位于 `scripts/toolchain-selftest.js`，独立入口，断言脚本族语法可加载、入口可运行、退出码符合基线，不并入 ref-check
-  - 共享层与各域校验模块位于 `scripts/lib/`（`text.js`、`walk.js`、`paths.js`、`spec-doc.js`、`ref-refs.js`、`ref-constants.js`、`ref-stages.js`、`ref-phrases.js`、`ref-debt-fields.js`、`ref-coverage.js`、`ref-line-endings.js`、`ref-structure.js`、`ref-install-params.js`、`ref-convergence.js`、`debt-history.js`、`version.js`、`metrics-sources.js`、`metrics-structure.js`、`metrics-delivery.js`），供本仓库各门禁、校验与度量脚本复用
+  - 共享层与各域校验模块位于 `scripts/lib/`（`text.js`、`walk.js`、`paths.js`、`spec-doc.js`、`ref-refs.js`、`ref-constants.js`、`ref-stages.js`、`ref-phrases.js`、`ref-debt-fields.js`、`ref-coverage.js`、`ref-line-endings.js`、`ref-structure.js`、`ref-install-params.js`、`ref-convergence.js`、`debt-history.js`、`version.js`、`metrics-sources.js`、`metrics-structure.js`、`metrics-delivery.js`、`span-parser.js`、`span-ast.js`、`span-langs.js`、`span-langs-convention.js`、`span-extract.js`、`span-compare.js`），供本仓库各门禁、校验与度量脚本复用
   - install-manifest-check 脚本位于 `scripts/install-manifest-check.js`，核对安装与卸载脚本的职责一致性并枚举随包脚本集合，作为 ref-check 的 C13
   - 其余门禁脚本 `fingerprint.js`、`design-root.js`、`decision-tables.js`、`roster-check.js`、`spec-index-check.js`、`debt-check.js` 与 `metrics-report.js` 同属该脚本清单，位于 `scripts/`
 - 存量重建 skill `ddd-rebuild` 与定向重构 skill `ddd-refactor`，分别位于 `skill/ddd-rebuild/` 与 `skill/ddd-refactor/`，两者与主 skill 同属一份清单，仅由用户显式调用
