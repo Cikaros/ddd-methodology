@@ -118,7 +118,7 @@ ddd-methodology/
 
 ## 安装内容
 
-本包为 pi package，资源由整仓提供，以 `pi install git:github.com/Cikaros/ddd-methodology@v0.1.0` 安装，`package.json` 声明 `pi.extensions`、`pi.skills` 与 `pi-subagents.agents` 供宿主发现；随包内容如下，按随装件与其在包内的位置逐条给出。
+本包为 pi package，资源由整仓提供，以 `pi install git:github.com/Cikaros/ddd-methodology` 安装（默认跟随默认分支），`package.json` 声明 `pi.extensions`、`pi.skills` 与 `pi-subagents.agents` 供宿主发现；随包内容如下，按随装件与其在包内的位置逐条给出。
 
 - Skill `ddd-methodology`，含 workflows 加速档脚本与门禁证据脚本，位于 `skill/ddd-methodology/`
   - workflow 脚本位于 `workflows/ddd-workflow.js`，供根会话以 `subagent({ workflow: ... , args: { root: "<项目根>" } })` 调用

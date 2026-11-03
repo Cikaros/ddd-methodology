@@ -29,7 +29,19 @@ const END = "<!-- ddd-methodology:end -->";
 const DDD_SKILL_DIRS = ["ddd-methodology", "ddd-rebuild", "ddd-refactor"];
 // agents 段的命名规则：旧安装只写入 ddd- 前缀的代理定义
 const DDD_AGENT_FILE_RE = /^ddd-.*\.md$/;
-const NEXT_STEP = "pi install git:github.com/Cikaros/ddd-methodology@v0.1.0";
+
+// 下一步安装提示：版本从 package.json 的 version 动态读出，使提示随发版自动更新，不再硬编码而陈旧。
+// 读取路径以脚本自身位置解析（本脚本随包分发，清单在包根），不依赖调用时的工作目录，也不硬编码绝对路径；
+// 读取失败降级为不带版本的安装命令并提示自行确认，不猜测版本号，也不因读取失败中止。
+function nextStepLine() {
+  const cmd = "pi install git:github.com/Cikaros/ddd-methodology";
+  let version = null;
+  try {
+    version = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf8")).version;
+  } catch (e) { version = null; }
+  if (typeof version === "string" && version) return `下一步：${cmd}@v${version}`;
+  return `下一步：${cmd}（未能读出本包版本，请自行确认要安装的版本）`;
+}
 
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
@@ -95,7 +107,7 @@ say(`用户作用域：${PI_HOME}`);
 
 if (!hasResidue) {
   say("无需迁移：未发现旧安装残留。");
-  say(`下一步：${NEXT_STEP}`);
+  say(nextStepLine());
   process.exit(0);
 }
 
@@ -117,7 +129,7 @@ say(`保留 ${path.join(PI_HOME, "settings.json")} 的 subagents.agentOverrides�
 if (dryRun) {
   say("");
   say("[dry-run] 仅打印计划，未落盘。");
-  say(`下一步：${NEXT_STEP}`);
+  say(nextStepLine());
   process.exit(0);
 }
 
@@ -169,4 +181,4 @@ if (residue.hasBlock) {
 
 say("");
 say(`[成功] 旧安装残留清理完成，settings.json 的 subagents.agentOverrides 未改动。`);
-say(`下一步：${NEXT_STEP}`);
+say(nextStepLine());

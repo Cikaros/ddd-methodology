@@ -12,7 +12,7 @@
 本方法论本体为 pi package，全局安装与移除：
 
 ```
-pi install git:github.com/Cikaros/ddd-methodology@v0.1.0
+pi install git:github.com/Cikaros/ddd-methodology
 pi remove ddd-methodology
 ```
 
@@ -25,7 +25,7 @@ git config --global url."git@github.com:".insteadOf "https://github.com/"
 一次性写法，只对当次命令生效：
 
 ```bash
-GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0='url.git@github.com:.insteadOf' GIT_CONFIG_VALUE_0='https://github.com/' pi install git:github.com/Cikaros/ddd-methodology@v0.1.0
+GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0='url.git@github.com:.insteadOf' GIT_CONFIG_VALUE_0='https://github.com/' pi install git:github.com/Cikaros/ddd-methodology
 ```
 
 skill、agent 与扩展的安装与移除均由 pi package 机制承担，不再由脚本复制。已按旧方式安装的用户可运行 `node scripts/migrate-to-package.js` 清理用户作用域的残留，加 `--dry-run` 只列计划不落盘；该脚本保留 `settings.json` 的 `subagents.agentOverrides`。
@@ -81,7 +81,7 @@ Linux、macOS 与 Git Bash 首次使用前执行 `chmod +x scripts/*.sh`。
 
 ## 版本管理
 
-版本以 `package.json` 的 `version` 为准，采用三段式语义化版本，tag 与之一致，例如 `v0.1.0`。用户可用 `pi install git:github.com/Cikaros/ddd-methodology@v0.1.0` 固定版本。规范修订后运行 `node scripts/ref-check.js .` 校验跨文档一致性，作为提交前检查。代理与 skill 清单的一致性判据由 `scripts/roster-check.js` 提供，`ref-check` 的 C5 代理清单校验与 C11 skill 清单校验均调用它。
+版本以 `package.json` 的 `version` 为准，采用三段式语义化版本，tag 与之一致。安装命令默认跟随默认分支；需要固定版本时，把所需 tag 以 `@vX.Y.Z` 的形式拼进安装命令，即 `pi install git:github.com/Cikaros/ddd-methodology@vX.Y.Z`，并将 `vX.Y.Z` 换成具体 tag。示例不写具体版本号，以免每次发版后陈旧。规范修订后运行 `node scripts/ref-check.js .` 校验跨文档一致性，作为提交前检查。代理与 skill 清单的一致性判据由 `scripts/roster-check.js` 提供，`ref-check` 的 C5 代理清单校验与 C11 skill 清单校验均调用它。
 
 `ref-check` 默认只读，不写盘；加 `--fix` 时由规范「状态文件」节的键清单生成 `workflows/ddd-workflow.js` 的 stageRegistry，并校验 `extensions/ddd-governance.ts` 的 `G5_INT_STAGE` 单键属于该集合，写盘范围限于 stageRegistry 数组块，改完须复跑默认模式确认无漂移。
 
