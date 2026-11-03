@@ -10,7 +10,7 @@
 ddd-methodology/
 ├── README.md                     # 仓库定位与入口
 ├── STRUCTURE.md                  # 仓库结构与安装内容明细，本文件
-├── CHANGELOG.md                  # 变更记录（v1.0 起）
+├── CHANGELOG.md                  # 包变更记录（v0.1.0 起）
 ├── docs/                         # 项目侧证据与归档
 │   ├── health.json              # 结构健康度量历史，入版本管理，上限 50 条
 │   ├── metrics.json             # 绩效度量聚合产物，由 metrics-report.js 生成

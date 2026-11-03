@@ -60,7 +60,7 @@ Linux、macOS 与 Git Bash 首次使用前执行 `chmod +x scripts/*.sh`。
 
 ## 版本管理
 
-本仓库使用 git tag 管理版本。规范修订流程：修改文档 → commit → 打递增版本 tag，例如 `v1.2`、`v1.3`。规范修订后运行 `node scripts/ref-check.js .` 校验跨文档一致性，作为提交前检查。代理与 skill 清单的一致性判据由 `scripts/roster-check.js` 提供，`ref-check` 的 C5 代理清单校验与 C11 skill 清单校验均调用它。
+版本以 `package.json` 的 `version` 为准，采用三段式语义化版本，tag 与之一致，例如 `v0.1.0`。用户可用 `pi install git:github.com/Cikaros/ddd-methodology@v0.1.0` 固定版本。规范修订后运行 `node scripts/ref-check.js .` 校验跨文档一致性，作为提交前检查。代理与 skill 清单的一致性判据由 `scripts/roster-check.js` 提供，`ref-check` 的 C5 代理清单校验与 C11 skill 清单校验均调用它。
 
 `ref-check` 默认只读，不写盘；加 `--fix` 时由规范「状态文件」节的键清单生成 `workflows/ddd-workflow.js` 的 stageRegistry，并校验 `extensions/ddd-governance.ts` 的 `G5_INT_STAGE` 单键属于该集合，写盘范围限于 stageRegistry 数组块，改完须复跑默认模式确认无漂移。
 

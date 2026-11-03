@@ -9,8 +9,7 @@
   "engines": { "node": ">=20" },
   "pi": {
     "extensions": ["./extensions"],
-    "skills": ["./skill"],
-    "changelogPath": ""
+    "skills": ["./skill"]
   },
   "pi-subagents": {
     "agents": ["./agents"]
