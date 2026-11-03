@@ -2,11 +2,11 @@
 /**
  * 目标：把存量债务登记簿的结构齐备、总量上限与时效判定收敛为单个可机的文本结论，作为债务清偿门禁的独立证据源。
  * 范围：下列机械可判定事项——docs/debts.json 存在且 JSON 合法；顶层含 currentVersion、maxOpen、defaultDueSpan 与 debts 数组；
- *   id 在仓库内唯一；每条含 id、desc、registeredAt、owner、status、reason、rootCause、recurrence 且 owner 具名非空；registeredAt 形如 v主.次；
- *   rootCause 取根因分类之一；recurrence 含非负整数 count 与最近一次复发的版本 lastVersion，count 为零时 lastVersion 须为 null，否则形如 v主.次；
- *   dueBy 可省，省略时按 registeredAt 加 defaultDueSpan 推导应清版本，给出时须形如 v主.次；
+ *   id 在仓库内唯一；每条含 id、desc、registeredAt、owner、status、reason、rootCause、recurrence 且 owner 具名非空；registeredAt 形如 v主.次[.补丁]；
+ *   rootCause 取根因分类之一；recurrence 含非负整数 count 与最近一次复发的版本 lastVersion，count 为零时 lastVersion 须为 null，否则形如 v主.次[.补丁]；
+ *   dueBy 可省，省略时按 registeredAt 加 defaultDueSpan 推导应清版本，给出时须形如 v主.次[.补丁]；
  *   status 仅取 open 或 closed；未清项数不超 maxOpen；每个未清项的应清版本不早于 currentVersion。
- *   并在登记簿合法且当前版本可解析时按当前版本维护 docs/debt-history.json 快照、以独立段落输出根因复发；该段落不改变末行结论与退出码。
+ *   并在登记簿合法且当前版本可解析时按当前版本维护债务历史快照（落点由共享层按内部区存在性择址）、以独立段落输出根因复发；该段落不改变末行结论与退出码。
  * 不包含：债务是否真被清偿、desc 与 reason 的合理性、连续两轮超期后的用户升级裁决，交由审计代理与根会话判定。
  * 用法：node debt-check.js <项目根>
  * 输出形态：文本正文，无空行；末行为机读结论
@@ -14,7 +14,7 @@
  * 退出码：0 通过（含未启用），1 存在缺口（超期、超上限、字段不全或 JSON 非法）
  * 输出上限：12000 字节，按 UTF-8 字节计量；超限截断明细，末行结论保留完整
  * 未启用取向：docs/debts.json 不存在时视为未启用，输出说明并判通过，不报错，兼容既有项目
- * 版本比较：按 v主.次 解析为数值后比较，不做字符串比较，避免 v2.10 与 v2.9 误判
+ * 版本比较：按 v主.次[.补丁] 解析为数值后比较，不做字符串比较，避免 v2.10 与 v2.9 误判；补丁段缺省按零，v1.2 与 v1.2.0 视为同一版本
  * 依赖：文本读取取 ./lib/text.js 的 readFileText，版本比较取 ./lib/version.js，债务快照与复发检测取 ./lib/debt-history.js，本脚本不再内联这些实现
  * 规范依据：规范「存量债务的登记与清偿」节的登记、超期校验与上限三节
  */
@@ -27,11 +27,12 @@ const { parseVersion, compareVersion, addSpan, formatVersion } = require("./lib/
 // 债务历史快照与根因复发检测取共享层，本脚本只负责按登记簿构建摘要并落盘、输出段落
 const { readHistory, summarize, upsertSnapshot, capHistory, saveHistory, detectRecurrence } = require("./lib/debt-history.js");
 // 产物路径取共享层单一常量，登记簿路径不再复写字面量
-const { DEBT_BOOK_REL, resolveRel } = require("./lib/paths.js");
+const { DEBT_BOOK_REL, artifactReadPath } = require("./lib/paths.js");
 
 const root = process.argv[2] || process.cwd();
 const DEBTS_REL = DEBT_BOOK_REL;
-const debtsPath = resolveRel(root, DEBTS_REL);
+// 落点解析取共享层回退链：公开区优先、内部区回退，两处皆无回 null 即视为未启用
+const debtsPath = artifactReadPath(root, DEBTS_REL);
 
 const REQUIRED_TOP = ["currentVersion", "maxOpen", "defaultDueSpan"];
 // 条目数组字段单列：其齐备性另须数组形态判定，故不与三标量字段混列
@@ -48,7 +49,7 @@ const isBlank = (v) => v === undefined || v === null || v === "";
 
 // 校验：回传缺口明细；文件不存在即未启用，明细为空
 function check() {
-  if (!fs.existsSync(debtsPath)) return { enabled: false, reasons: [], openCount: 0 };
+  if (!debtsPath) return { enabled: false, reasons: [], openCount: 0 };
   const reasons = [];
 
   let data;
@@ -69,7 +70,7 @@ function check() {
 
   const current = parseVersion(data.currentVersion);
   if (!isBlank(data.currentVersion) && current === null) {
-    reasons.push(`${DEBTS_REL} currentVersion 非法（须形如 v主.次）：${JSON.stringify(data.currentVersion)}`);
+    reasons.push(`${DEBTS_REL} currentVersion 非法（须形如 v主.次[.补丁]）：${JSON.stringify(data.currentVersion)}`);
   }
   const maxOpen = typeof data.maxOpen === "number" && Number.isFinite(data.maxOpen) ? data.maxOpen : null;
   if (!isBlank(data.maxOpen) && maxOpen === null) {
@@ -109,7 +110,7 @@ function check() {
     if (!isBlank(entry.rootCause) && !ROOT_CAUSES.includes(entry.rootCause)) {
       reasons.push(`${DEBTS_REL} ${label} rootCause 非法（须取根因分类之一）：${JSON.stringify(entry.rootCause)}`);
     }
-    // 复发记录：count 为零时无复发版本，lastVersion 须为 null；count 大于零时须给出形如 v主.次 的最近复发版本
+    // 复发记录：count 为零时无复发版本，lastVersion 须为 null；count 大于零时须给出形如 v主.次[.补丁] 的最近复发版本
     if (!isBlank(entry.recurrence)) {
       const rec = entry.recurrence;
       if (typeof rec !== "object" || rec === null || Array.isArray(rec)) {
@@ -120,22 +121,22 @@ function check() {
         } else if (rec.count === 0) {
           if (rec.lastVersion !== null) reasons.push(`${DEBTS_REL} ${label} recurrence.lastVersion 在复发次数为零时须为 null：${JSON.stringify(rec.lastVersion)}`);
         } else if (parseVersion(rec.lastVersion) === null) {
-          reasons.push(`${DEBTS_REL} ${label} recurrence.lastVersion 非法（复发次数大于零时须形如 v主.次）：${JSON.stringify(rec.lastVersion)}`);
+          reasons.push(`${DEBTS_REL} ${label} recurrence.lastVersion 非法（复发次数大于零时须形如 v主.次[.补丁]）：${JSON.stringify(rec.lastVersion)}`);
         }
       }
     }
     const registered = parseVersion(entry.registeredAt);
     if (!isBlank(entry.registeredAt) && registered === null) {
-      reasons.push(`${DEBTS_REL} ${label} registeredAt 非法（须形如 v主.次）：${JSON.stringify(entry.registeredAt)}`);
+      reasons.push(`${DEBTS_REL} ${label} registeredAt 非法（须形如 v主.次[.补丁]）：${JSON.stringify(entry.registeredAt)}`);
     }
-    // dueBy 可省：省略时按 registeredAt 加 defaultDueSpan 推导应清版本，给出时须形如 v主.次
+    // dueBy 可省：省略时按 registeredAt 加 defaultDueSpan 推导应清版本，给出时须形如 v主.次[.补丁]
     let due = null;
     let derived = null;
     if (isBlank(entry.dueBy)) {
       if (registered !== null && dueSpan !== null) derived = addSpan(registered, dueSpan);
     } else {
       due = parseVersion(entry.dueBy);
-      if (due === null) reasons.push(`${DEBTS_REL} ${label} dueBy 非法（须形如 v主.次）：${JSON.stringify(entry.dueBy)}`);
+      if (due === null) reasons.push(`${DEBTS_REL} ${label} dueBy 非法（须形如 v主.次[.补丁]）：${JSON.stringify(entry.dueBy)}`);
     }
     // 快照摘要取全部条目，含已清项：复发检测按上一版本快照的未清项与当前版本新增登记项比对
     summaries.push(summarize(entry, !isBlank(entry.dueBy) ? entry.dueBy : (derived ? formatVersion(derived) : null)));
@@ -187,7 +188,8 @@ else lines = [`债务登记簿校验通过：${DEBTS_REL}，currentVersion ${cur
 if (enabled && current !== null && Array.isArray(summaries)) {
   const history = readHistory(root);
   const recurrences = detectRecurrence(history, currentVersion, summaries);
-  saveHistory(root, capHistory(upsertSnapshot(history, currentVersion, summaries, new Date().toISOString())));
+  const historyRel = saveHistory(root, capHistory(upsertSnapshot(history, currentVersion, summaries, new Date().toISOString())));
+  lines.push(`[快照] 债务历史已写入 ${historyRel}，本行不改变末行结论`);
   if (recurrences.length) {
     lines.push(`[根因复发] ${recurrences.length} 项，升级由根会话与审计代理裁决，本段不改变末行结论`);
     for (const r of recurrences) lines.push(`  ✗ ${r.rootCause}：牵涉 ${r.entries.join("、")}，涉及版本 ${r.fromVersion} → ${r.toVersion}`);

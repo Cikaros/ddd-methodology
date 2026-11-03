@@ -22,7 +22,7 @@ const fs = require("fs");
 const path = require("path");
 // 读取失败回空串而非中断：DESIGN 读不到时仍走指纹校验并给出结构化结论，消费端不以栈信息判读
 const { readFileText } = require("./lib/text.js");
-const { HEALTH_REL, resolveRel } = require("./lib/paths.js");
+const { HEALTH_REL, artifactReadPath } = require("./lib/paths.js");
 const { checkContractFingerprint } = require("./fingerprint");
 const { absoluteDesignDir } = require("./design-root");
 const { walk, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
@@ -80,8 +80,8 @@ function check() {
     }
   }
 
-  const healthPath = resolveRel(root, HEALTH_REL);
-  if (fs.existsSync(healthPath)) {
+  const healthPath = artifactReadPath(root, HEALTH_REL);
+  if (healthPath) {
     let history = [];
     try {
       const parsed = JSON.parse(readFileText(healthPath));

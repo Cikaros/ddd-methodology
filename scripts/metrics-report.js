@@ -17,7 +17,7 @@
 const fs = require("fs");
 const path = require("path");
 const { HEALTH_REL, DEBT_BOOK_REL, readHealth, readDebts, readDirFiles, isBlank } = require("./lib/metrics-sources.js");
-const { METRICS_REL } = require("./lib/paths.js");
+const { METRICS_REL, artifactWritePath, artifactWriteRel } = require("./lib/paths.js");
 const { computeTrend, computeDebt, computeRecurrence } = require("./lib/metrics-structure.js");
 const { REPORTS_DIR_REL, computeGates, computeReworkRounds, computeDefectLevels, computeDefectDensity, computeUnconsumedDeclarations, computeMechanicalEvidenceCoverage } = require("./lib/metrics-delivery.js");
 
@@ -64,7 +64,8 @@ const payload = {
   notes,
 };
 
-const metricsPath = path.join(root, ...METRICS_REL.split("/"));
+// 落点取共享层写入解析：内部区目录存在则写其中，否则写公开区
+const metricsPath = artifactWritePath(root, METRICS_REL);
 fs.mkdirSync(path.dirname(metricsPath), { recursive: true });
 fs.writeFileSync(metricsPath, JSON.stringify(payload, null, 2) + "\n");
 
@@ -117,7 +118,7 @@ if (notes.length) {
   for (const note of notes) say(`  · ${note}`, true);
 }
 say("");
-say(`结构化产物：${METRICS_REL}`);
+say(`结构化产物：${artifactWriteRel(root, METRICS_REL)}`);
 say("本脚本恒退出 0，仅报告，不作门禁");
 say("RESULT: report");
 

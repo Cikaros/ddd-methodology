@@ -9,7 +9,7 @@ const fs = require("fs");
 const path = require("path");
 const { readFileText } = require("./text.js");
 // 产物路径取共享层单一常量，本模块只转发入参，不再复写路径字面量
-const { HEALTH_REL, DEBT_BOOK_REL } = require("./paths.js");
+const { HEALTH_REL, DEBT_BOOK_REL, artifactReadPath } = require("./paths.js");
 
 // 缺省取向：非有限数值一律视为零，使早期条目缺字段时不判失败
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
@@ -18,8 +18,8 @@ const isBlank = (v) => v === undefined || v === null || v === "";
 
 // 读健康度量历史：文件缺失即未启用，解析失败记原因后同样按不可采集处理
 function readHealth(root) {
-  const file = path.join(root, ...HEALTH_REL.split("/"));
-  if (!fs.existsSync(file)) return { available: false, history: [] };
+  const file = artifactReadPath(root, HEALTH_REL);
+  if (!file) return { available: false, history: [] };
   try {
     const parsed = JSON.parse(readFileText(file));
     return { available: true, history: Array.isArray(parsed && parsed.history) ? parsed.history : [] };
@@ -30,8 +30,8 @@ function readHealth(root) {
 
 // 读登记簿：文件缺失即未启用，解析失败或顶层形态非法记 invalid
 function readDebts(root) {
-  const file = path.join(root, ...DEBT_BOOK_REL.split("/"));
-  if (!fs.existsSync(file)) return { available: false };
+  const file = artifactReadPath(root, DEBT_BOOK_REL);
+  if (!file) return { available: false };
   try {
     const data = JSON.parse(readFileText(file));
     if (data === null || typeof data !== "object" || Array.isArray(data)) return { available: true, invalid: true };

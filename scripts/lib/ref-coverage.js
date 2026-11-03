@@ -12,12 +12,12 @@
 const fs = require("fs");
 const path = require("path");
 const { readFileText, drift } = require("./text.js");
-const { DEBT_BOOK_REL } = require("./paths.js");
+const { DEBT_BOOK_REL, artifactCandidates } = require("./paths.js");
 
-// 映射产物候选路径，按序回退：随包分发的目标项目产物在 docs/，本仓库自身副本在 docs/internal/
-const COVERAGE_RELS = ["docs/check-coverage.json", "docs/internal/check-coverage.json"];
+// 映射产物候选路径，按共享层回退链：随包分发的目标项目产物在 docs/，本仓库自身副本在 docs/internal/
+const COVERAGE_RELS = artifactCandidates("docs/check-coverage.json");
 // 登记簿候选路径同形回退：paths.js 的常量服务目标项目，本仓库自身副本在 docs/internal/
-const DEBT_BOOK_RELS = [DEBT_BOOK_REL, `docs/internal/${DEBT_BOOK_REL.split("/").pop()}`];
+const DEBT_BOOK_RELS = artifactCandidates(DEBT_BOOK_REL);
 const REF_CHECK_REL = "scripts/ref-check.js";
 const SCRIPT_NAME_RE = /\.js$/;
 // 校验清单的唯一定义处在 ref-check 的 CHECKS 数组：取每项的编号首格，形如 ["C1", ...

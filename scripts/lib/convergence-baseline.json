@@ -1,0 +1,83 @@
+{
+  "generatedAt": "2026-11-03T04:32:41.863Z",
+  "repoItems": {
+    "files": 82,
+    "dirs": 14
+  },
+  "docHeadings": {
+    "agents/ddd-acceptance.md": 7,
+    "agents/ddd-arbiter.md": 7,
+    "agents/ddd-architect.md": 7,
+    "agents/ddd-auditor.md": 7,
+    "agents/ddd-decomposer.md": 7,
+    "agents/ddd-doc-sync.md": 7,
+    "agents/ddd-fixer.md": 7,
+    "agents/ddd-implementer.md": 7,
+    "agents/ddd-interface-reviewer.md": 7,
+    "agents/ddd-requirements.md": 7,
+    "agents/ddd-test-planner.md": 7,
+    "agents/ddd-tester.md": 7,
+    "global/APPEND_SYSTEM.md": 6,
+    "README.md": 6,
+    "skill/ddd-methodology/references/spec-change.md": 3,
+    "skill/ddd-methodology/references/spec-declare.md": 3,
+    "skill/ddd-methodology/references/spec-design.md": 5,
+    "skill/ddd-methodology/references/spec-gate.md": 2,
+    "skill/ddd-methodology/references/spec-govern.md": 9,
+    "skill/ddd-methodology/references/spec-metrics.md": 5,
+    "skill/ddd-methodology/references/spec-rebuild.md": 10,
+    "skill/ddd-methodology/references/spec-role.md": 2,
+    "skill/ddd-methodology/references/spec.md": 3,
+    "skill/ddd-methodology/references/templates-debts.md": 4,
+    "skill/ddd-methodology/references/templates-rebuild.md": 5,
+    "skill/ddd-methodology/references/templates.md": 10,
+    "skill/ddd-methodology/SKILL.md": 8,
+    "skill/ddd-rebuild/SKILL.md": 7,
+    "skill/ddd-refactor/SKILL.md": 8,
+    "STRUCTURE.md": 3
+  },
+  "duplicateFindings": [
+    {
+      "sentence": "产出接口评审报告、仲裁裁决单、巡检报告或审计报告等专属产物的职责型只读任务，按产出物查「角色与交接」节的派发表，派对应只读代理",
+      "sample": "产出接口评审报告、仲裁裁决单、巡检报告或审计报告等专属产物的职责型只读任务，按产出物查「角色与交接」节的派发表，派对应只读代理",
+      "files": [
+        "README.md",
+        "global/APPEND_SYSTEM.md",
+        "skill/ddd-methodology/SKILL.md",
+        "skill/ddd-methodology/references/spec-role.md"
+      ],
+      "source": "人工复核确认的真重复",
+      "dueWave": "W4"
+    },
+    {
+      "sentence": "任一步骤不通过即停止并报告，不得动工",
+      "sample": "任一步骤不通过即停止并报告，不得动工",
+      "files": [
+        "skill/ddd-rebuild/SKILL.md",
+        "skill/ddd-refactor/SKILL.md"
+      ],
+      "source": "人工复核确认的真重复",
+      "dueWave": "W4"
+    },
+    {
+      "sentence": "冻结后不得扩范围，锚点之外一律可弃",
+      "sample": "冻结后不得扩范围，锚点之外一律可弃",
+      "files": [
+        "skill/ddd-rebuild/SKILL.md",
+        "skill/ddd-refactor/SKILL.md"
+      ],
+      "source": "人工复核确认的真重复",
+      "dueWave": "W4"
+    },
+    {
+      "sentence": "只读任务不得派给任何具备写权限的 ddd-* 代理，即使任务看上去很小",
+      "sample": "只读任务不得派给任何具备写权限的 ddd-* 代理，即使任务看上去很小",
+      "files": [
+        "global/APPEND_SYSTEM.md",
+        "skill/ddd-methodology/references/spec-role.md"
+      ],
+      "source": "人工复核确认的真重复",
+      "dueWave": "W4"
+    }
+  ]
+}

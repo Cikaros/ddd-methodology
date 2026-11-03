@@ -18,7 +18,7 @@
 const fs = require("fs");
 const path = require("path");
 const { readFileText } = require("./lib/text.js");
-const { HEALTH_REL, resolveRel, CHANGELOG_NAME } = require("./lib/paths.js");
+const { HEALTH_REL, artifactWritePath, artifactWriteRel, CHANGELOG_NAME } = require("./lib/paths.js");
 const { walk, SOURCE_TREE_SKIP_DIR_NAMES, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
 const { absoluteDesignDir } = require("./design-root.js");
 const { CONTRACT_SECTION_RE } = require("./fingerprint.js");
@@ -235,7 +235,8 @@ const metrics = {
   bannedComments: bannedComments.length,
   staleComments: staleComments.length,
 };
-const healthPath = resolveRel(root, HEALTH_REL);
+// 落点取共享层写入解析：内部区目录存在则写其中，否则写公开区
+const healthPath = artifactWritePath(root, HEALTH_REL);
 let history = [];
 try {
   const prev = JSON.parse(readFileText(healthPath));
@@ -265,7 +266,7 @@ const entries = [];
 const say = (text, droppable) => entries.push({ text, droppable: Boolean(droppable) });
 
 say("=== 代码结构健康检查 ===");
-say(`源码文件 ${metrics.files} 个，共 ${metrics.sourceLines} 行；度量已写入 ${HEALTH_REL}`);
+say(`源码文件 ${metrics.files} 个，共 ${metrics.sourceLines} 行；度量已写入 ${artifactWriteRel(root, HEALTH_REL)}`);
 say("");
 say(`[文件规模] 超限 ${oversized.length}（其中基础能力超 300 行 ${oversizedBase}），接近上限 ${nearLimit.length}`);
 for (const o of oversized) say(`  ✗ ${o.file}  ${o.lines} 行，上限 ${o.limit}`, true);

@@ -79,6 +79,7 @@ ddd-methodology/
     ├── install-manifest-check.js # 安装与卸载脚本清单一致性校验，供 ref-check 的 C13 调用
     ├── debt-check.js             # 存量债务登记簿超期与上限校验脚本，末行 pass 或 overdue
     ├── metrics-report.js         # 绩效度量聚合脚本，读 health.json、debts.json、gates/ 与 reports/，写 docs/metrics.json，末行 RESULT: report
+    ├── toolchain-selftest.js     # 工具链自测：脚本族语法可加载、入口可运行、退出码符合基线
     └── lib/                      # 脚本共享层，供上述脚本复用
         ├── text.js               # 安全读文件、按行编号与漂移项构造三项纯函数
         ├── paths.js              # 产物路径与变更记录排除名的单一常量，供各消费脚本引用
@@ -93,11 +94,14 @@ ddd-methodology/
         ├── ref-line-endings.js   # 工作区行尾一致性校验：C16
         ├── ref-structure.js      # 结构树与安装内容明细一致性校验：C17
         ├── ref-install-params.js # 安装参数表与安装脚本参数一致性校验：C18
+        ├── ref-convergence.js    # 收敛度校验：C19
         ├── debt-history.js       # 债务历史快照与根因复发检测
         ├── version.js            # 版本标识工具：v主.次 的解析、比较、加跨度与格式化
         ├── metrics-sources.js    # 度量来源读取面：健康与登记簿读取、目录取文件、机读行与表格解析、缺省数值归一
         ├── metrics-structure.js  # 结构与债务类度量：超阈值文件数趋势、债务未清数与超期率、同一根因复发次数
         └── metrics-delivery.js   # 交付质量与声明面类度量：门禁一次通过率与过门轮次、返工轮次分布、缺陷四级分布与密度、无消费方声明占比、机械证据覆盖率
+        ├── convergence-baseline.json # 收敛度基线：仓库文件数与目录数、各活文档标题数、已复核的跨文件重复
+        └── toolchain-baseline.json   # 工具链自测基线：各入口脚本在本仓库的预期退出码
 ```
 
 ## 安装内容
@@ -110,7 +114,8 @@ ddd-methodology/
   - code-health 脚本位于 `scripts/code-health.js`，度量结构健康并写入项目内 docs/health.json，仅报告不作门禁
   - governance-check 脚本位于 `scripts/governance-check.js`，校验契约指纹与结构趋势，输出 verdict 作为 G5-INT 门槛证据
   - ref-check 脚本位于 `scripts/ref-check.js`，校验跨文档引用、常量与枚举集合一致性，供文档同步链使用
-  - 共享层与各域校验模块位于 `scripts/lib/`（`text.js`、`walk.js`、`paths.js`、`spec-doc.js`、`ref-refs.js`、`ref-constants.js`、`ref-stages.js`、`ref-phrases.js`、`ref-debt-fields.js`、`ref-coverage.js`、`ref-line-endings.js`、`ref-structure.js`、`ref-install-params.js`、`debt-history.js`、`version.js`、`metrics-sources.js`、`metrics-structure.js`、`metrics-delivery.js`），供本仓库各门禁、校验与度量脚本复用
+  - toolchain-selftest 脚本位于 `scripts/toolchain-selftest.js`，独立入口，断言脚本族语法可加载、入口可运行、退出码符合基线，不并入 ref-check
+  - 共享层与各域校验模块位于 `scripts/lib/`（`text.js`、`walk.js`、`paths.js`、`spec-doc.js`、`ref-refs.js`、`ref-constants.js`、`ref-stages.js`、`ref-phrases.js`、`ref-debt-fields.js`、`ref-coverage.js`、`ref-line-endings.js`、`ref-structure.js`、`ref-install-params.js`、`ref-convergence.js`、`debt-history.js`、`version.js`、`metrics-sources.js`、`metrics-structure.js`、`metrics-delivery.js`），供本仓库各门禁、校验与度量脚本复用
   - install-manifest-check 脚本位于 `scripts/install-manifest-check.js`，校验安装与卸载脚本的清单一致性，作为 ref-check 的 C13
   - 其余门禁脚本 `fingerprint.js`、`design-root.js`、`decision-tables.js`、`roster-check.js`、`spec-index-check.js`、`debt-check.js` 与 `metrics-report.js` 同属该脚本清单，位于 `scripts/`
 - 存量重建 skill `ddd-rebuild` 与定向重构 skill `ddd-refactor`，分别位于 `skill/ddd-rebuild/` 与 `skill/ddd-refactor/`，两者与主 skill 同属一份清单，仅由用户显式调用

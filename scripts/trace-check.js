@@ -5,8 +5,8 @@
  * 用法：node trace-check.js <项目根>
  * 校验链：AC.md 总验收 ↔ 各 DESIGN.md 模块级验收要点 ↔ 各 TEST_PLAN.md 用例表
  * 输出形态：文本正文，内容为未覆盖（总 AC 无模块承接 / 模块 AC 无用例覆盖）与悬空引用（引用了不存在的 AC 编号）清单
- * 末行机读结论：通过输出 `RESULT: pass`，存在缺口输出 `RESULT: gap`
- * 退出码：0 通过，1 存在缺口。门禁地位：G4 与 G5 门禁的脚本证据源
+ * 末行机读结论：通过输出 `RESULT: pass`，存在缺口输出 `RESULT: gap`，方法论仓库自身输出 `RESULT: pass`（不适用）
+ * 退出码：0 通过（含不适用），1 存在缺口。门禁地位：G4 与 G5 门禁的脚本证据源
  * 输出上限：12000 字节，按 UTF-8 计量；超限截断明细，末行机读结论与截断计数行保留
  * 依赖：文本读取取 ./lib/text.js 的 readFileText，本脚本不再内联读取实现。
  * 规范依据：规范「结构与注释的机械证据」节的脚本消费契约表，与「质量门禁」节的证据源行
@@ -50,6 +50,20 @@ function capTraceReport(head, details, tail) {
     if (Buffer.byteLength(out.join("\n"), "utf8") <= TRACE_LIMIT_BYTES) return out;
   }
   return build(0);
+}
+
+// ---- 0. 方法论仓库自身：报不适用而非缺口 ----
+// 判据取文件存在性而非根路径字面量：根含 skill/ddd-methodology/SKILL.md 且无 REQUIREMENTS.md 者即方法论仓库自身，
+// 此类仓库无 AC.md 等应用侧产物，G2/G4/G5 门禁无判定对象，按规范「本仓库适用边界」节报不适用并退出 0
+const METHODOLOGY_MARKER = ["skill", "ddd-methodology", "SKILL.md"];
+if (fs.existsSync(path.join(root, ...METHODOLOGY_MARKER)) && !fs.existsSync(path.join(root, "REQUIREMENTS.md"))) {
+  const message = capTraceReport(
+    ["=== DDD 追溯一致性校验 ==="],
+    ["[不适用] 本仓库为方法论自身：根含 skill/ddd-methodology/SKILL.md 且无 REQUIREMENTS.md，G2/G4/G5 门禁无判定对象，按规范「本仓库适用边界」节报不适用"],
+    ["", "结果：不适用（不产生缺口）", "RESULT: pass"],
+  );
+  console.log(message.join("\n"));
+  process.exit(0);
 }
 
 // ---- 1. 总 AC ----

@@ -10,13 +10,13 @@ const path = require("path");
 const { readFileText } = require("./text.js");
 const { parseVersion, compareVersion } = require("./version.js");
 // 产物路径取共享层单一常量，本模块不再复写路径字面量
-const { DEBT_HISTORY_REL, resolveRel } = require("./paths.js");
+const { DEBT_HISTORY_REL, artifactWritePath, artifactWriteRel } = require("./paths.js");
 
 const SNAPSHOT_LIMIT = 50; // 与健康度量产物同口径：历史上限五十条，超出截断
 
 // 读取历史：文件缺失或非法一律回空数组，读失败不得中断债务校验
 function readHistory(root) {
-  const file = resolveRel(root, DEBT_HISTORY_REL);
+  const file = artifactWritePath(root, DEBT_HISTORY_REL);
   try {
     const parsed = JSON.parse(readFileText(file));
     return parsed && Array.isArray(parsed.history) ? parsed.history : [];
@@ -53,11 +53,12 @@ function capHistory(history, limit = SNAPSHOT_LIMIT) {
   return history.length > limit ? history.slice(-limit) : history;
 }
 
-// 落盘：目录不存在时建出，产物形态固定为含 history 数组的对象
+// 落盘：目录不存在时建出，产物形态固定为含 history 数组的对象；回传落点的仓库相对路径，供调用方在输出中显名
 function saveHistory(root, history) {
-  const file = resolveRel(root, DEBT_HISTORY_REL);
+  const file = artifactWritePath(root, DEBT_HISTORY_REL);
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify({ history }, null, 2) + "\n");
+  return artifactWriteRel(root, DEBT_HISTORY_REL);
 }
 
 // 上一版本快照：取版本严格早于当前版本中最新的一条；无可比快照时回 null
