@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "description": "分治式设计驱动开发方法论：为 pi 与 pi-subagents 提供的技能、子代理与运行时守卫",
   "license": "MIT",
-  "type": "module",
   "keywords": ["pi-package", "ddd", "subagents", "methodology"],
   "files": ["agents", "extensions", "skill", "global", "profiles", "scripts", "workflows", "README.md", "STRUCTURE.md", "LICENSE"],
   "engines": { "node": ">=20" },
