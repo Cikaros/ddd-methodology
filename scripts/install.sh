@@ -84,8 +84,8 @@ if [[ "$CHECK_ONLY" == "1" ]]; then
             echo "  $s : 未安装"
         fi
     done
-    if [[ -f "$PI_HOME/extensions/ddd-governance.ts" ]]; then
-        echo "  扩展     : 已安装 ($PI_HOME/extensions/ddd-governance.ts)"
+    if [[ -f "$PI_HOME/extensions/ddd-context.ts" && -f "$PI_HOME/extensions/ddd-tools.ts" && -f "$PI_HOME/extensions/ddd-governance.ts" ]]; then
+        echo "  扩展     : 已安装 ($PI_HOME/extensions/)"
     else
         echo "  扩展     : 未安装"
     fi
@@ -141,8 +141,22 @@ for s in trace-check code-health governance-check fingerprint design-root decisi
     fi
 done
 
-# 1.7 安装运行时守卫扩展，仅本方法论的固定文件，不触碰用户其他扩展
+# 1.7 安装运行时扩展，仅本方法论的固定文件，不触碰用户其他扩展；逐文件显式列出，不用通配符也不建同名列表
 EXT_DST="$PI_HOME/extensions"
+if [[ -f "$ROOT/extensions/ddd-context.ts" ]]; then
+    mkdir -p "$EXT_DST"
+    cp -f "$ROOT/extensions/ddd-context.ts" "$EXT_DST/ddd-context.ts"
+    echo "[完成] 扩展 -> $EXT_DST/ddd-context.ts"
+else
+    echo "[警告] 缺少 $ROOT/extensions/ddd-context.ts" >&2
+fi
+if [[ -f "$ROOT/extensions/ddd-tools.ts" ]]; then
+    mkdir -p "$EXT_DST"
+    cp -f "$ROOT/extensions/ddd-tools.ts" "$EXT_DST/ddd-tools.ts"
+    echo "[完成] 扩展 -> $EXT_DST/ddd-tools.ts"
+else
+    echo "[警告] 缺少 $ROOT/extensions/ddd-tools.ts" >&2
+fi
 if [[ -f "$ROOT/extensions/ddd-governance.ts" ]]; then
     mkdir -p "$EXT_DST"
     cp -f "$ROOT/extensions/ddd-governance.ts" "$EXT_DST/ddd-governance.ts"

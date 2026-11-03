@@ -96,6 +96,18 @@ for %%S in (trace-check code-health governance-check fingerprint design-root dec
 )
 
 if not exist "%PI_HOME%\extensions" mkdir "%PI_HOME%\extensions"
+if exist "%ROOT%extensions\ddd-context.ts" (
+    copy /y "%ROOT%extensions\ddd-context.ts" "%PI_HOME%\extensions\ddd-context.ts" >nul
+    if errorlevel 1 ( echo [WARN] extension copy failed ) else ( echo [OK] Extension -> %PI_HOME%\extensions\ddd-context.ts )
+) else (
+    echo [WARN] missing %ROOT%extensions\ddd-context.ts
+)
+if exist "%ROOT%extensions\ddd-tools.ts" (
+    copy /y "%ROOT%extensions\ddd-tools.ts" "%PI_HOME%\extensions\ddd-tools.ts" >nul
+    if errorlevel 1 ( echo [WARN] extension copy failed ) else ( echo [OK] Extension -> %PI_HOME%\extensions\ddd-tools.ts )
+) else (
+    echo [WARN] missing %ROOT%extensions\ddd-tools.ts
+)
 if exist "%ROOT%extensions\ddd-governance.ts" (
     copy /y "%ROOT%extensions\ddd-governance.ts" "%PI_HOME%\extensions\ddd-governance.ts" >nul
     if errorlevel 1 ( echo [WARN] extension copy failed ) else ( echo [OK] Extension -> %PI_HOME%\extensions\ddd-governance.ts )
@@ -161,7 +173,11 @@ if exist "%SKILL_DST%\workflows\ddd-workflow.js" ( echo   Workflow : installed )
 for %%S in (trace-check code-health governance-check fingerprint design-root decision-tables install-manifest-check ref-check roster-check spec-index-check debt-check metrics-report toolchain-selftest lib\text lib\walk lib\paths lib\spec-doc lib\ref-refs lib\ref-constants lib\ref-stages lib\ref-phrases lib\ref-debt-fields lib\debt-history lib\ref-coverage lib\ref-line-endings lib\ref-structure lib\ref-install-params lib\ref-convergence lib\version lib\metrics-sources lib\metrics-structure lib\metrics-delivery) do (
     if exist "%SKILL_DST%\scripts\%%S.js" ( echo   %%S : installed ) else ( echo   %%S : missing )
 )
-if exist "%PI_HOME%\extensions\ddd-governance.ts" ( echo   Extension: installed ) else ( echo   Extension: missing )
+set "EXT_OK=1"
+if not exist "%PI_HOME%\extensions\ddd-context.ts" set "EXT_OK="
+if not exist "%PI_HOME%\extensions\ddd-tools.ts" set "EXT_OK="
+if not exist "%PI_HOME%\extensions\ddd-governance.ts" set "EXT_OK="
+if defined EXT_OK ( echo   Extension: installed ) else ( echo   Extension: missing )
 if exist "%PI_HOME%\.ddd-model-overrides.json" (
     echo   Models   : profile applied
 ) else (

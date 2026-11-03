@@ -59,6 +59,8 @@ ddd-methodology/
 │   ├── ddd-doc-sync.md           # 文档同步守护者（方法论自身文档巡检）
 │   └── ddd-auditor.md            # 声明面审计者（可验证性与无用代码修剪）
 ├── extensions/
+│   ├── ddd-context.ts            # 会话上下文：注入全局规则 section，探测 subagent 前置依赖
+│   ├── ddd-tools.ts              # 机械校验工具化：把甲类校验脚本注册为 ddd_* 工具
 │   └── ddd-governance.ts         # 运行时守卫，仅 DDD 项目激活，拦截越阈值写入与全量测试误跑
 └── scripts/
     ├── install.bat               # Windows 安装/更新（幂等）
@@ -119,7 +121,7 @@ ddd-methodology/
   - install-manifest-check 脚本位于 `scripts/install-manifest-check.js`，校验安装与卸载脚本的清单一致性，作为 ref-check 的 C13
   - 其余门禁脚本 `fingerprint.js`、`design-root.js`、`decision-tables.js`、`roster-check.js`、`spec-index-check.js`、`debt-check.js` 与 `metrics-report.js` 同属该脚本清单，位于 `scripts/`
 - 存量重建 skill `ddd-rebuild` 与定向重构 skill `ddd-refactor`，分别位于 `skill/ddd-rebuild/` 与 `skill/ddd-refactor/`，两者与主 skill 同属一份清单，仅由用户显式调用
-- 运行时守卫扩展位于 `extensions/ddd-governance.ts`，仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默
+- 运行时扩展位于 `extensions/`：`ddd-context.ts` 在会话开始时注入全局规则 section 并探测 subagent 前置依赖；`ddd-tools.ts` 把甲类机械校验脚本注册为 `ddd_*` 工具；`ddd-governance.ts` 仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默
 - 模型配比记录文件 `~/.pi/agent/.ddd-model-overrides.json`，记录本方法论写入的代理、配比名与写入前原值，供精确回退
 - 全局规则区块，按标记合并入 `~/.pi/agent/APPEND_SYSTEM.md`：只替换标记区块，区块外用户自定义内容原样保留；首次安装前自动备份为 `APPEND_SYSTEM.md.ddd-bak`，卸载时若仅剩标记区块则优先从该备份恢复并删除备份文件
 - 12 个 agent 定义，位于 `agents/ddd-*.md`
