@@ -63,22 +63,22 @@ ddd-methodology/
 │   ├── ddd-tools.ts              # 机械校验工具化：把甲类校验脚本注册为 ddd_* 工具
 │   └── ddd-governance.ts         # 运行时守卫，仅 DDD 项目激活，拦截越阈值写入与全量测试误跑
 └── scripts/
-    ├── install.bat               # Windows 安装/更新（幂等）
-    ├── install.sh                # Linux/macOS/Git Bash 安装/更新
-    ├── uninstall.bat             # Windows 卸载（固定文件清单，防误删）
-    ├── uninstall.sh              # Linux/macOS/Git Bash 卸载
+    ├── install.bat               # Windows 模型配比：调用 apply-models 应用配比
+    ├── install.sh                # Linux/macOS/Git Bash 模型配比：应用配比
+    ├── uninstall.bat             # Windows 模型配比：撤回本方法论写入的模型配置
+    ├── uninstall.sh              # Linux/macOS/Git Bash 模型配比：撤回模型配置
     ├── trace-check.js            # 追溯一致性校验脚本，G4 与 G5 门禁证据
-    ├── apply-models.js           # 按代理模型配比的应用与可用性冒烟
+    ├── apply-models.js           # 按代理模型配比的应用与可用性冒烟，仓库内部专用
+    ├── migrate-to-package.js     # 旧安装迁移到 pi package：清理用户作用域的残留，仓库内部专用
     ├── code-health.js            # 结构健康度量脚本，仅报告不作门禁，写入项目内 docs/health.json
     ├── governance-check.js       # 契约指纹与结构趋势门槛校验，输出 verdict 作为 G5-INT 门槛证据
     ├── fingerprint.js            # 契约指纹唯一实现，供 trace-check 与 governance-check 共用
     ├── design-root.js            # 设计树根路径解析唯一实现，供同上两者共用
-    ├── merge-append-system.js    # 全局规则区块合并，供安装与卸载脚本调用
     ├── decision-tables.js        # 判定表默认分支校验库，供 ref-check 调用
     ├── ref-check.js              # 跨文档引用、常量与枚举一致性校验，本仓库文档同步链证据
     ├── roster-check.js           # 代理与 skill 清单一致性校验，供 ref-check 的 C5、C11 调用
     ├── spec-index-check.js       # 规范索引表与规范标题一致性校验，供 ref-check 的 C12 调用
-    ├── install-manifest-check.js # 安装与卸载脚本清单一致性校验，供 ref-check 的 C13 调用
+    ├── install-manifest-check.js # 安装与卸载脚本职责一致性校验，供 ref-check 的 C13 调用
     ├── debt-check.js             # 存量债务登记簿超期与上限校验脚本，末行 pass 或 overdue
     ├── metrics-report.js         # 绩效度量聚合脚本，读 health.json、debts.json、gates/ 与 reports/，写 docs/metrics.json，末行 RESULT: report
     ├── toolchain-selftest.js     # 工具链自测：脚本族语法可加载、入口可运行、退出码符合基线
@@ -108,7 +108,7 @@ ddd-methodology/
 
 ## 安装内容
 
-本包以 pi package 形态分发，资源由整仓提供，`package.json` 声明 `pi.extensions`、`pi.skills` 与 `pi-subagents.agents` 供宿主发现；随包内容如下，按随装件与其在包内的位置逐条给出。
+本包为 pi package，资源由整仓提供，以 `pi install git:github.com/Cikaros/ddd-methodology@v0.1.0` 安装，`package.json` 声明 `pi.extensions`、`pi.skills` 与 `pi-subagents.agents` 供宿主发现；随包内容如下，按随装件与其在包内的位置逐条给出。
 
 - Skill `ddd-methodology`，含 workflows 加速档脚本与门禁证据脚本，位于 `skill/ddd-methodology/`
   - workflow 脚本位于 `workflows/ddd-workflow.js`，供根会话以 `subagent({ workflow: ... , args: { root: "<项目根>" } })` 调用
@@ -118,10 +118,10 @@ ddd-methodology/
   - ref-check 脚本位于 `scripts/ref-check.js`，校验跨文档引用、常量与枚举集合一致性，供文档同步链使用
   - toolchain-selftest 脚本位于 `scripts/toolchain-selftest.js`，独立入口，断言脚本族语法可加载、入口可运行、退出码符合基线，不并入 ref-check
   - 共享层与各域校验模块位于 `scripts/lib/`（`text.js`、`walk.js`、`paths.js`、`spec-doc.js`、`ref-refs.js`、`ref-constants.js`、`ref-stages.js`、`ref-phrases.js`、`ref-debt-fields.js`、`ref-coverage.js`、`ref-line-endings.js`、`ref-structure.js`、`ref-install-params.js`、`ref-convergence.js`、`debt-history.js`、`version.js`、`metrics-sources.js`、`metrics-structure.js`、`metrics-delivery.js`），供本仓库各门禁、校验与度量脚本复用
-  - install-manifest-check 脚本位于 `scripts/install-manifest-check.js`，校验安装与卸载脚本的清单一致性，作为 ref-check 的 C13
+  - install-manifest-check 脚本位于 `scripts/install-manifest-check.js`，核对安装与卸载脚本的职责一致性并枚举随包脚本集合，作为 ref-check 的 C13
   - 其余门禁脚本 `fingerprint.js`、`design-root.js`、`decision-tables.js`、`roster-check.js`、`spec-index-check.js`、`debt-check.js` 与 `metrics-report.js` 同属该脚本清单，位于 `scripts/`
 - 存量重建 skill `ddd-rebuild` 与定向重构 skill `ddd-refactor`，分别位于 `skill/ddd-rebuild/` 与 `skill/ddd-refactor/`，两者与主 skill 同属一份清单，仅由用户显式调用
 - 运行时扩展位于 `extensions/`：`ddd-context.ts` 在会话开始时注入全局规则 section 并探测 subagent 前置依赖；`ddd-tools.ts` 把甲类机械校验脚本注册为 `ddd_*` 工具；`ddd-governance.ts` 仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默
-- 模型配比记录文件 `~/.pi/agent/.ddd-model-overrides.json`，记录本方法论写入的代理、配比名与写入前原值，供精确回退
-- 全局规则区块，按标记合并入 `~/.pi/agent/APPEND_SYSTEM.md`：只替换标记区块，区块外用户自定义内容原样保留；首次安装前自动备份为 `APPEND_SYSTEM.md.ddd-bak`，卸载时若仅剩标记区块则优先从该备份恢复并删除备份文件
+- 全局规则由 `extensions/ddd-context.ts` 以 sections 注入，不再改写用户全局文件
+- 模型配比记录文件 `~/.pi/agent/.ddd-model-overrides.json`，记录本方法论写入的代理、配比名与写入前原值，供精确回退；模型配比由 `scripts/install.sh` 与 `scripts/install.bat` 调用 apply-models 应用或撤回
 - 12 个 agent 定义，位于 `agents/ddd-*.md`

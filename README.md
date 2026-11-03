@@ -9,13 +9,22 @@
 
 ## 安装与卸载
 
-安装卸载均为全局操作，按平台执行。
+本方法论本体为 pi package，全局安装与移除：
+
+```
+pi install git:github.com/Cikaros/ddd-methodology@v0.1.0
+pi remove ddd-methodology
+```
+
+skill、agent 与扩展的安装与移除均由 pi package 机制承担，不再由脚本复制。已按旧方式安装的用户可运行 `node scripts/migrate-to-package.js` 清理用户作用域的残留，加 `--dry-run` 只列计划不落盘；该脚本保留 `settings.json` 的 `subagents.agentOverrides`。
+
+模型配比为部署政策，由仓库内的脚本应用与撤回，按平台执行。
 
 | 操作 | Windows | Linux、macOS 与 Git Bash |
 |---|---|---|
-| 安装或覆盖更新 | `scripts\install.bat` | `./scripts/install.sh` |
-| 检查安装状态 | `scripts\install.bat --check` | `./scripts/install.sh --check` |
-| 卸载 | `scripts\uninstall.bat` | `./scripts/uninstall.sh` |
+| 应用模型配比 | `scripts\install.bat --models <配比>` | `./scripts/install.sh --models <配比>` |
+| 检查模型配比状态 | `scripts\install.bat --check` | `./scripts/install.sh --check` |
+| 撤回模型配比 | `scripts\uninstall.bat` | `./scripts/uninstall.sh` |
 
 Linux、macOS 与 Git Bash 首次使用前执行 `chmod +x scripts/*.sh`。
 
@@ -23,15 +32,15 @@ Linux、macOS 与 Git Bash 首次使用前执行 `chmod +x scripts/*.sh`。
 
 | 参数 | 取值 | 说明 |
 |---|---|---|
-| `--models` | `balanced`、`quality` | 安装并按 `profiles/models.json` 的配比配置各代理模型 |
+| `--models` | `balanced`、`quality` | 按 `profiles/models.json` 的配比配置各代理模型 |
 | `--models none` | 固定值 | 显式跳过模型配比，不读取配比文件 |
 | `--set` | `ddd-<代理名>=<模型名>` | 在配比基础上改单个代理，可重复 |
 | `--skip-verify` | 无 | 跳过可用性冒烟，仅在已确认模型可用时使用 |
 | `--provider` | provider 名 | 指定模型 provider，默认取配比文件值 |
-| `--check` | 无 | 只检查安装状态，不写入 |
+| `--check` | 无 | 只检查模型配比状态，不写入 |
 | `--repo` | 仓库根路径 | 指定仓库位置，供 `apply-models.js` 定位 `profiles/models.json` |
 
-省略 `--models` 时不触碰模型设置，`--models none` 为显式跳过。卸载会移除本方法论写入的模型配置。
+省略 `--models` 时不触碰模型设置，`--models none` 为显式跳过。撤回会移除本方法论写入的模型配置，`settings.json` 的 `subagents.agentOverrides` 保留。
 
 安装内容明细，即各随装件与其安装路径，见 [STRUCTURE.md](STRUCTURE.md)。
 
@@ -89,8 +98,8 @@ node scripts/apply-models.js status                                 # 查看当�
 node scripts/apply-models.js clear                                  # 移除本方法论写入的配置
 ```
 
-前置条件：`node` 必须可用，配比应用与全局规则合并均依赖它；未安装 node 时脚本降级为警告并跳过这两项。
+前置条件：`node` 必须可用，配比应用依赖它；未安装 node 时脚本降级为警告并跳过。
 
-**配比应用与卸载都依赖仓库在场**：`profiles/`、`scripts/apply-models.js` 与 `scripts/merge-append-system.js` 均不随安装复制到 skill 目录，故更换配比与执行卸载需在仓库内运行；在仓库外直接调用 `apply-models.js` 时可用 `--repo` 指向仓库根。
+**配比应用与撤回都在仓库内运行**：`profiles/` 与 `scripts/apply-models.js` 属仓库内部专用脚本，不随包分发的运行流程；更换配比或撤回模型配置请在仓库内运行，在仓库外直接调用 `apply-models.js` 时可用 `--repo` 指向仓库根。
 
 `profiles/models.json` 内记录了配比的实测证据与理由，含可用性、延迟、审计召回、编码契约忠实度与成本结构。证据为单轮对照，样本量有限，使用中出现反例应更新该表。

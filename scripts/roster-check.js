@@ -2,14 +2,14 @@
  * 目标：把仓库清单类校验（代理清单、skill 清单）收敛为可单独复核的库文件，控制单脚本的行数规模。
  * 范围：代理清单校验与 skill 清单校验两项——文件系统枚举、声明文件解析、集合双向比对与漂移项产出。
  * 不包含：文件遍历之外的语义判断（代理定义正文、skill 正文等）、其他校验项、命令行入口。
- * 声明文件集合：代理清单为 skill/ddd-methodology/SKILL.md、skill/ddd-methodology/references/spec-role.md、STRUCTURE.md、
- *   scripts/install.sh、scripts/install.bat、scripts/uninstall.sh、scripts/uninstall.bat、workflows/ddd-workflow.js，
- *   另加 profiles/models.json 的配比档位；skill 清单为前述安装脚本、卸载脚本与 STRUCTURE.md。
+ * 声明文件集合：代理清单为 skill/ddd-methodology/SKILL.md、skill/ddd-methodology/references/spec-role.md、STRUCTURE.md
+ *   与 workflows/ddd-workflow.js，另加 profiles/models.json 的配比档位；skill 清单为 STRUCTURE.md。
+ *   安装与卸载脚本已收敛为仅承担模型配比，不再持有 skill 与代理清单，故不再作为受控声明载体。
  * 代理名载体：规范与结构与安装内容明细文档用 ddd- 前缀 token 扫描，注释行不参与；结构树内的代理条目形如 ddd-某名.md，
  *   扫描时剥去 .md 后缀取代理名，使树内条目计入声明集合；workflow 的 key、runKey、stateNote 参数
  *   与状态键是运行标识而非代理名，故只取 agent 字段的字符串字面量；配比档位取各档 roles 的键集合，按档与
  *   agents/ 集合比对，缺角色与幽灵角色均报漂移。
- * skill 名载体：安装脚本取变量名含 skill 的清单赋值与 skill 路径引用；STRUCTURE.md 取结构树围栏内的 skill/<名>/ 目录项。
+ * skill 名载体：STRUCTURE.md 取结构树围栏内的 skill/<名>/ 目录项。
  * 代理名排除集：与代理名同形的 skill 目录名由 enumerateSkillDirs 动态取得，与 C11 共用同一枚举，
  *   不得硬编码 skill 名；skill 目录的枚举定义以含 SKILL.md 为准，两处共用以免各自遍历漂移。
  * 调用形态：checkAgentRoster(root)、checkSkillRoster(root)；root 为仓库根；两者回传漂移项数组，
@@ -22,15 +22,14 @@ const fs = require("fs");
 const path = require("path");
 const { readFileText, withLineNumbers, drift } = require("./lib/text.js");
 
-// 声明代理集合的入口：规范入口、结构与安装内容明细文档与安装脚本；卸载脚本持有同名清单副本，一并校验以免悄悄漂移。
-// 规范角色表与沙箱 workflow 无生成通道，只能内联，故同样列入受控声明面
+// 声明代理集合的入口：规范入口、结构与安装内容明细文档与沙箱 workflow；规范角色表与 workflow 无生成通道，只能内联，故列入受控声明面
 const WORKFLOW_REL = "workflows/ddd-workflow.js";
 // 仓库结构与安装内容明细文档：承载仓库结构树，是代理名与 skill 名的声明载体之一
 const STRUCTURE_DOC_REL = ["STRUCTURE.md"];
-const AGENT_DECLARATION_FILES = [["skill", "ddd-methodology", "SKILL.md"], ["skill", "ddd-methodology", "references", "spec-role.md"], STRUCTURE_DOC_REL, ["scripts", "install.sh"], ["scripts", "install.bat"], ["scripts", "uninstall.sh"], ["scripts", "uninstall.bat"], WORKFLOW_REL.split("/")];
+const AGENT_DECLARATION_FILES = [["skill", "ddd-methodology", "SKILL.md"], ["skill", "ddd-methodology", "references", "spec-role.md"], STRUCTURE_DOC_REL, WORKFLOW_REL.split("/")];
 const MODELS_REL = ["profiles", "models.json"];
-// skill 清单的声明文件：安装脚本与卸载脚本、仓库结构与安装内容明细文档；实际目录集合由 skill/*/SKILL.md 枚举
-const SKILL_DECLARATION_FILES = [["scripts", "install.sh"], ["scripts", "install.bat"], ["scripts", "uninstall.sh"], ["scripts", "uninstall.bat"], STRUCTURE_DOC_REL];
+// skill 清单的声明文件：仓库结构与安装内容明细文档；实际目录集合由 skill/*/SKILL.md 枚举
+const SKILL_DECLARATION_FILES = [STRUCTURE_DOC_REL];
 const SKILL_NAME = /^ddd-[a-z][a-z0-9-]*$/; // skill 目录名形态，与安装脚本清单取值一致
 
 // skill 目录集合的唯一枚举入口：C5 的代理名排除集与 C11 的实际集合共用，避免两处各自遍历 skill 目录
@@ -42,14 +41,10 @@ function enumerateSkillDirs(root) {
   } catch (e) { return []; }
 }
 
-// 脚本的声明载体是清单赋值行与字段字面量，注释行不是；注释里“ddd- 前缀”类描述词会被裸 token 扫描误当声明
+// 受控声明面收敛后只剩规范文档与沙箱 workflow，注释判定只需覆盖 workflow 的 js 形态
 function isCommentLine(rel, line) {
-  const name = rel[rel.length - 1];
-  const trimmed = line.trim();
-  if (name.endsWith(".sh")) return trimmed.startsWith("#");
-  if (name.endsWith(".bat")) return /^(?:rem\b|::)/i.test(trimmed);
-  if (name.endsWith(".js")) return /^(?:\/\/|\/\*|\*)/.test(trimmed);
-  return false;
+  if (!rel[rel.length - 1].endsWith(".js")) return false;
+  return /^(?:\/\/|\/\*|\*)/.test(line.trim());
 }
 
 // 声明提取按载体分派：workflow 里与代理名同形的运行标识最多，通用扫描会把它们当声明
@@ -137,28 +132,16 @@ function checkAgentRoster(root) {
   return found.concat(checkModelProfiles(root, roster));
 }
 
-// 单个声明文件的 skill 名集合：安装脚本取清单赋值与路径引用，结构与安装内容明细文档取结构树围栏内的目录项
+// 单个声明文件的 skill 名集合：结构与安装内容明细文档取结构树围栏内的目录项
 function collectDeclaredSkills(root, rel) {
   const text = readFileText(path.join(root, ...rel));
   const names = new Map();
   const add = (name, no) => { if (SKILL_NAME.test(name) && !names.has(name)) names.set(name, no); };
-  if (rel.join("/") === STRUCTURE_DOC_REL.join("/")) {
-    let fenced = false;
-    for (const row of withLineNumbers(text)) {
-      if (/^\s*```/.test(row.line)) { fenced = !fenced; continue; }
-      if (!fenced) continue;
-      for (const m of row.line.matchAll(/skill\/([A-Za-z0-9._-]+)\//g)) add(m[1], row.no);
-    }
-  } else {
-    // 清单赋值：变量名含 skill 的 shell/bat 单行赋值，取值为目录名数组或空格分隔名；路径引用：skill[s]/<名>
-    for (const m of text.matchAll(/^[ \t]*(?:set\s+)?"?([A-Za-z_][A-Za-z0-9_]*)"?[ \t]*=[ \t]*\(?([^)\r\n"]*)/gm)) {
-      if (!/skill/i.test(m[1])) continue;
-      const no = text.slice(0, m.index).split("\n").length;
-      for (const token of m[2].split(/\s+/)) add(token.trim(), no);
-    }
-    for (const row of withLineNumbers(text)) {
-      for (const m of row.line.matchAll(/skills?[\\/]([A-Za-z0-9._-]+)/g)) add(m[1], row.no);
-    }
+  let fenced = false;
+  for (const row of withLineNumbers(text)) {
+    if (/^\s*```/.test(row.line)) { fenced = !fenced; continue; }
+    if (!fenced) continue;
+    for (const m of row.line.matchAll(/skill\/([A-Za-z0-9._-]+)\//g)) add(m[1], row.no);
   }
   return { file: rel.join("/"), names };
 }
