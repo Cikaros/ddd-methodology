@@ -9,6 +9,10 @@
  * 必须通过 args.root 传入项目根绝对路径——workflow 脚本运行在沙箱中，
  * 没有 process 全局，唯一合法的数据通道就是冻结的 args。
  *
+ * 沙箱可用对象：runs.run、runs.all、runs.lanes、runs.steer、runs.status、runs.ref、emit、console、args。
+ *   runs.parallel 与 runs.chain 不存在，属已废弃的旧顶层 API，误用即报 not a function；本轮改造中已因此踩坑，
+ *   成本以分钟计，写此以免复踩。
+ *
  * 前置条件：本脚本用到的 ddd-* 代理须已安装于 ~/.pi/agent/agents/，未安装将导致派发失败，脚本不自建存在性校验；安装状态可用 install.sh --check 或 install.bat --check 自检。
  *
  * 阶段键清单的权威源为 `references/spec-govern.md`「状态文件」节，本脚本的 stageRegistry 须与其一致，由 `scripts/ref-check.js` 的 C4 校验；

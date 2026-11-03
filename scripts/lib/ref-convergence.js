@@ -3,9 +3,10 @@
  *   作为 ref-check 的 C19 校验项，承载「设计内敛、文件内敛、规则内敛」判据。
  * 范围：C19 四项断言——其一，docs/internal/refactor/ 下 .md 文件恰好一份；
  *   其二，仓库内非忽略文件数与目录数与基线比对，只报增长；其三，对 ref-check 已认定的活文档集合逐份统计标题数与基线比对，只报增长；
- *   其四，抽取候选规范句，检出跨两个以上文件重复者中相对基线新增的部分，已登记于基线的重复不再计入。
+ *   其四，抽取候选规范句，在规范文件集内检出跨两个以上定义站点重复者中相对基线新增的部分，已登记于基线的重复不再计入。
  * 不包含：引用形态、常量集合、冻结短语的校验语义（各见同目录对应模块）、命令行入口。不引入第三方依赖。
- * 单一权威：冻结短语集合读取 ref-phrases.js 的登记表声明处，本模块不另立一份；活文档集合由 ref-check 经 env 注入，本模块不另写遍历口径。
+ * 单一权威：冻结短语集合读取 ref-phrases.js 的登记表声明处，本模块不另立一份；断言一至三的活文档集合由 ref-check 经 env 注入，本模块不另写遍历口径；
+ *   断言四的检出面为规范文件集，由本模块按 env.root 下的 references/ 枚举 spec*.md 与 templates*.md，摘要站点（README、global/APPEND_SYSTEM.md、各 SKILL.md）不入检出，因摘要重述直接服务就地可读。
  * 基线：scripts/lib/convergence-baseline.json，记录仓库文件数与目录数、各活文档标题数、以及已复核的跨文件重复
  *   （每条含归一化句、原文首句、检出文件清单、来源与待清波次）。基线缺失时由本模块首次生成并落盘，其后只读比对。
  * 断言四的语义固定为「检出相对基线的新增重复」，不代表库内不存在重复：库内既有重复登记于基线并同步登记为债务，基线是过渡登记而非静默冻结。
@@ -18,6 +19,9 @@ const { readFileText, drift } = require("./text.js");
 
 const REFACTOR_DIR_REL = "docs/internal/refactor";
 const BASELINE_REL = "scripts/lib/convergence-baseline.json";
+// 断言四的检出面：规范文件集，即 references/ 下的 spec*.md 与 templates*.md，只认定义站点，不收摘要重述
+const REFERENCES_DIR_REL = ["skill", "ddd-methodology", "references"];
+const DEFINITION_FILE_RE = /^(?:spec|templates).*\.md$/;
 const FROZEN_PHRASES_REL = "scripts/lib/ref-phrases.js";
 const SENTENCE_MIN_LEN = 12; // 短句多为列表项与通用短语，纳入会淹没真问题
 const NORM_CUE_RE = /须|不得|必须|应|禁止|一律|严禁|必/; // 规范语气词，用于把「规范句」与步骤、说明、普通清单项区分开
@@ -110,10 +114,15 @@ function createConvergenceChecks(env) {
     }
   }
 
-  // 断言四的检出面：归一化句到文件的映射，只留跨两个以上文件者，附原文首句
+  // 断言四的检出面：规范文件集内的定义站点，按 env.root 下的 references/ 枚举；归一化句到文件的映射，只留跨两个以上文件者，附原文首句
+  function definitionFiles() {
+    const dir = path.join(root, ...REFERENCES_DIR_REL);
+    let names; try { names = fs.readdirSync(dir); } catch (e) { names = []; }
+    return names.filter((name) => DEFINITION_FILE_RE.test(name)).sort().map((name) => path.join(dir, name));
+  }
   function collectDuplicates(frozen) {
     const bySentence = new Map();
-    for (const file of liveDocPaths) {
+    for (const file of definitionFiles()) {
       const rel = relPath(file);
       for (const { sentence, raw } of candidateSentences(readFileText(file), frozen)) {
         if (!bySentence.has(sentence)) bySentence.set(sentence, { raw, files: new Set() });
