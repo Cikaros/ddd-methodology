@@ -3,17 +3,19 @@
  * DDD-Methodology 追溯一致性校验脚本（只读）
  *
  * 用法：node trace-check.js <项目根>
- * 校验链：AC.md 总验收 ↔ 各 DESIGN.md 模块级验收要点 ↔ 各 TEST_PLAN.md 用例表
- * 输出形态：文本正文，内容为未覆盖（总 AC 无模块承接 / 模块 AC 无用例覆盖）与悬空引用（引用了不存在的 AC 编号）清单
+ * 校验链：REQUIREMENTS.md 需求编号 ↔ AC.md 总验收 ↔ 各 DESIGN.md 模块级验收要点 ↔ 各 TEST_PLAN.md 用例表
+ * 输出形态：文本正文，含未覆盖（R 无 AC 承接 / 总 AC 无模块承接 / 模块 AC 无用例覆盖）、悬空引用（AC 引用了不存在的 R、模块引用了不存在的 AC、DESIGN 消费方引用了不存在的目录）、孤儿 AC、接口无设计来源与模块名拼写不一致
+ * 新增判据的说明只在规范「结构与注释的机械证据」节的脚本消费契约表处展开，本脚本只落机械实现；判据无可机械判定形态时按「无法判定」告警并显式说明，不静默判过
  * 末行机读结论：通过输出 `RESULT: pass`，存在缺口输出 `RESULT: gap`，方法论仓库自身输出 `RESULT: pass`（不适用）
- * 退出码：0 通过（含不适用），1 存在缺口。门禁地位：G4 与 G5 门禁的脚本证据源
+ * 退出码：0 通过（含不适用与仅告警的无法判定），1 存在缺口。门禁地位：G2、G4 与 G5 门禁的脚本证据源
  * 输出上限：12000 字节，按 UTF-8 计量；超限截断明细，末行机读结论与截断计数行保留
  * 依赖：文本读取取 ./lib/text.js 的 readFileText，本脚本不再内联读取实现。
  * 规范依据：规范「结构与注释的机械证据」节的脚本消费契约表，与「质量门禁」节的证据源行
  *
  * 约定格式（与 templates.md 模板一致）：
- *   AC.md 中条目形如 "AC-001"、"AC-002"…
- *   DESIGN.md 验收要点中引用形如 "AC-001"（模块承接）
+ *   REQUIREMENTS.md 需求清单首列即需求编号，编号形态由实得编号归纳，不预设前缀恒常与编号连续
+ *   AC.md 中条目形如 "AC-001"、"AC-002"…，「对应需求」列引用需求编号
+ *   DESIGN.md 验收要点中引用形如 "AC-001"（模块承接）；契约表「消费方模块」列填模块名或路径
  *   TEST_PLAN.md 用例表"覆盖的 AC/验收要点"列中引用形如 "AC-001"
  */
 
@@ -157,10 +159,6 @@ for (const [f, refs] of moduleACs) {
 for (const ac of coveredByDesign) {
   if (!coveredByTests.has(ac)) problems.push(`G5 缺口：${ac}（模块级验收要点）未被任何 TEST_PLAN.md 用例覆盖`);
 }
-// G2：AC.md 双向可追溯的基本检查（需求编号列存在性）
-if (!/\|?\s*需求编号|需求ID|对应需求/.test(readFileText(acFile))) {
-  warnings.push("AC.md 未检测到需求编号追溯列（G2 双向追溯依据），建议模板补充");
-}
 // 提示
 if (designFiles.length > 0 && totalACs.length > 0 && coveredByDesign.size === 0) {
   warnings.push("DESIGN.md 存在但未引用任何 AC 编号，请检查验收要点章节格式");
@@ -170,10 +168,177 @@ if (designFiles.length > 0 && totalACs.length > 0 && coveredByDesign.size === 0)
 variantCheck(readFileText(acFile), "AC.md");
 for (const f of [...designFiles, ...testFiles]) variantCheck(readFileText(f), path.relative(root, f));
 
+// ---- 4.5 R 编号机械追溯、孤儿与悬空、术语拼写一致性（N-8 / N-9 / N-11）----
+// 判据说明的单一权威在规范「结构与注释的机械证据」节的脚本消费契约表处，本处只落机械实现。
+// 表格解析：取首个表头命中 headerRe 的表格，跳过分隔行，遇非表行即止；AC.md 需求列与 DESIGN 契约表消费方列共用
+function readTable(text, headerRe) {
+  const lines = String(text).split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i].trim().startsWith("|")) continue;
+    const headers = lines[i].split("|").slice(1, -1).map((c) => c.trim());
+    if (!headers.some((c) => headerRe.test(c))) continue;
+    const rows = [];
+    for (let j = i + 1; j < lines.length; j++) {
+      if (!lines[j].trim().startsWith("|")) break;
+      const row = lines[j].split("|").slice(1, -1).map((c) => c.trim());
+      if (row.every((c) => /^[-:\s]*$/.test(c))) continue;
+      rows.push(row);
+    }
+    return { headers, rows };
+  }
+  return null;
+}
+// 二级标题锚定：标题允许序号前缀；未命中回 null，由调用方决定降级口径
+function sectionBody(text, title) {
+  const m = String(text).match(new RegExp(`##\\s*(?:[一二三四五六七八九十\\d]+[、.．]?\\s*)?${title}[^\\n]*([\\s\\S]*?)(?=\\n## |$)`));
+  return m && m[1] ? m[1] : null;
+}
+// 需求编号集合：优先锚定「需求清单」节，未命中则退回首个含「编号」表头的表格；编号去标记后取原样，不预设前缀
+function readRequirementIds(text) {
+  const table = readTable(sectionBody(text, "需求清单") || text, /编号/);
+  if (!table) return null;
+  const idx = table.headers.findIndex((h) => /编号/.test(h));
+  if (idx < 0) return null;
+  const ids = table.rows.map((row) => (row[idx] || "").replace(/[`*\s]/g, "")).filter(Boolean);
+  return ids.length ? [...new Set(ids)] : null;
+}
+// 编号形态由实得编号归纳：非数字前缀加数字后缀；前缀不必恒常，取实得前缀集合；无数字后缀或空前缀即不可识别，回 null
+function deriveIdPattern(ids) {
+  const prefixes = new Set();
+  for (const id of ids) {
+    const m = id.match(/^(.*?)(\d+)$/);
+    if (!m || !m[1]) return null;
+    prefixes.add(m[1]);
+  }
+  const alts = [...prefixes].map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).sort((a, b) => b.length - a.length);
+  return new RegExp(`(?:${alts.join("|")})\\d+`, "g");
+}
+// AC.md 需求列：表头含「AC 编号」的表格取「对应需求」列；回传逐行的 AC 编号与需求列原值
+function readAcRequirements(text) {
+  const table = readTable(text, /AC\s*编号|AC编号/);
+  if (!table) return null;
+  const acIdx = table.headers.findIndex((h) => /AC\s*编号|AC编号/.test(h));
+  const reqIdx = table.headers.findIndex((h) => /需求/.test(h));
+  if (acIdx < 0 || reqIdx < 0) return null;
+  return table.rows.map((row) => ({
+    ac: ((row[acIdx] || "").match(AC_RE) || [])[0] || (row[acIdx] || "").trim(),
+    reqCell: (row[reqIdx] || "").trim(),
+  }));
+}
+// 消费方列取值拆分：去标记后按顿号、逗号、分号与空白切分，回传非空 token
+function splitConsumers(cell) {
+  return String(cell).replace(/[`*]/g, "").split(/[、,，;；\s]+/).map((s) => s.trim()).filter(Boolean);
+}
+// 目录基名枚举：递归取目录基名，跳过点开头条目与 node_modules
+function dirBaseNames(dir) {
+  const out = [];
+  let entries; try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return out; }
+  for (const entry of entries) {
+    if (!entry.isDirectory() || entry.name.startsWith(".") || entry.name === "node_modules") continue;
+    out.push(entry.name);
+    out.push(...dirBaseNames(path.join(dir, entry.name)));
+  }
+  return out;
+}
+
+const acRequirements = readAcRequirements(readFileText(acFile));
+
+// N-9 断言一（孤儿 AC）：无需求承接的 AC，即未声明需求编号或编号列为空；只读 AC.md，与 REQUIREMENTS.md 是否存在无关
+if (!acRequirements) {
+  warnings.push("无法判定：AC.md 未含可解析的「AC 编号」与「对应需求」列，无需求承接的 AC（N-9 断言一）未执行");
+} else {
+  for (const row of acRequirements) if (!row.reqCell) problems.push(`N-9 孤儿 AC：${row.ac || "（未编号）"} 未声明需求编号`);
+}
+
+// N-8：三项断言各自判定前提，缺则逐项报无法判定，不静默判过
+const reqFile = path.join(root, "REQUIREMENTS.md");
+const requirementsText = fs.existsSync(reqFile) ? readFileText(reqFile) : "";
+const requirementIds = requirementsText ? readRequirementIds(requirementsText) : null;
+const requirementPattern = requirementIds ? deriveIdPattern(requirementIds) : null;
+const requirementKnown = requirementIds ? new Set(requirementIds) : null;
+const reqReason = !requirementsText ? "缺 REQUIREMENTS.md"
+  : !requirementIds ? "REQUIREMENTS.md 未含可解析的需求编号表（需求清单）"
+  : !requirementPattern ? "REQUIREMENTS.md 的编号体系不可识别（无数字后缀或前缀不成立）"
+  : null;
+const acReason = !acRequirements ? "AC.md 未含可解析的「AC 编号」与「对应需求」列" : null;
+
+if (reqReason) {
+  warnings.push(`无法判定：${reqReason} —— N-8 断言一（每条 R 至少被一条 AC 承接）未执行，不静默判过`);
+  warnings.push(`无法判定：${reqReason} —— N-8 断言二（每条 AC 引用的 R 真实存在）未执行，不静默判过`);
+  warnings.push(`无法判定：${reqReason} —— N-8 断言三（编号体系识别，不预设编号连续性）未执行，不静默判过`);
+} else if (acReason) {
+  warnings.push(`无法判定：${acReason} —— N-8 断言一（每条 R 至少被一条 AC 承接）未执行，不静默判过`);
+  warnings.push(`无法判定：${acReason} —— N-8 断言二（每条 AC 引用的 R 真实存在）未执行，不静默判过`);
+} else {
+  const coveredR = new Set();
+  for (const row of acRequirements) {
+    for (const ref of row.reqCell.match(requirementPattern) || []) {
+      if (requirementKnown.has(ref)) coveredR.add(ref);
+      else problems.push(`N-8 悬空引用：${row.ac || "（未编号）"} 引用了 REQUIREMENTS.md 中不存在的 ${ref}`);
+    }
+  }
+  for (const id of requirementIds) if (!coveredR.has(id)) problems.push(`N-8 覆盖缺口：需求 ${id} 未被任何 AC 承接`);
+}
+
+// N-9 断言三与 N-11 的 DESIGN 侧输入：逐份 DESIGN 取「对外接口与约定」的消费方列
+const designConsumers = [];
+const logicalConsumers = [];
+let interfaceRows = 0;
+for (const f of designFiles) {
+  const rel = path.relative(root, f);
+  const designText = readFileText(f);
+  const table = readTable(sectionBody(designText, "对外接口与约定") || designText, /消费方/);
+  if (!table) continue;
+  const idx = table.headers.findIndex((h) => /消费方/.test(h));
+  if (idx < 0) continue;
+  for (const row of table.rows) {
+    interfaceRows++;
+    for (const value of splitConsumers(row[idx] || "")) {
+      designConsumers.push(value);
+      if (fs.existsSync(path.join(root, value))) continue; // 能对应项目根下的目录或文件即通过
+      if (/[\\/]/.test(value)) problems.push(`N-9 悬空接口引用：${rel} 的消费方模块「${value}」不对应项目根下的目录或文件`);
+      else logicalConsumers.push(`${value}（${rel}）`);
+    }
+  }
+}
+// N-9 断言二：无设计来源的接口——三层链路以 AC 编号串联，接口无对应编号，判定来源须解析代码侧导出符号，非本脚本形态
+if (interfaceRows > 0) {
+  warnings.push("无法判定：无设计来源的接口（N-9 断言二）——三层链路以 AC 编号串联，接口无对应编号；判定接口来源须解析代码侧导出符号，本脚本无此可机械判定的形态，该断言未执行，不静默判过");
+}
+if (logicalConsumers.length) {
+  warnings.push(`无法判定：消费方模块 ${logicalConsumers.join("、")} 为逻辑模块名而非路径，未做模糊匹配，N-9 断言三对这几项未执行`);
+}
+
+// N-11 术语拼写一致性：三面模块名的精确比较——按去分隔符、转小写归一为同一键，键内原始拼写须逐字唯一。
+// 仅当同一键跨两个以上面且出现两种以上拼写时才报，全程为等值比较，不使用任何相似度阈值。界：只做拼写，不判语义漂移
+if (designConsumers.length) {
+  const SPELLING_SURFACE = { design: "DESIGN 消费方列", code: "代码目录树", test: "TEST_PLAN 路径" };
+  const spellingGroups = new Map();
+  const addSpelling = (surface, raw) => {
+    const token = String(raw).trim();
+    if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(token)) return;
+    const key = token.replace(/[-_]/g, "").toLowerCase();
+    const byRaw = spellingGroups.get(key) || new Map();
+    byRaw.set(token, (byRaw.get(token) || new Set()).add(surface));
+    spellingGroups.set(key, byRaw);
+  };
+  for (const value of designConsumers) for (const seg of value.split(/[\\/]+/)) addSpelling("design", seg);
+  for (const name of dirBaseNames(root)) addSpelling("code", name);
+  for (const f of testFiles) for (const seg of path.relative(root, f).split(path.sep).slice(0, -1)) addSpelling("test", seg);
+  for (const [key, byRaw] of spellingGroups) {
+    if (byRaw.size < 2) continue;
+    const surfaces = new Set();
+    for (const set of byRaw.values()) for (const s of set) surfaces.add(s);
+    if (surfaces.size < 2) continue;
+    const variants = [...byRaw.entries()].map(([raw, set]) => `${raw}（${[...set].map((s) => SPELLING_SURFACE[s]).join("、")}）`);
+    problems.push(`N-11 拼写不一致：模块名键 ${key} 在不同面拼写不一：${variants.join(" vs ")}`);
+  }
+}
+
 // ---- 5. 输出 ----
 const head = [
   "=== DDD 追溯一致性校验 ===",
-  `总 AC：${totalACs.length} 条；DESIGN.md：${designFiles.length} 份；TEST_PLAN.md：${testFiles.length} 份；契约指纹已校验 ${fingerprintsChecked} 份`,
+  `总 AC：${totalACs.length} 条；需求编号：${requirementIds ? `${requirementIds.length} 条` : "未判定"}；DESIGN.md：${designFiles.length} 份；TEST_PLAN.md：${testFiles.length} 份；契约指纹已校验 ${fingerprintsChecked} 份`,
 ];
 const details = [];
 if (warnings.length) {
@@ -186,7 +351,7 @@ if (problems.length) {
 }
 const tail = problems.length
   ? ["", `结果：未通过（${problems.length} 项缺口，${warnings.length} 项警告）`, "RESULT: gap"]
-  : ["", "结果：通过 ✓（可作为 G4/G5 门禁证据）", "RESULT: pass"];
+  : ["", "结果：通过 ✓（可作为 G2 追溯性、G4 与 G5 门禁的机械证据）", "RESULT: pass"];
 
 console.log(capTraceReport(head, details, tail).join("\n"));
 process.exit(problems.length ? 1 : 0);
