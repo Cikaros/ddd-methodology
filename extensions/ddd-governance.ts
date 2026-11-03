@@ -21,9 +21,10 @@
  * 依据：规范「粒度与独立性」节、「实现与测试分离」节与「结构与契约的演进治理」节。
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { dirname, join, resolve, sep } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { describeError, readText } from "./lib/shared.ts";
 
 const GRANULARITY_LINE_LIMIT = 500;
 const RUNTIME_EXCEPTION_MARK = "运行时例外";
@@ -196,14 +197,6 @@ function countLines(text) {
 	return trimmed === "" ? 0 : trimmed.split("\n").length;
 }
 
-function readText(path) {
-	try {
-		return existsSync(path) ? readFileSync(path, "utf8") : null;
-	} catch {
-		return null;
-	}
-}
-
 function warn(ctx, message) {
 	try {
 		if (ctx && ctx.hasUI && ctx.ui && typeof ctx.ui.notify === "function") {
@@ -214,9 +207,4 @@ function warn(ctx, message) {
 	} catch {
 		// 记警告本身失败不得升级为错误
 	}
-}
-
-function describeError(error) {
-	if (error && typeof error.message === "string") return error.message;
-	return String(error);
 }

@@ -6,7 +6,7 @@
  * 校验链：REQUIREMENTS.md 需求编号 ↔ AC.md 总验收 ↔ 各 DESIGN.md 模块级验收要点 ↔ 各 TEST_PLAN.md 用例表
  * 输出形态：文本正文，含未覆盖（R 无 AC 承接 / 总 AC 无模块承接 / 模块 AC 无用例覆盖）、悬空引用（AC 引用了不存在的 R、模块引用了不存在的 AC、DESIGN 消费方引用了不存在的目录）、孤儿 AC、无设计来源的接口（接口在代码侧无对应导出）与模块名拼写不一致
  * 新增判据的说明只在规范「结构与注释的机械证据」节的脚本消费契约表处展开，本脚本只落机械实现；判据无可机械判定形态时按「无法判定」告警并显式说明，不静默判过
- * 无设计来源的接口复用签名级提取能力（见 lib/span-compare.js），语言推导不出、消费方列非文件路径或解析器未安装时报「无法判定」并说明，不把比对逻辑复制进本脚本
+ * 无设计来源的接口复用签名级提取能力，表格与章节解析原语（readTable、sectionBody）亦复用同一实现（均见 lib/span-compare.js），语言推导不出、消费方列非文件路径或解析器未安装时报「无法判定」并说明，不把比对逻辑复制进本脚本
  * 末行机读结论：通过输出 `RESULT: pass`，存在缺口输出 `RESULT: gap`，方法论仓库自身输出 `RESULT: pass`（不适用）
  * 退出码：0 通过（含不适用与仅告警的无法判定），1 存在缺口。门禁地位：G2、G4 与 G5 门禁的脚本证据源
  * 输出上限：12000 字节，按 UTF-8 计量；超限截断明细，末行机读结论与截断计数行保留
@@ -28,7 +28,7 @@ const { checkContractFingerprint } = require("./fingerprint");
 const { absoluteDesignDir } = require("./design-root");
 const { walk, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
 const { isMethodologyRepo, methodologyReason, NOT_APPLICABLE_TAIL } = require("./lib/repo-scope.js");
-const { readContractTable, interfaceExported } = require("./lib/span-compare.js");
+const { readTable, sectionBody, readContractTable, interfaceExported } = require("./lib/span-compare.js");
 
 const root = process.argv[2] || process.cwd();
 const problems = [];
@@ -173,29 +173,7 @@ for (const f of [...designFiles, ...testFiles]) variantCheck(readFileText(f), pa
 
 // ---- 4.5 R 编号机械追溯、孤儿与悬空、术语拼写一致性（N-8 / N-9 / N-11）----
 // 判据说明的单一权威在规范「结构与注释的机械证据」节的脚本消费契约表处，本处只落机械实现。
-// 表格解析：取首个表头命中 headerRe 的表格，跳过分隔行，遇非表行即止；AC.md 需求列与 DESIGN 契约表消费方列共用
-function readTable(text, headerRe) {
-  const lines = String(text).split("\n");
-  for (let i = 0; i < lines.length; i++) {
-    if (!lines[i].trim().startsWith("|")) continue;
-    const headers = lines[i].split("|").slice(1, -1).map((c) => c.trim());
-    if (!headers.some((c) => headerRe.test(c))) continue;
-    const rows = [];
-    for (let j = i + 1; j < lines.length; j++) {
-      if (!lines[j].trim().startsWith("|")) break;
-      const row = lines[j].split("|").slice(1, -1).map((c) => c.trim());
-      if (row.every((c) => /^[-:\s]*$/.test(c))) continue;
-      rows.push(row);
-    }
-    return { headers, rows };
-  }
-  return null;
-}
-// 二级标题锚定：标题允许序号前缀；未命中回 null，由调用方决定降级口径
-function sectionBody(text, title) {
-  const m = String(text).match(new RegExp(`##\\s*(?:[一二三四五六七八九十\\d]+[、.．]?\\s*)?${title}[^\\n]*([\\s\\S]*?)(?=\\n## |$)`));
-  return m && m[1] ? m[1] : null;
-}
+// 表格与章节解析原语（readTable、sectionBody）取自签名级模块的同一实现，见 lib/span-compare.js，本脚本不再各写一份
 // 需求编号集合：优先锚定「需求清单」节，未命中则退回首个含「编号」表头的表格；编号去标记后取原样，不预设前缀
 function readRequirementIds(text) {
   const table = readTable(sectionBody(text, "需求清单") || text, /编号/);

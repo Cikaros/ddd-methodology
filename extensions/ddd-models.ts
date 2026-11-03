@@ -10,19 +10,17 @@
  *
  * 仅用户触发：不注册为工具，不挂接任何 pi.on 事件，模型无法自动调用；未知参数由脚本自身给出可用选项，
  * 故此处只转交、不内联配比名清单。
- * 脚本路径由本文件位置解析出的包根拼出，不依赖调用方传入，不硬编码绝对路径。
+ * 脚本路径由共享模块（lib/shared.ts）解析出的包根拼出，不依赖调用方传入，不硬编码绝对路径。
  * 依据：设计 N-13。
  */
 
 import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { EXEC_TIMEOUT_MS, PACKAGE_ROOT, describeError, exitCodeOf, type ExecResult } from "./lib/shared.ts";
 
-// 扩展位于 <包根>/extensions/ 下，故 `..` 即包根
-const PACKAGE_ROOT = fileURLToPath(new URL("..", import.meta.url));
+// 脚本位于共享模块解析出的包根之 scripts/ 下，位置不硬编码，也不随本文件层级而变
 const SCRIPT_PATH = join(PACKAGE_ROOT, "scripts", "apply-models.js");
-const EXEC_TIMEOUT_MS = 120_000; // 可用性冒烟含网络请求，留足预算，超时按执行失败处理
 // 脚本自身的子命令关键字：命中即原样转交，其余首个参数按配比名处理而前置 apply；此处只列关键字，不列配比名
 const SUBCOMMANDS = new Set(["apply", "verify", "clear", "list", "status"]);
 
@@ -54,14 +52,14 @@ async function runModels(pi: ExtensionAPI, ctx: unknown, raw: unknown): Promise<
 		emit(ctx, `[ddd-models] 配比脚本缺失：${SCRIPT_PATH}。请确认该文件随包发布，且位置可由包根解析。`, false);
 		return;
 	}
-	let result: { code?: unknown; stdout?: unknown; stderr?: unknown; error?: unknown } | undefined;
+	let result: ExecResult | undefined;
 	try {
-		result = (await pi.exec("node", [SCRIPT_PATH, ...buildSubcommand(raw), "--repo", PACKAGE_ROOT], { timeout: EXEC_TIMEOUT_MS })) as typeof result;
+		result = (await pi.exec("node", [SCRIPT_PATH, ...buildSubcommand(raw), "--repo", PACKAGE_ROOT], { timeout: EXEC_TIMEOUT_MS })) as ExecResult;
 	} catch (error) {
 		emit(ctx, `[ddd-models] 执行失败：${describeError(error)}`, false);
 		return;
 	}
-	const exitCode = result && typeof result.code === "number" ? result.code : null;
+	const exitCode = exitCodeOf(result);
 	const stdout = result && typeof result.stdout === "string" ? result.stdout : "";
 	const stderr = result && typeof result.stderr === "string" ? result.stderr : "";
 	const body = [stdout, stderr].filter((part) => part.trim() !== "").join("\n");
@@ -86,9 +84,4 @@ function emit(ctx: unknown, text: string, ok: boolean): void {
 	}
 	if (ok) console.log(text);
 	else console.error(text);
-}
-
-function describeError(error: unknown): string {
-	if (error && typeof (error as { message?: unknown }).message === "string") return (error as { message: string }).message;
-	return String(error);
 }

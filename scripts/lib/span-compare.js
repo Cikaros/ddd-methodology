@@ -1,6 +1,6 @@
 /**
  * 目标：把 DESIGN 契约表与代码侧的签名比对收敛为三态判定——一致、不一致、无法判定——并把语言的推导方式定为唯一实现。
- * 范围：契约表读取、由「消费方模块」列扩展名推导语言、逐行三态比对、接口来源的存在性判定（供 trace-check 承接 N-9 断言二复用）。
+ * 范围：契约表读取、表格与章节解析原语、由「消费方模块」列扩展名推导语言、逐行三态比对、接口来源的存在性判定（供 trace-check 承接 N-9 断言二复用）。
  * 不包含：解析器供给（见 span-parser.js）、提取（见 span-extract.js）、命令行装配与输出（见 scripts/span-check.js）。
  * 排除列：「错误语义」与「时序依赖与副作用」两列必须排除。语法层只能部分推断 `throws`、`Result<T,E>`、`(T, error)`，不等价，
  *   强行核对会使判据本身不可满足，故这两列不进入比对。
@@ -24,13 +24,13 @@ const EXT_LANGUAGE = {
   rs: "rust",
 };
 
-// 二级标题锚定：标题允许序号前缀，与 trace-check 的口径一致
+// 二级标题锚定：标题允许序号前缀；未命中回 null，由调用方决定降级口径。此处的解析原语供 trace-check 复用，两处不再各写一份
 function sectionBody(text, title) {
   const match = String(text).match(new RegExp(`##\\s*(?:[一二三四五六七八九十\\d]+[、.．]?\\s*)?${title}[^\\n]*([\\s\\S]*?)(?=\\n## |$)`));
   return match && match[1] ? match[1] : null;
 }
 
-// 表格解析：取首个表头命中 headerRe 的表格，跳过分隔行，遇非表行即止
+// 表格解析：取首个表头命中 headerRe 的表格，跳过分隔行，遇非表行即止；AC.md 需求列、DESIGN 契约表消费方列等共用同一实现
 function readTable(text, headerRe) {
   const lines = String(text).split("\n");
   for (let i = 0; i < lines.length; i++) {
@@ -117,4 +117,4 @@ async function interfaceExported(root, row) {
   return { ok: true, found: code.symbols.some((symbol) => symbol.name === target), file: language.file };
 }
 
-module.exports = { readContractTable, deriveLanguage, compareRow, interfaceExported };
+module.exports = { readTable, sectionBody, readContractTable, deriveLanguage, compareRow, interfaceExported };

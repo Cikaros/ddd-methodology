@@ -62,7 +62,9 @@ ddd-methodology/
 │   ├── ddd-context.ts            # 会话上下文：注入全局规则 section，探测 subagent 前置依赖
 │   ├── ddd-tools.ts              # 机械校验工具化：把甲类校验脚本注册为 ddd_* 工具
 │   ├── ddd-governance.ts         # 运行时守卫，仅 DDD 项目激活，拦截越阈值写入与全量测试误跑
-│   └── ddd-models.ts             # 模型配比命令：以 slash 命令提供用户触发入口，复用 scripts/apply-models.js
+│   ├── ddd-models.ts             # 模型配比命令：以 slash 命令提供用户触发入口，复用 scripts/apply-models.js
+│   └── lib/
+│       └── shared.ts             # 扩展共享小工具：包根解析、执行超时、退出码归一、错误描述与安全读文本
 └── scripts/
     ├── install.bat               # Windows 模型配比：调用 apply-models 应用配比
     ├── install.sh                # Linux/macOS/Git Bash 模型配比：应用配比
@@ -133,7 +135,7 @@ ddd-methodology/
   - install-manifest-check 脚本位于 `scripts/install-manifest-check.js`，核对安装与卸载脚本的职责一致性并枚举随包脚本集合，作为 ref-check 的 C13
   - 其余门禁脚本 `fingerprint.js`、`design-root.js`、`decision-tables.js`、`roster-check.js`、`spec-index-check.js`、`debt-check.js` 与 `metrics-report.js` 同属该脚本清单，位于 `scripts/`
 - 存量重建 skill `ddd-rebuild` 与定向重构 skill `ddd-refactor`，分别位于 `skill/ddd-rebuild/` 与 `skill/ddd-refactor/`，两者与主 skill 同属一份清单，仅由用户显式调用
-- 运行时扩展位于 `extensions/`：`ddd-context.ts` 在会话开始时注入全局规则 section 并探测 subagent 前置依赖；`ddd-tools.ts` 把甲类机械校验脚本注册为 `ddd_*` 工具，并以 `/ddd-parser-install` 命令提供解析器供给的用户触发入口；`ddd-governance.ts` 仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默；`ddd-models.ts` 以 slash 命令 `/ddd-models` 提供模型配比的用户触发入口，转交仓库内部专用脚本 apply-models.js，不注册为工具
+- 运行时扩展位于 `extensions/`：`ddd-context.ts` 在会话开始时注入全局规则 section 并探测 subagent 前置依赖；`ddd-tools.ts` 把甲类机械校验脚本注册为 `ddd_*` 工具，并以 `/ddd-parser-install` 命令提供解析器供给的用户触发入口；`ddd-governance.ts` 仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默；`ddd-models.ts` 以 slash 命令 `/ddd-models` 提供模型配比的用户触发入口，转交仓库内部专用脚本 apply-models.js，不注册为工具；四者共用的纯工具（包根解析、执行超时、退出码归一、错误描述与安全读文本）集中在 `extensions/lib/shared.ts`，该子目录无 index.ts，不作为扩展入口加载
 - 全局规则由 `extensions/ddd-context.ts` 以 sections 注入，不再改写用户全局文件
 - 模型配比记录文件 `~/.pi/agent/.ddd-model-overrides.json`，记录本方法论写入的代理、配比名与写入前原值，供精确回退；模型配比由 `scripts/install.sh` 与 `scripts/install.bat` 调用 apply-models 应用或撤回
 - 12 个 agent 定义，位于 `agents/ddd-*.md`

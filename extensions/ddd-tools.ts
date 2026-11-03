@@ -7,20 +7,17 @@
  *   另以 registerCommand 提供解析器供给的用户入口 ddd-parser-install，仅用户触发，转交 scripts/install-parser.js，安装逻辑与版本清单不在扩展侧复写。
  * 不包含：全局规则注入与前置依赖探测（见同目录 ddd-context.ts）、结构治理守卫（见同目录 ddd-governance.ts）、模型配比命令（见同目录 ddd-models.ts）。
  *
- * 脚本路径一律由本文件位置（import.meta.url）解析的包根拼出，不依赖调用方传入，不硬编码绝对路径。
+ * 脚本路径一律由共享模块（lib/shared.ts）解析的包根拼出，不依赖调用方传入，不硬编码绝对路径。
  * 调用约定：node <脚本绝对路径> <项目根绝对路径>；机读状态取脚本末行 `RESULT: xxx` 的 xxx 或 JSON 输出的 verdict。
  * 依据：设计 N-4。
  */
 
 import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { Type } from "typebox";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { EXEC_TIMEOUT_MS, PACKAGE_ROOT, describeError, exitCodeOf, type ExecResult } from "./lib/shared.ts";
 
-// 扩展位于 <包根>/extensions/ 下，故 `..` 即包根
-const PACKAGE_ROOT = fileURLToPath(new URL("..", import.meta.url));
-const EXEC_TIMEOUT_MS = 120_000; // 防脚本挂死拖住一次工具调用，超时按执行失败处理
 const SUMMARY_MAX_CHARS = 1500; // 进模型上下文的摘要上限，与「降低上下文负担」的目标一致
 const KEY_LINE_LIMIT = 5;
 
@@ -115,13 +112,13 @@ async function runCheck(pi: ExtensionAPI, spec: { name: string; script: string }
 	if (!existsSync(scriptPath)) {
 		return failure(spec, root, null, null, `脚本缺失：${scriptPath}。请确认 ${spec.script}.js 随包发布，且其位置可由包根解析。`);
 	}
-	let result: { code?: unknown; stdout?: unknown; stderr?: unknown; error?: unknown } | undefined;
+	let result: ExecResult | undefined;
 	try {
-		result = (await pi.exec("node", [scriptPath, root], { timeout: EXEC_TIMEOUT_MS })) as typeof result;
+		result = (await pi.exec("node", [scriptPath, root], { timeout: EXEC_TIMEOUT_MS })) as ExecResult;
 	} catch (error) {
 		return failure(spec, root, null, null, `执行失败：${describeError(error)}`);
 	}
-	const exitCode = result && typeof result.code === "number" ? result.code : null;
+	const exitCode = exitCodeOf(result);
 	const stdout = result && typeof result.stdout === "string" ? result.stdout : "";
 	const stderr = result && typeof result.stderr === "string" ? result.stderr : "";
 	if ((result && result.error) || exitCode === null) {
@@ -211,11 +208,6 @@ function truncate(text: string, max: number): string {
 	return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
-function describeError(error: unknown): string {
-	if (error && typeof (error as { message?: unknown }).message === "string") return (error as { message: string }).message;
-	return String(error);
-}
-
 // ---- 解析器供给入口的运行逻辑 ----
 
 // 先展示将安装的包与位置，再执行安装；两步都经 install-parser.js，扩展侧不读版本清单、不内置安装实现
@@ -240,9 +232,9 @@ async function runParserInstall(pi: ExtensionAPI, ctx: unknown): Promise<void> {
 
 // 脚本调用：合并 stdout 与 stderr 为可读文本，返回退出码是否为零；执行抛错回 null 由调用方报错
 async function runNode(pi: ExtensionAPI, args: string[]): Promise<{ ok: boolean; text: string } | null> {
-	let result: { code?: unknown; stdout?: unknown; stderr?: unknown } | undefined;
+	let result: ExecResult | undefined;
 	try {
-		result = (await pi.exec("node", args, { timeout: EXEC_TIMEOUT_MS })) as typeof result;
+		result = (await pi.exec("node", args, { timeout: EXEC_TIMEOUT_MS })) as ExecResult;
 	} catch {
 		return null;
 	}
