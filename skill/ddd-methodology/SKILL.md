@@ -59,6 +59,8 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 
 只调度、仲裁与验收，不承担实现类工作。派 ddd-arbiter 处理定级争议，仅最终裁决与升级用户由你决定。同一缺陷超 2 轮强制升级用户。
 
+根会话是被开发项目的调度与验收主体，不受子代理白名单约束，可调用全部已注册扩展工具。机械校验一律经工具运行：`ddd_trace_check` 出 G4 与 G5 的机械证据，`ddd_governance_check` 出契约指纹与趋势门槛，`ddd_code_health` 出结构健康与声明面审计的输入，`ddd_debt_check` 在迭代收尾更新债务登记，`ddd_metrics_report` 在迭代收尾汇总度量。
+
 审计代理为只读，其报告由你按报告给出的建议归档名落盘至 `<项目根>/docs/audits/`，作为下次修剪清单回验的输入。
 
 过门时按 templates 的门禁检查单写入门禁记录至 `<项目根>/docs/gates/`，记录须含 `GATE` 机读行（门号、过门轮次与结论），轮次语义见规范「质量门禁」节。
@@ -73,14 +75,13 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 
 ## 机械门禁
 
-约束不得只靠提示词，派发须绑定机械证据。门禁证据分判断型与机械型两类：脚本命令与运行时守卫为机械型，指名代理为判断型；G1、G2、G3 及 G6 的部分子项为判断型，并非全门机械，判据见规范「质量门禁」节。分两层，覆盖面见规范「结构与契约的演进治理」节 16.5。
+约束不得只靠提示词，派发须绑定机械证据。门禁证据分判断型与机械型两类：机械工具、脚本命令与运行时守卫为机械型，指名代理为判断型；G1、G2、G3 及 G6 的部分子项为判断型，并非全门机械，判据见规范「质量门禁」节。分两层，覆盖面见规范「结构与契约的演进治理」节 16.5。
 
-脚本调用形式统一为 `node ~/.pi/agent/skills/ddd-methodology/scripts/<脚本名>.js <项目根>`。其中 `apply-models.js` 与 `ref-check.js` 属仓库内运行，须用仓库相对路径 `node scripts/<脚本名>.js <项目根>`；其余随装门禁脚本用安装后路径。
+甲类脚本，即服务被开发项目的机械校验，一律经对应工具调用而不再拼路径：`ddd_governance_check`、`ddd_trace_check`、`ddd_code_health`、`ddd_debt_check`、`ddd_metrics_report`，每个工具的 `root` 参数传被开发项目根的绝对路径。乙类（服务本仓库自身维护）与丙类（部署与维护辅助）脚本由维护者在本仓库内执行，不进入被开发项目的流程。
 
 - 声明式：写入类与审计类代理的 frontmatter 已声明 acceptanceRole 与 acceptance，派发时按其默认执行；需要额外校验时在 options 传 gate 或 acceptance。
-- 运行时：`~/.pi/agent/extensions/ddd-governance.ts` 在 DDD 项目内拦截越阈值写入与全量测试误跑，仅覆盖根会话与后台子代理，前台子代理不加载 ambient 扩展。
-- 门槛脚本：governance-check 校验契约指纹一致性与超阈值趋势，输出 verdict 作为 G5-INT 证据，见规范「结构与注释的机械证据」节。
-- 引用校验：ref-check 校验跨文档引用有效性、常量一致性与枚举集合一致性，供文档同步链使用。
+- 运行时：`extensions/ddd-governance.ts` 在 DDD 项目内拦截越阈值写入与全量测试误跑，仅覆盖根会话与后台子代理，前台子代理不加载 ambient 扩展。
+- 门槛工具：`ddd_governance_check` 校验契约指纹一致性与超阈值趋势，输出 verdict 作为 G5-INT 证据，见规范「结构与注释的机械证据」节。
 
 脚本的输出形态、机读结论与退出码语义见规范「结构与注释的机械证据」节的脚本消费契约表。
 
@@ -92,7 +93,7 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 subagent({ workflow: "<skill目录>/workflows/ddd-workflow.js", args: { root: "<项目根绝对路径>" } })
 ```
 
-前置条件为加速档用到的 `ddd-*` 代理已安装，未安装将导致派发失败。安装状态自检用 `install.sh --check` 或 `install.bat --check`；模型配比状态自检用 `node scripts/apply-models.js status`，两者职责不同，不得混用。完整流程另有手工派发所用的 `ddd-doc-sync` 与 `ddd-arbiter`，不在加速档派发范围内。
+前置条件为加速档用到的 `ddd-*` 代理已安装，未安装将导致派发失败。模型配比属使用者可选增强，由使用者在包目录内自行执行，不属被开发项目流程，模型不得自动触发。完整流程另有手工派发所用的 `ddd-doc-sync` 与 `ddd-arbiter`，不在加速档派发范围内。
 
 加速档覆盖九步，止于声明面审计。审计报告的落盘仍由根会话执行。
 

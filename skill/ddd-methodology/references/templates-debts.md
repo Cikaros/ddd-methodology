@@ -2,7 +2,7 @@
 
 `templates.md` 的配套文件，承载存量债务登记簿的骨架与字段说明。设计依据见规范「存量债务的登记与清偿」节；规范条款见 `spec-declare.md` 的声明面可验证与修剪节 12.1 子节。
 
-登记簿置于 `<项目根>/docs/debts.json`，是存量债务的唯一登记处，替代散落在正文句子中的登记。校验由 `node ~/.pi/agent/skills/ddd-methodology/scripts/debt-check.js <项目根>` 承担，末行给出机读结论并据此置退出码。
+登记簿置于 `<项目根>/docs/debts.json`，是存量债务的唯一登记处，替代散落在正文句子中的登记。校验由 `ddd_debt_check` 工具（`root` 传被开发项目根的绝对路径）承担，末行给出机读结论并据此置退出码。
 
 ## 骨架
 

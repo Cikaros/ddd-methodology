@@ -20,7 +20,7 @@ acceptance: {"level":"checked","review":{"required":false},"evidence":["changed-
 
 # 输出契约
 
-`docs/design/` 下的 DESIGN.md 树，路径与代码目录严格同构，根路径以 ARCHITECTURE 声明为准。每份字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 DESIGN 节；该模板路径在开发态回退到仓库内 `skill/ddd-methodology/references/templates.md`。粒度阈值见「粒度与独立性」节。并附结构治理回执，记产出文档规模与「粒度与独立性」节文档粒度阈值的比对。
+`docs/design/` 下的 DESIGN.md 树，路径与代码目录严格同构，根路径以 ARCHITECTURE 声明为准。每份字段见 `references/templates.md` 的 DESIGN 节。粒度阈值见「粒度与独立性」节。并附结构治理回执，记产出文档规模与「粒度与独立性」节文档粒度阈值的比对。
 
 # 职责
 

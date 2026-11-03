@@ -4,7 +4,7 @@ description: 存量重建。当用户判断项目碎片累积、修补成本已�
 disable-model-invocation: true
 ---
 
-规范唯一权威源为 `~/.pi/agent/skills/ddd-methodology/references/spec-rebuild.md` 的「存量重建」节，产物模板见 `~/.pi/agent/skills/ddd-methodology/references/templates.md` 与 `~/.pi/agent/skills/ddd-methodology/references/templates-rebuild.md`。
+规范唯一权威源为 `../ddd-methodology/references/spec-rebuild.md` 的「存量重建」节，产物模板见 `../ddd-methodology/references/templates.md` 与 `../ddd-methodology/references/templates-rebuild.md`。
 
 # 定位
 
@@ -48,11 +48,11 @@ disable-model-invocation: true
 
 # 开放与约束
 
-分界表与开放区、约束区的含义统一见 `~/.pi/agent/skills/ddd-methodology/references/spec-rebuild.md` 的「开放与约束」节，本节不保留表的实体定义。
+分界表与开放区、约束区的含义统一见 `../ddd-methodology/references/spec-rebuild.md` 的「开放与约束」节，本节不保留表的实体定义。
 
 # 产物
 
-本轮产出四件，逐项按 `~/.pi/agent/skills/ddd-methodology/references/templates-rebuild.md` 的对应模板生成。
+本轮产出四件，逐项按 `../ddd-methodology/references/templates-rebuild.md` 的对应模板生成。
 
 | 产物 | 模板节 |
 |---|---|

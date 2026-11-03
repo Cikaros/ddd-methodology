@@ -20,7 +20,7 @@ acceptance: {"level":"checked","review":{"required":false},"evidence":["changed-
 
 # 输出契约
 
-测试报告与缺陷路由单，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 TEST_PLAN 与缺陷路由单两节；该模板路径在开发态回退到仓库内 `skill/ddd-methodology/references/templates.md`。报告含重构等价性节，记契约指纹比对结果与用例集合增减；报告含结构治理回执，记产出文档规模与「粒度与独立性」节文档粒度阈值的比对。报告末尾必须含机读行 `DEFECTS: {"A":n,"B":n,"C":n,"D":n,"unresolved":bool}`，该行无论有无缺陷均须输出，零缺陷时计数全零；缺行或与正文矛盾将导致加速档中断。
+测试报告与缺陷路由单，字段见 `references/templates.md` 的 TEST_PLAN 与缺陷路由单两节。报告含重构等价性节，记契约指纹比对结果与用例集合增减；报告含结构治理回执，记产出文档规模与「粒度与独立性」节文档粒度阈值的比对。报告末尾必须含机读行 `DEFECTS: {"A":n,"B":n,"C":n,"D":n,"unresolved":bool}`，该行无论有无缺陷均须输出，零缺陷时计数全零；缺行或与正文矛盾将导致加速档中断。
 
 测试报告与缺陷路由单须同时落盘归档至 `<项目根>/docs/reports/`：测试报告文件名 `test-<版本>-r<轮次>.md`，缺陷路由单文件名 `defect-<版本>-r<轮次>-<缺陷ID>.md`；版本取项目当前版本，轮次为测试执行轮次，同一轮唯一定位、多轮不覆盖。归档件保留上述末行机读行与缺陷路由单的轮回计数字段，供度量聚合脚本采集返工轮次分布与缺陷四级分布。
 

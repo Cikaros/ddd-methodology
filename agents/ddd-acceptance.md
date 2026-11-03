@@ -20,7 +20,7 @@ acceptance: {"level":"checked","review":{"required":false},"evidence":["changed-
 
 # 输出契约
 
-`AC.md`，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 AC 节；该模板路径在开发态回退到仓库内 `skill/ddd-methodology/references/templates.md`。AC 编号为 AC-001 起，每条含对应需求编号与 Given、When、Then 三段。判定条件必须是可观测的输入、输出或状态，不得使用良好、合理、友好之类措辞。粒度阈值见「粒度与独立性」节。并附结构治理回执，记产出文档规模与「粒度与独立性」节文档粒度阈值的比对。
+`AC.md`，字段见 `references/templates.md` 的 AC 节。AC 编号为 AC-001 起，每条含对应需求编号与 Given、When、Then 三段。判定条件必须是可观测的输入、输出或状态，不得使用良好、合理、友好之类措辞。粒度阈值见「粒度与独立性」节。并附结构治理回执，记产出文档规模与「粒度与独立性」节文档粒度阈值的比对。
 
 # 职责
 

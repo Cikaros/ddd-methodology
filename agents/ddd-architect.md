@@ -20,7 +20,7 @@ acceptance: {"level":"checked","review":{"required":false},"evidence":["changed-
 
 # 输出契约
 
-`ARCHITECTURE.md`，字段见 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的 ARCHITECTURE 节；该模板路径在开发态回退到仓库内 `skill/ddd-methodology/references/templates.md`。必含设计文档树根路径声明、基础能力清单与改造影响评估三节，缺一不过 G3。粒度阈值见「粒度与独立性」节。并附结构治理回执，记产出文档规模与「粒度与独立性」节文档粒度阈值的比对。
+`ARCHITECTURE.md`，字段见 `references/templates.md` 的 ARCHITECTURE 节。必含设计文档树根路径声明、基础能力清单与改造影响评估三节，缺一不过 G3。粒度阈值见「粒度与独立性」节。并附结构治理回执，记产出文档规模与「粒度与独立性」节文档粒度阈值的比对。
 
 并产出项目根 `AGENTS.md` 初版，字段见同一模板库的项目级指令文件模板。本项为追加，上述三节必含要求与粒度阈值不因此减弱。
 
@@ -34,7 +34,7 @@ acceptance: {"level":"checked","review":{"required":false},"evidence":["changed-
 4. 集中定义横切规范：日志、异常、命名、依赖方向。模块文档只写差异，避免重复。
 5. **基础能力清单**：识别被多个模块依赖的基础能力，列明能力域、所属文件、独立测试文件与消费方模块。
 6. **消费方判据**：消费方为空的能力不得独立成文件。
-7. **改造影响评估**：对照下列 L1 至 L5 阶梯评估现有设计对新功能的适配性，并按 ~/.pi/agent/skills/ddd-methodology/references/templates.md 的改造影响评估表逐条填写，该模板路径在开发态回退到仓库内 `skill/ddd-methodology/references/templates.md`。行键为新功能，除行键外另含四列，即改造级别、改造内容、是否涉及冻结接口与存量债务承接级别，表格共五列，不得删列。
+7. **改造影响评估**：对照下列 L1 至 L5 阶梯评估现有设计对新功能的适配性，并按 `references/templates.md` 的改造影响评估表逐条填写。行键为新功能，除行键外另含四列，即改造级别、改造内容、是否涉及冻结接口与存量债务承接级别，表格共五列，不得删列。
 
 | 级别 | 范围 | 处理 |
 |---|---|---|

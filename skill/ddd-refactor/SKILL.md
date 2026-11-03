@@ -4,7 +4,7 @@ description: 定向重构。当用户针对部分代码或模块在使用中发�
 disable-model-invocation: true
 ---
 
-规范唯一权威源为 `~/.pi/agent/skills/ddd-methodology/references/spec-rebuild.md` 的「存量重建」节，产物模板见 `~/.pi/agent/skills/ddd-methodology/references/templates.md` 与 `~/.pi/agent/skills/ddd-methodology/references/templates-rebuild.md`。
+规范唯一权威源为 `../ddd-methodology/references/spec-rebuild.md` 的「存量重建」节，产物模板见 `../ddd-methodology/references/templates.md` 与 `../ddd-methodology/references/templates-rebuild.md`。
 
 # 定位
 
@@ -44,15 +44,15 @@ disable-model-invocation: true
 
 # 开放与约束
 
-分界表与开放区、约束区的含义统一见 `~/.pi/agent/skills/ddd-methodology/references/spec-rebuild.md` 的「开放与约束」节，本节不保留表的实体定义。
+分界表与开放区、约束区的含义统一见 `../ddd-methodology/references/spec-rebuild.md` 的「开放与约束」节，本节不保留表的实体定义。
 
 ## 防堆叠约束
 
-三条防堆叠约束统一见 `~/.pi/agent/skills/ddd-methodology/references/spec-rebuild.md` 的「防堆叠约束」节，本节不保留其实体定义。
+三条防堆叠约束统一见 `../ddd-methodology/references/spec-rebuild.md` 的「防堆叠约束」节，本节不保留其实体定义。
 
 # 产物
 
-本轮产出三件，逐项按 `~/.pi/agent/skills/ddd-methodology/references/templates-rebuild.md` 的对应模板生成，范围节填写本次的模块或问题。
+本轮产出三件，逐项按 `../ddd-methodology/references/templates-rebuild.md` 的对应模板生成，范围节填写本次的模块或问题。
 
 | 产物 | 模板节 |
 |---|---|
