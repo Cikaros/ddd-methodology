@@ -66,10 +66,6 @@ ddd-methodology/
 │   └── lib/
 │       └── shared.ts             # 扩展共享小工具：包根解析、执行超时、退出码归一、错误描述与安全读文本
 └── scripts/
-    ├── install.bat               # Windows 模型配比：调用 apply-models 应用配比
-    ├── install.sh                # Linux/macOS/Git Bash 模型配比：应用配比
-    ├── uninstall.bat             # Windows 模型配比：撤回本方法论写入的模型配置
-    ├── uninstall.sh              # Linux/macOS/Git Bash 模型配比：撤回模型配置
     ├── trace-check.js            # 追溯一致性校验脚本，G4 与 G5 门禁证据
     ├── apply-models.js           # 按代理模型配比的应用与可用性冒烟，仓库内部专用
     ├── migrate-to-package.js     # 旧安装迁移到 pi package：清理用户作用域的残留，仓库内部专用
@@ -83,7 +79,7 @@ ddd-methodology/
     ├── install-parser.js         # 解析器按需安装入口：把锁定版本的解析器与 grammar 装到用户固定位置
     ├── roster-check.js           # 代理与 skill 清单一致性校验，供 ref-check 的 C5、C11 调用
     ├── spec-index-check.js       # 规范索引表与规范标题一致性校验，供 ref-check 的 C12 调用
-    ├── install-manifest-check.js # 安装与卸载脚本职责一致性校验，供 ref-check 的 C13 调用
+    ├── install-manifest-check.js # 随包脚本集合枚举，供 ref-check 的 C17 比对安装内容明细
     ├── debt-check.js             # 存量债务登记簿超期与上限校验脚本，末行 pass 或 overdue
     ├── metrics-report.js         # 绩效度量聚合脚本，读 health.json、debts.json、gates/ 与 reports/，写 docs/metrics.json，末行 RESULT: report
     ├── toolchain-selftest.js     # 工具链自测：脚本族语法可加载、入口可运行、退出码符合基线
@@ -100,7 +96,6 @@ ddd-methodology/
         ├── ref-coverage.js       # 校验项映射一致性校验：C15
         ├── ref-line-endings.js   # 工作区行尾一致性校验：C16
         ├── ref-structure.js      # 结构树与安装内容明细一致性校验：C17
-        ├── ref-install-params.js # 安装参数表与安装脚本参数一致性校验：C18
         ├── ref-convergence.js    # 收敛度校验：C19
         ├── repo-scope.js         # 方法论仓库自身判定：不适用语义的共享实现，供 trace-check 与 span-check 复用
         ├── debt-history.js       # 债务历史快照与根因复发检测
@@ -131,11 +126,11 @@ ddd-methodology/
   - span-check 脚本位于 `scripts/span-check.js`，比对 DESIGN 契约签名与代码侧导出符号，输出一致、不一致、无法判定三态，仅不一致计入缺口
   - install-parser 脚本位于 `scripts/install-parser.js`，把签名级校验所需的解析器与 grammar 装到用户固定位置，仅由 `/ddd-parser-install` 命令触发
   - toolchain-selftest 脚本位于 `scripts/toolchain-selftest.js`，独立入口，断言脚本族语法可加载、入口可运行、退出码符合基线，不并入 ref-check
-  - 共享层与各域校验模块位于 `scripts/lib/`（`text.js`、`walk.js`、`paths.js`、`spec-doc.js`、`ref-refs.js`、`ref-constants.js`、`ref-stages.js`、`ref-phrases.js`、`ref-debt-fields.js`、`ref-coverage.js`、`ref-line-endings.js`、`ref-structure.js`、`ref-install-params.js`、`ref-convergence.js`、`repo-scope.js`、`debt-history.js`、`version.js`、`metrics-sources.js`、`metrics-structure.js`、`metrics-delivery.js`、`span-parser.js`、`span-ast.js`、`span-langs.js`、`span-langs-convention.js`、`span-extract.js`、`span-compare.js`），供本仓库各门禁、校验与度量脚本复用
-  - install-manifest-check 脚本位于 `scripts/install-manifest-check.js`，核对安装与卸载脚本的职责一致性并枚举随包脚本集合，作为 ref-check 的 C13
+  - 共享层与各域校验模块位于 `scripts/lib/`（`text.js`、`walk.js`、`paths.js`、`spec-doc.js`、`ref-refs.js`、`ref-constants.js`、`ref-stages.js`、`ref-phrases.js`、`ref-debt-fields.js`、`ref-coverage.js`、`ref-line-endings.js`、`ref-structure.js`、`ref-convergence.js`、`repo-scope.js`、`debt-history.js`、`version.js`、`metrics-sources.js`、`metrics-structure.js`、`metrics-delivery.js`、`span-parser.js`、`span-ast.js`、`span-langs.js`、`span-langs-convention.js`、`span-extract.js`、`span-compare.js`），供本仓库各门禁、校验与度量脚本复用
+  - install-manifest-check 脚本位于 `scripts/install-manifest-check.js`，枚举仓库随包脚本集合，供 ref-check 的 C17 与安装内容明细双向比对
   - 其余门禁脚本 `fingerprint.js`、`design-root.js`、`decision-tables.js`、`roster-check.js`、`spec-index-check.js`、`debt-check.js` 与 `metrics-report.js` 同属该脚本清单，位于 `scripts/`
 - 存量重建 skill `ddd-rebuild` 与定向重构 skill `ddd-refactor`，分别位于 `skill/ddd-rebuild/` 与 `skill/ddd-refactor/`，两者与主 skill 同属一份清单，仅由用户显式调用
 - 运行时扩展位于 `extensions/`：`ddd-context.ts` 在会话开始时注入全局规则 section 并探测 subagent 前置依赖；`ddd-tools.ts` 把甲类机械校验脚本注册为 `ddd_*` 工具，并以 `/ddd-parser-install` 命令提供解析器供给的用户触发入口；`ddd-governance.ts` 仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默；`ddd-models.ts` 以 slash 命令 `/ddd-models` 提供模型配比的用户触发入口，转交仓库内部专用脚本 apply-models.js，不注册为工具；四者共用的纯工具（包根解析、执行超时、退出码归一、错误描述与安全读文本）集中在 `extensions/lib/shared.ts`，该子目录无 index.ts，不作为扩展入口加载
 - 全局规则由 `extensions/ddd-context.ts` 以 sections 注入，不再改写用户全局文件
-- 模型配比记录文件 `~/.pi/agent/.ddd-model-overrides.json`，记录本方法论写入的代理、配比名与写入前原值，供精确回退；模型配比由 `scripts/install.sh` 与 `scripts/install.bat` 调用 apply-models 应用或撤回
+- 模型配比记录文件 `~/.pi/agent/.ddd-model-overrides.json`，记录本方法论写入的代理、配比名与写入前原值，供精确回退；模型配比经扩展的 `/ddd-models` 命令转交仓库内部专用脚本 apply-models.js 应用或撤回
 - 12 个 agent 定义，位于 `agents/ddd-*.md`

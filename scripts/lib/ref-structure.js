@@ -3,9 +3,9 @@
  * 范围：C17 两项断言——其一，结构树内全部文件与目录条目在仓库中真实存在，且仓库内除点开头条目外的文件与目录均在树中列出，即双向一致；
  *   树中以目录节点列出而无展开子项的目录视为未展开，其内容不作反向核对，只核对其自身存在性；
  *   反向核对只面向随仓库发布的条目，被 .gitignore 排除者不属漏登记，故按 git 忽略语义跳过；树内条目须真实存在的前向核对不跳过；
- *   其二，安装内容明细中列出的脚本名集合与安装脚本的随装脚本白名单双向一致。
- * 不包含：结构树与安装内容明细的排版、安装参数表（见 ref-install-params.js）、其他校验项、命令行入口。不引入第三方依赖。
- * 白名单来源：随装脚本白名单取自安装清单一致性校验已解析的集合，经装配注入 env，本模块不另写第二份安装脚本解析。
+ *   其二，安装内容明细中列出的脚本名集合与随包脚本集合双向一致。
+ * 不包含：结构树与安装内容明细的排版、其他校验项、命令行入口。不引入第三方依赖。
+ * 集合来源：随包脚本集合取自 install-manifest-check.js 的枚举，经装配注入 env，本模块不另写第二份 scripts/ 枚举。
  */
 
 const fs = require("fs");
@@ -135,7 +135,7 @@ function createStructureChecks(env) {
     return names;
   }
 
-  // 白名单归一：安装脚本的 lib/ 前缀条目剥去前缀只留基名并补扩展名，与明细短名同形
+  // 集合归一：随包脚本的 lib/ 前缀条目剥去前缀只留基名并补扩展名，与明细短名同形
   const normalizeShipped = () => new Set([...shippedScripts].map((name) => `${name.split("/").pop()}.js`));
 
   function checkStructureDoc() {
@@ -178,7 +178,7 @@ function createStructureChecks(env) {
       found.push(drift("C17", STRUCTURE_REL, 0, "仓库内文件与目录须在结构树中列出", `结构树含 ${item.rel}`, item.rel));
     }
 
-    // 断言二：安装内容明细的随装脚本集合与安装脚本白名单双向一致
+    // 断言二：安装内容明细的随装脚本集合与随包脚本集合双向一致
     const section = readInstallSection(text);
     if (!section) {
       found.push(drift("C17", STRUCTURE_REL, 0, "须含安装内容明细节", "含安装内容明细", "未找到"));
@@ -187,10 +187,10 @@ function createStructureChecks(env) {
     const detail = collectDetailScripts(section);
     const shipped = normalizeShipped();
     for (const name of shipped) {
-      if (!detail.has(name)) found.push(drift("C17", STRUCTURE_REL, 0, "安装脚本白名单的随装脚本须在安装内容明细中列出", `${name} 已列出`, name));
+      if (!detail.has(name)) found.push(drift("C17", STRUCTURE_REL, 0, "随包脚本集合的脚本须在安装内容明细中列出", `${name} 已列出`, name));
     }
     for (const name of detail) {
-      if (!shipped.has(name)) found.push(drift("C17", STRUCTURE_REL, 0, "安装内容明细列出的脚本须属安装脚本白名单", `白名单含 ${name}`, name));
+      if (!shipped.has(name)) found.push(drift("C17", STRUCTURE_REL, 0, "安装内容明细列出的脚本须属随包脚本集合", `集合含 ${name}`, name));
     }
     return found;
   }

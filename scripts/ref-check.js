@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 /**
  * 目标：把本仓库跨文档引用、常量、清单与冻结短语的一致性外化为可复现的机械证据，供文档同步链在提交前校验。
- * 范围：C1 至 C19 十九项校验；默认只读不落盘，仅 --fix 写盘，写盘范围限 workflow 的阶段注册表块；C19 的收敛度基线在缺失时首次生成。
+ * 范围：十七项校验，编号沿用 C1 至 C19，其中 C13 与 C18 无对应校验项；编号不复用，以免既有引用与教训回写映射漂移；
+ *   默认只读不落盘，仅 --fix 写盘，写盘范围限 workflow 的阶段注册表块；C19 的收敛度基线在缺失时首次生成。
  * 校验实现按域外置于 ./lib/：规范读取面见 spec-doc.js，引用形态见 ref-refs.js，常量集合见 ref-constants.js，
  *   阶段键见 ref-stages.js，冻结短语见 ref-phrases.js，登记簿字段集合见 ref-debt-fields.js，校验项映射见 ref-coverage.js，
- *   工作区行尾见 ref-line-endings.js，结构树与安装内容明细见 ref-structure.js，安装参数表见 ref-install-params.js；安装清单校验见顶层 ./install-manifest-check.js。本脚本只作装配与输出。
+ *   工作区行尾见 ref-line-endings.js，结构树与安装内容明细见 ref-structure.js；随装脚本枚举见顶层 ./install-manifest-check.js。本脚本只作装配与输出。
  * 清单类校验 C5 与 C11 由 ./roster-check.js 提供，本脚本只作调用。
  * 索引表校验 C12 由 ./spec-index-check.js 提供，本脚本只作调用并注入已枚举的规范文件清单与索引入口路径。
  * 用法：node ref-check.js <仓库根> [--fix]；--fix 从 spec 键清单生成 workflow 阶段注册表并输出改动清单。
@@ -31,7 +32,6 @@ const { createDebtFieldChecks } = require("./lib/ref-debt-fields.js");
 const { createCoverageChecks } = require("./lib/ref-coverage.js");
 const { createLineEndingChecks } = require("./lib/ref-line-endings.js");
 const { createStructureChecks } = require("./lib/ref-structure.js");
-const { createInstallParamChecks } = require("./lib/ref-install-params.js");
 const { createConvergenceChecks } = require("./lib/ref-convergence.js");
 const installManifestCheck = require("./install-manifest-check.js");
 const decisionTables = require("./decision-tables.js");
@@ -68,7 +68,7 @@ const liveDocPaths = walkRefDocs(root).filter((file) => file.endsWith(".md") && 
 // 规范读取面：规范文件集合与节标题索引，一次性建立后供各校验项复用
 const spec = createSpecReader(root);
 const specDocs = spec.docs;
-// 随装脚本白名单由安装清单校验解析，经装配注入结构文档校验，避免两处各写一份安装脚本解析
+// 随装脚本白名单由 install-manifest-check.js 的枚举解析，经装配注入结构文档校验，避免两处各写一份脚本枚举
 const shippedScripts = installManifestCheck.parseShippedScripts(root);
 // 各域校验项的装配环境：仓库根、路径归一、活文档清单、规范读取器、两处固定路径与随装脚本白名单
 const env = { root, relPath, liveDocPaths, spec, workflowRel: WORKFLOW_REL, guardRel: GUARD_REL, shippedScripts };
@@ -80,7 +80,6 @@ const debtFieldChecks = createDebtFieldChecks(env);
 const coverageChecks = createCoverageChecks(env);
 const lineEndingChecks = createLineEndingChecks(env);
 const structureChecks = createStructureChecks(env);
-const installParamChecks = createInstallParamChecks(env);
 const convergenceChecks = createConvergenceChecks(env);
 
 // --fix 唯一写盘点：只重写 workflow 的阶段注册表块，写盘前先比对，无差异不写盘；guard 只校验不写
@@ -110,12 +109,10 @@ const CHECKS = [
   ["C10", "判定表默认分支", () => decisionTables.checkJudgmentDefault(liveDocPaths.map(relPath), (rel) => readFileText(path.join(root, rel)))],
   ["C11", "skill 清单一致性", () => rosterCheck.checkSkillRoster(root)],
   ["C12", "规范索引表一致性", () => specIndexCheck.checkSpecIndex(root, specDocs.map((doc) => doc.rel), SPEC_INDEX_REL)],
-  ["C13", "安装清单一致性", () => installManifestCheck.checkInstallManifest(root)],
   ["C14", "登记簿字段集合一致性", debtFieldChecks.checkDebtFieldSets],
   ["C15", "校验项映射一致性", coverageChecks.checkCheckCoverage],
   ["C16", "工作区行尾一致性", lineEndingChecks.checkLineEndings],
   ["C17", "结构与安装内容明细一致性", structureChecks.checkStructureDoc],
-  ["C18", "安装参数表一致性", installParamChecks.checkInstallParams],
   ["C19", "收敛度校验", convergenceChecks.checkConvergence],
 ];
 

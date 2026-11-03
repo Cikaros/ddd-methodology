@@ -30,29 +30,17 @@ GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0='url.git@github.com:.insteadOf' GIT_CONFIG_V
 
 skill、agent 与扩展的安装与移除均由 pi package 机制承担，不再由脚本复制。已按旧方式安装的用户可运行 `node scripts/migrate-to-package.js` 清理用户作用域的残留，加 `--dry-run` 只列计划不落盘；该脚本保留 `settings.json` 的 `subagents.agentOverrides`。
 
-模型配比为部署政策，由仓库内的脚本应用与撤回，按平台执行。
+模型配比为部署政策，经扩展注册的 slash 命令 `/ddd-models` 应用与撤回。命令把参数转交随包脚本 `scripts/apply-models.js`，由它按 `profiles/models.json` 写入用户设置；脚本路径由包根解析，位置无关，无须知道包被安装到何处。
 
-| 操作 | Windows | Linux、macOS 与 Git Bash |
-|---|---|---|
-| 应用模型配比 | `scripts\install.bat --models <配比>` | `./scripts/install.sh --models <配比>` |
-| 检查模型配比状态 | `scripts\install.bat --check` | `./scripts/install.sh --check` |
-| 撤回模型配比 | `scripts\uninstall.bat` | `./scripts/uninstall.sh` |
+| 用法 | 说明 |
+|---|---|
+| `/ddd-models <配比>` | 应用配比，等价于 `apply <配比>`，按 `profiles/models.json` 配置各代理模型 |
+| `/ddd-models verify <配比>` | 仅执行可用性冒烟，不写入 |
+| `/ddd-models status` | 只查看当前模型配比状态，不写入 |
+| `/ddd-models list` | 列出全部配比并与注册表比对 |
+| `/ddd-models clear` | 撤回本方法论写入的模型配置，用户自有配置保留 |
 
-Linux、macOS 与 Git Bash 首次使用前执行 `chmod +x scripts/*.sh`。
-
-安装参数如下，Windows 与 Linux 通用。
-
-| 参数 | 取值 | 说明 |
-|---|---|---|
-| `--models` | `balanced`、`quality` | 按 `profiles/models.json` 的配比配置各代理模型 |
-| `--models none` | 固定值 | 显式跳过模型配比，不读取配比文件 |
-| `--set` | `ddd-<代理名>=<模型名>` | 在配比基础上改单个代理，可重复 |
-| `--skip-verify` | 无 | 跳过可用性冒烟，仅在已确认模型可用时使用 |
-| `--provider` | provider 名 | 指定模型 provider，默认取配比文件值 |
-| `--check` | 无 | 只检查模型配比状态，不写入 |
-| `--repo` | 仓库根路径 | 指定仓库位置，供 `apply-models.js` 定位 `profiles/models.json` |
-
-省略 `--models` 时不触碰模型设置，`--models none` 为显式跳过。撤回会移除本方法论写入的模型配置，`settings.json` 的 `subagents.agentOverrides` 保留。
+`apply` 子命令另接受三个选项：`--provider <名>` 指定模型 provider，默认取配比文件值；`--set ddd-<代理名>=<模型名>` 在配比基础上改单个代理，可重复；`--skip-verify` 跳过可用性冒烟，仅在已确认模型可用时使用。省略配比时不触碰模型设置。撤回会移除本方法论写入的模型配置，`settings.json` 的 `subagents.agentOverrides` 保留。
 
 安装内容明细，即各随装件与其包内位置，见 [STRUCTURE.md](STRUCTURE.md)。
 
