@@ -76,7 +76,7 @@ const baselinePath = path.join(root, ...BASELINE_REL);
 let baseline;
 let baselineNote;
 if (initMode || !fs.existsSync(baselinePath)) {
-  baseline = { generatedAt: new Date().toISOString(), timeoutMs: TIMEOUT_MS, entries: observed };
+  baseline = { entries: observed };
   fs.mkdirSync(path.dirname(baselinePath), { recursive: true });
   fs.writeFileSync(baselinePath, JSON.stringify(baseline, null, 2) + "\n");
   baselineNote = `${initMode ? "--init 重写" : "首次生成"}基线：${relOf(baselinePath)}（${Object.keys(observed).length} 项）`;

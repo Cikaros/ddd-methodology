@@ -157,7 +157,7 @@ function createConvergenceChecks(env) {
     // 先落占位使本次统计含基线文件自身，避开生成基线即报文件数增长的循环依赖；占位随即被正式内容覆盖
     if (!baselineText) {
       try { fs.writeFileSync(baselinePath, "{}\n"); } catch (e) { /* 落盘失败：按不含基线自身统计，下次生成仍会纠正 */ }
-      const fresh = { generatedAt: new Date().toISOString(), repoItems: countRepoItems(root), docHeadings: currentHeadings(), duplicateFindings: duplicates.map((item) => ({ ...item, source: "待复核", dueWave: null })) };
+      const fresh = { repoItems: countRepoItems(root), docHeadings: currentHeadings(), duplicateFindings: duplicates.map((item) => ({ ...item, source: "待复核", dueWave: null })) };
       try { fs.writeFileSync(baselinePath, JSON.stringify(fresh, null, 2) + "\n"); } catch (e) { /* 落盘失败不阻断，下次仍会尝试生成 */ }
       return found;
     }
