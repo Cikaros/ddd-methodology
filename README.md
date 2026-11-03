@@ -54,7 +54,7 @@ Linux、macOS 与 Git Bash 首次使用前执行 `chmod +x scripts/*.sh`。
 
 省略 `--models` 时不触碰模型设置，`--models none` 为显式跳过。撤回会移除本方法论写入的模型配置，`settings.json` 的 `subagents.agentOverrides` 保留。
 
-安装内容明细，即各随装件与其安装路径，见 [STRUCTURE.md](STRUCTURE.md)。
+安装内容明细，即各随装件与其包内位置，见 [STRUCTURE.md](STRUCTURE.md)。
 
 ## 使用
 

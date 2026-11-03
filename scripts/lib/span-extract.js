@@ -73,4 +73,4 @@ async function extractSignature(signatureText, language) {
   return { ok: false, reason: `签名文本在合成片段中无法解析：${sig}` };
 }
 
-module.exports = { SUPPORTED_LANGUAGES, extractFile, extractSignature };
+module.exports = { extractFile, extractSignature };

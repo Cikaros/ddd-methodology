@@ -1,6 +1,6 @@
 # 变更记录
 
-本文件记录 pi package 形态的版本变更，版本号与仓库根 `package.json` 的 `version` 对应，采用三段式语义化版本；本包经 `pi install` 安装，例如 `pi install git:github.com/Cikaros/ddd-methodology@v0.1.0`。方法论规范版本 v1.0 至 v2.21 的演进史已归档至 `docs/internal/history/spec-changelog.md`，属内部档案，不作为公开内容。
+本文件记录 pi package 形态的版本变更，版本号与仓库根 `package.json` 的 `version` 对应，采用三段式语义化版本；本包经 `pi install` 安装，例如 `pi install git:github.com/Cikaros/ddd-methodology`。方法论规范版本 v1.0 至 v2.21 的演进史已归档至 `docs/internal/history/spec-changelog.md`，属内部档案，不作为公开内容。
 
 ## 0.1.2（2026-11-03）
 
@@ -17,4 +17,7 @@
 - **许可**：新增 `LICENSE`，MIT 协议。
 - **文档分层**：`docs/` 按读者分层为 `guide`、`reference`、`internal`，内部产物不再随公开仓发布。
 - **版本体系**：切换为包语义化版本，历史规范版本 tag 全部废弃，从 `v0.1.0` 重新起步。
-- **跟进调整**：文档与校验脚本随 pi package 形态同步调整。
+- **全局规则交付方式**：删除 `scripts/merge-append-system.js`；全局规则不再由脚本按标记区块合并入用户全局文件，改由 `extensions/ddd-context.ts` 在会话启动时以 `sections.ddd_global_rules` 注入。
+- **安装职责收敛**：`scripts/install.sh`、`install.bat`、`uninstall.sh`、`uninstall.bat` 的复制安装职责删除，收敛为仅承担模型配比；skill、子代理与扩展的安装与移除交由 `pi install` 与 `pi remove` 承担。
+- **运行时扩展**：新增四个扩展，`ddd-context.ts` 注入全局规则并探测 `pi-subagents` 前置依赖，`ddd-tools.ts` 把甲类机械校验注册为六个 `ddd_*` 工具，`ddd-governance.ts` 仅在含 `docs/design` 或 `docs/gates` 的项目内拦截越阈值写入与全量测试误跑，`ddd-models.ts` 以 `/ddd-models` 命令提供模型配比的用户触发入口。
+- **签名级符合性校验**：新增 `ddd_span_check` 与 `scripts/span-check.js`，把 DESIGN 契约签名与代码侧导出符号三态比对；所需解析器按需装到用户固定位置，入口为 `/ddd-parser-install`，首期覆盖 TypeScript、JavaScript、Python、Java、Go、Rust。

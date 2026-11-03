@@ -18,7 +18,7 @@
 
 - 度量 JSON：`check-coverage.json`、`debt-history.json`、`debts.json`、`health.json`、`metrics.json`
 - `refactor/`：重构设计与过程记录
-- `research/`：调研笔记与阶段性报告
+- `history/`：规范演进史与历史设计归档
 
 该层已由根目录 `.gitignore` 的 `docs/internal/` 条目排除，**不随公开仓库发布**，
 仅供本地维护参考。

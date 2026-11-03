@@ -1,6 +1,4 @@
 {
-  "generatedAt": "2026-11-03T04:32:58.456Z",
-  "timeoutMs": 120000,
   "entries": {
     "scripts/code-health.js": 0,
     "scripts/debt-check.js": 0,

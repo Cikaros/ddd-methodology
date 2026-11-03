@@ -40,7 +40,7 @@ ddd-methodology/
 ├── skill/ddd-refactor/           # 定向重构 skill，仅由用户显式调用
 │   └── SKILL.md                  # 定向重构流程入口
 ├── global/
-│   └── APPEND_SYSTEM.md         # 全局规则权威版本，安装时按标记区块合并入用户全局文件
+│   └── APPEND_SYSTEM.md         # 全局规则权威版本，由 extensions/ddd-context.ts 以 sections.ddd_global_rules 注入，不再改写用户全局文件
 ├── profiles/
 │   └── models.json              # 按代理的模型配比，含实测证据与理由，不写入 agent 定义
 ├── workflows/
@@ -120,7 +120,7 @@ ddd-methodology/
 
 本包为 pi package，资源由整仓提供，以 `pi install git:github.com/Cikaros/ddd-methodology` 安装（默认跟随默认分支），`package.json` 声明 `pi.extensions`、`pi.skills` 与 `pi-subagents.agents` 供宿主发现；随包内容如下，按随装件与其在包内的位置逐条给出。
 
-- Skill `ddd-methodology`，含 workflows 加速档脚本与门禁证据脚本，位于 `skill/ddd-methodology/`
+- Skill `ddd-methodology`，目录内只含 `SKILL.md` 与 `references/`；随包脚本在 `scripts/`，加速档在 `workflows/`
   - workflow 脚本位于 `workflows/ddd-workflow.js`，供根会话以 `subagent({ workflow: ... , args: { root: "<项目根>" } })` 调用
   - trace-check 脚本位于 `scripts/trace-check.js`，作为 G4 与 G5 门禁证据
   - code-health 脚本位于 `scripts/code-health.js`，度量结构健康并写入项目内 docs/health.json，仅报告不作门禁

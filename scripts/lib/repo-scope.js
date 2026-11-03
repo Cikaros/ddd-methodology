@@ -24,4 +24,4 @@ function methodologyReason(noTargetDesc) {
   return `[不适用] 本仓库为方法论自身：${METHODOLOGY_MARKER_DESC}，${noTargetDesc}，按规范「本仓库适用边界」节报不适用`;
 }
 
-module.exports = { METHODOLOGY_MARKER, METHODOLOGY_MARKER_DESC, NOT_APPLICABLE_TAIL, isMethodologyRepo, methodologyReason };
+module.exports = { NOT_APPLICABLE_TAIL, isMethodologyRepo, methodologyReason };

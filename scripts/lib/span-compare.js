@@ -117,4 +117,4 @@ async function interfaceExported(root, row) {
   return { ok: true, found: code.symbols.some((symbol) => symbol.name === target), file: language.file };
 }
 
-module.exports = { readContractTable, deriveLanguage, compareRow, interfaceExported, EXT_LANGUAGE };
+module.exports = { readContractTable, deriveLanguage, compareRow, interfaceExported };
