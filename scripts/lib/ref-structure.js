@@ -2,6 +2,7 @@
  * 目标：把 STRUCTURE.md 的结构树与安装内容明细外化为机械可判的一致性，作为结构与安装内容明细的机械消费方。
  * 范围：C17 两项断言——其一，结构树内全部文件与目录条目在仓库中真实存在，且仓库内除点开头条目外的文件与目录均在树中列出，即双向一致；
  *   树中以目录节点列出而无展开子项的目录视为未展开，其内容不作反向核对，只核对其自身存在性；
+ *   反向核对只面向随仓库发布的条目，被 .gitignore 排除者不属漏登记，故按 git 忽略语义跳过；树内条目须真实存在的前向核对不跳过；
  *   其二，安装内容明细中列出的脚本名集合与安装脚本的随装脚本白名单双向一致。
  * 不包含：结构树与安装内容明细的排版、安装参数表（见 ref-install-params.js）、其他校验项、命令行入口。不引入第三方依赖。
  * 白名单来源：随装脚本白名单取自安装清单一致性校验已解析的集合，经装配注入 env，本模块不另写第二份安装脚本解析。
@@ -9,6 +10,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { spawnSync } = require("child_process");
 const { readFileText, drift } = require("./text.js");
 
 const STRUCTURE_REL = "STRUCTURE.md";
@@ -75,6 +77,44 @@ function createStructureChecks(env) {
     return out;
   }
 
+  // 忽略集：结构树的反向核对只面向随仓库发布的条目，被 .gitignore 排除者不属漏登记，故按 git 忽略语义剔除；
+  // git 不可用或当前根非仓库时退回直读 .gitignore 的最小匹配，两条路径都只排除确属忽略者，降级不得误报
+  function readIgnoredRels(items) {
+    if (!items.length) return new Set();
+    const res = spawnSync("git", ["-C", root, "check-ignore", "--stdin", "-z"], {
+      input: items.map((item) => `${item.rel}\0`).join(""),
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    // check-ignore 以 1 表示无命中，属正常结果；其余非零或 spawn 失败才走最小匹配兜底
+    if (res.status === 0 || res.status === 1) return new Set(String(res.stdout || "").split("\0").filter(Boolean));
+    return minimalIgnoredRels(items);
+  }
+
+  // 最小忽略匹配：仅在 git 不可用时兜底，直读根 .gitignore，支持注释、目录限定与 *、? 通配；
+  // 不求完整 gitignore 语义，只保证不把确属忽略的条目误报为漏登记
+  function minimalIgnoredRels(items) {
+    const rules = [];
+    for (const raw of (readFileText(path.join(root, ".gitignore")) || "").split("\n")) {
+      const line = raw.replace(/\s+$/, "");
+      if (!line || line.startsWith("#")) continue;
+      const dirOnly = line.endsWith("/");
+      const body = line.replace(/^\/+/, "").replace(/\/+$/, "");
+      const anchored = line.startsWith("/") || body.includes("/");
+      const expr = body.split("/").map((part) => part.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^/]*").replace(/\?/g, "[^/]")).join("/");
+      rules.push(new RegExp(`${anchored ? "^" : "(^|/)"}${expr}${dirOnly ? "(?:/|$)" : "$"}`));
+    }
+    const hit = (rel) => rules.some((re) => re.test(rel));
+    const ignored = new Set();
+    for (const item of items) {
+      const parts = item.rel.split("/");
+      for (let k = 1; k <= parts.length; k++) {
+        if (hit(parts.slice(0, k).join("/"))) { ignored.add(item.rel); break; }
+      }
+    }
+    return ignored;
+  }
+
   // 安装内容明细节：自「## 安装内容」标题至下一二级标题前
   function readInstallSection(text) {
     const start = text.search(/^##\s*安装内容/m);
@@ -131,8 +171,10 @@ function createStructureChecks(env) {
     const unexpandedDirs = [];
     for (const [rel, meta] of entries) if (meta.kind === "dir" && !expanded.has(rel)) unexpandedDirs.push(rel);
     const underUnexpanded = (rel) => unexpandedDirs.some((prefix) => rel === prefix || rel.startsWith(`${prefix}/`));
-    for (const item of scanRepo()) {
-      if (entries.has(item.rel) || underUnexpanded(item.rel)) continue;
+    const repoItems = scanRepo();
+    const ignored = readIgnoredRels(repoItems);
+    for (const item of repoItems) {
+      if (ignored.has(item.rel) || entries.has(item.rel) || underUnexpanded(item.rel)) continue;
       found.push(drift("C17", STRUCTURE_REL, 0, "仓库内文件与目录须在结构树中列出", `结构树含 ${item.rel}`, item.rel));
     }
 

@@ -11,14 +11,15 @@ ddd-methodology/
 ├── README.md                     # 仓库定位与入口
 ├── STRUCTURE.md                  # 仓库结构与安装内容明细，本文件
 ├── CHANGELOG.md                  # 包变更记录（v0.1.0 起）
-├── docs/                         # 项目侧证据与归档
-│   ├── health.json              # 结构健康度量历史，入版本管理，上限 50 条
-│   ├── metrics.json             # 绩效度量聚合产物，由 metrics-report.js 生成
-│   ├── debts.json               # 存量债务登记簿，超期与未清上限由 debt-check.js 校验
-│   ├── debt-history.json        # 债务历史快照，由 debt-check.js 按版本维护，上限 50 条
-│   ├── check-coverage.json      # 根因到已建立校验项的映射，由 ref-check 的 C15 校验
-│   └── refactor/                # 改造设计文档目录，本仓库自我迭代的冻结契约来源
-│       └── DESIGN.md            # 已执行完毕的改造设计冻结契约正文，版本 v2.12
+├── LICENSE                       # 许可协议（MIT）
+├── package.json                  # pi package 清单：扩展、skill 与子代理入口
+├── package-lock.json             # npm 依赖锁定文件
+├── docs/                         # 面向读者的公开文档与维护者内部归档
+│   ├── README.md                # 文档索引
+│   ├── guide/                   # 方法论白皮书正文
+│   │   ├── ddd-methodology-whitepaper.docx
+│   │   └── ddd-methodology-whitepaper.pdf
+│   └── internal/                # 维护者内部档案，由 .gitignore 排除，不随公开仓库发布
 ├── skill/ddd-methodology/        # pi Skill，规范权威源为 references/ 下的规范文件集
 │   ├── SKILL.md                  # 调度流程入口
 │   ├── references/
@@ -101,21 +102,19 @@ ddd-methodology/
 
 ## 安装内容
 
-安装内容如下，按随装件与安装路径逐条给出。
+本包以 pi package 形态分发，资源由整仓提供，`package.json` 声明 `pi.extensions`、`pi.skills` 与 `pi-subagents.agents` 供宿主发现；随包内容如下，按随装件与其在包内的位置逐条给出。
 
-- Skill，含 workflows 加速档脚本与门禁证据脚本，安装到 `~/.pi/agent/skills/ddd-methodology/`
-  - workflow 脚本位于 `~/.pi/agent/skills/ddd-methodology/workflows/ddd-workflow.js`，供根会话以 `subagent({ workflow: ... , args: { root: "<项目根>" } })` 调用
-  - trace-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js`，作为 G4 与 G5 门禁证据
-  - code-health 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/code-health.js`，度量结构健康并写入项目内 docs/health.json，仅报告不作门禁
-  - governance-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/governance-check.js`，校验契约指纹与结构趋势，输出 verdict 作为 G5-INT 门槛证据
-  - ref-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/ref-check.js`，校验跨文档引用、常量与枚举集合一致性，供文档同步链使用
-  - 共享层与各域校验模块位于 `scripts/lib/`（`text.js`、`walk.js`、`paths.js`、`spec-doc.js`、`ref-refs.js`、`ref-constants.js`、`ref-stages.js`、`ref-phrases.js`、`ref-debt-fields.js`、`ref-coverage.js`、`ref-line-endings.js`、`ref-structure.js`、`ref-install-params.js`、`debt-history.js`、`version.js`、`metrics-sources.js`、`metrics-structure.js`、`metrics-delivery.js`），供本仓库各门禁、校验与度量脚本复用，随 Skill 装到 `~/.pi/agent/skills/ddd-methodology/scripts/lib/`，卸载时随固定清单一并移除
-  - install-manifest-check 脚本位于 `~/.pi/agent/skills/ddd-methodology/scripts/install-manifest-check.js`，校验安装与卸载脚本的清单一致性，作为 ref-check 的 C13
-  - 其余门禁脚本 `fingerprint.js`、`design-root.js`、`decision-tables.js`、`roster-check.js`、`spec-index-check.js`、`debt-check.js` 与 `metrics-report.js` 同属该脚本清单，随 Skill 装到 `~/.pi/agent/skills/ddd-methodology/scripts/`
-- 存量重建 skill `ddd-rebuild` 与定向重构 skill `ddd-refactor`，分别安装到 `~/.pi/agent/skills/ddd-rebuild/` 与 `~/.pi/agent/skills/ddd-refactor/`。三者同属一份固定清单，安装时一并复制、卸载时一并移除，随装随卸；卸载只删清单内目录，不影响用户自有 skill
-- 运行时守卫扩展 `~/.pi/agent/extensions/ddd-governance.ts`，仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默
+- Skill `ddd-methodology`，含 workflows 加速档脚本与门禁证据脚本，位于 `skill/ddd-methodology/`
+  - workflow 脚本位于 `workflows/ddd-workflow.js`，供根会话以 `subagent({ workflow: ... , args: { root: "<项目根>" } })` 调用
+  - trace-check 脚本位于 `scripts/trace-check.js`，作为 G4 与 G5 门禁证据
+  - code-health 脚本位于 `scripts/code-health.js`，度量结构健康并写入项目内 docs/health.json，仅报告不作门禁
+  - governance-check 脚本位于 `scripts/governance-check.js`，校验契约指纹与结构趋势，输出 verdict 作为 G5-INT 门槛证据
+  - ref-check 脚本位于 `scripts/ref-check.js`，校验跨文档引用、常量与枚举集合一致性，供文档同步链使用
+  - 共享层与各域校验模块位于 `scripts/lib/`（`text.js`、`walk.js`、`paths.js`、`spec-doc.js`、`ref-refs.js`、`ref-constants.js`、`ref-stages.js`、`ref-phrases.js`、`ref-debt-fields.js`、`ref-coverage.js`、`ref-line-endings.js`、`ref-structure.js`、`ref-install-params.js`、`debt-history.js`、`version.js`、`metrics-sources.js`、`metrics-structure.js`、`metrics-delivery.js`），供本仓库各门禁、校验与度量脚本复用
+  - install-manifest-check 脚本位于 `scripts/install-manifest-check.js`，校验安装与卸载脚本的清单一致性，作为 ref-check 的 C13
+  - 其余门禁脚本 `fingerprint.js`、`design-root.js`、`decision-tables.js`、`roster-check.js`、`spec-index-check.js`、`debt-check.js` 与 `metrics-report.js` 同属该脚本清单，位于 `scripts/`
+- 存量重建 skill `ddd-rebuild` 与定向重构 skill `ddd-refactor`，分别位于 `skill/ddd-rebuild/` 与 `skill/ddd-refactor/`，两者与主 skill 同属一份清单，仅由用户显式调用
+- 运行时守卫扩展位于 `extensions/ddd-governance.ts`，仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默
 - 模型配比记录文件 `~/.pi/agent/.ddd-model-overrides.json`，记录本方法论写入的代理、配比名与写入前原值，供精确回退
-- 全局规则区块，按标记合并入 `~/.pi/agent/APPEND_SYSTEM.md`：只替换标记区块，区块外用户自定义内容原样保留，卸载时移除该区块；首次安装前自动备份为 `APPEND_SYSTEM.md.ddd-bak`，卸载时若仅剩标记区块则优先从该备份恢复并删除备份文件
-- 12 个 agent 定义，按固定文件名清单，安装到 `~/.pi/agent/agents/ddd-*.md`
-
-脚本按固定文件名清单安装/卸载，不会影响 `~/.pi/agent/agents/` 下用户自定义的其他代理文件。
+- 全局规则区块，按标记合并入 `~/.pi/agent/APPEND_SYSTEM.md`：只替换标记区块，区块外用户自定义内容原样保留；首次安装前自动备份为 `APPEND_SYSTEM.md.ddd-bak`，卸载时若仅剩标记区块则优先从该备份恢复并删除备份文件
+- 12 个 agent 定义，位于 `agents/ddd-*.md`
