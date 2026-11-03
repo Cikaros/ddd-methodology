@@ -16,6 +16,18 @@ pi install git:github.com/Cikaros/ddd-methodology@v0.1.0
 pi remove ddd-methodology
 ```
 
+**网络提示**：pi 经 **HTTPS** clone `github.com` 安装 git 来源包，该通道不通会让 `pi install` 失败，这属传输通道问题而非包本身问题。确因该通道不通时，可自行把 git 的该地址重写为 SSH。持久写法：
+
+```bash
+git config --global url."git@github.com:".insteadOf "https://github.com/"
+```
+
+一次性写法，只对当次命令生效：
+
+```bash
+GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0='url.git@github.com:.insteadOf' GIT_CONFIG_VALUE_0='https://github.com/' pi install git:github.com/Cikaros/ddd-methodology@v0.1.0
+```
+
 skill、agent 与扩展的安装与移除均由 pi package 机制承担，不再由脚本复制。已按旧方式安装的用户可运行 `node scripts/migrate-to-package.js` 清理用户作用域的残留，加 `--dry-run` 只列计划不落盘；该脚本保留 `settings.json` 的 `subagents.agentOverrides`。
 
 模型配比为部署政策，由仓库内的脚本应用与撤回，按平台执行。
