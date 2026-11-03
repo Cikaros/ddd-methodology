@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 /**
  * 目标：把契约指纹与结构趋势的门禁判定收敛为单个 JSON 文档，作为 G4、G4.5、G5、G5-INT 与 G6 的 typed gate 证据源。
- * 范围：四项机械可判定事项——各 DESIGN.md 契约指纹齐备且与契约段实算值一致；存在设计文档树时其根路径已在
+ * 范围：五项机械可判定事项——各 DESIGN.md 契约指纹齐备且与契约段实算值一致；存在设计文档树时其根路径已在
  *   ARCHITECTURE.md 声明（未声明即阻断，不得回退 docs/design 而放行）；docs/health.json 最新一条相对上一条
  *   问题类计数未增加（问题类计数的键集合以本脚本内的 TREND_BLOCKING_KEYS 常量为唯一权威，规范只作抽象描述并指向本脚本）；
- *   已记录指纹的 DESIGN 其「变更记录」节是否有数据行（无则仅告警不阻断）。
- * 不包含：行为等价性、用例集合增减方向、变更类型声明与产物是否相符等需语义判断的事项，交由 ddd-tester 与 ddd-auditor。
+ *   已记录指纹的 DESIGN 其「变更记录」节是否有数据行（无则仅告警不阻断）；「变更记录」最新一轮的变更类型与该轮相对上一轮的
+ *   契约指纹变化相符（声明行为变更或重建却指纹未变、声明重构却指纹变化即阻断；不足两轮或类型不在已知之列时报无法判定并说明，不静默通过）。
+ * 不包含：行为等价性、用例集合增减方向、变更类型声明与行为产物是否相符、结构度量是否真改善等需语义判断的事项，交由 ddd-tester 与 ddd-auditor。
+ * 零 delta 拦截的对象是「变更记录」表最新一轮相对上一轮的类型与指纹，两轮的比对基准是表内自带的上一轮契约指纹。
  * 用法：node governance-check.js <项目根>
  * 输出形态：单个 JSON 文档，且仅此一个；字段 limitBytes 给出输出上限，供消费端自证口径。
  * 末行机读结论：`verdict` 字段，取值 ok 或 blocked
@@ -23,7 +25,7 @@ const path = require("path");
 // 读取失败回空串而非中断：DESIGN 读不到时仍走指纹校验并给出结构化结论，消费端不以栈信息判读
 const { readFileText } = require("./lib/text.js");
 const { HEALTH_REL, artifactReadPath } = require("./lib/paths.js");
-const { checkContractFingerprint } = require("./fingerprint");
+const { checkContractFingerprint, isWellFormedFingerprint } = require("./fingerprint");
 const { absoluteDesignDir } = require("./design-root");
 const { walk, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
 
@@ -54,6 +56,65 @@ function hasChangeRecordRow(text) {
   return nonSep.length > 1; // 去掉表头后仍有数据行
 }
 
+// 「变更记录」表列序固定为 轮次 | 变更类型 | 契约指纹 | 结构度量 | 依据，取自 templates.md 的 DESIGN 模板；
+// 该表是变更类型与契约指纹的既有承载，本脚本复用其机读形态，不新造并行的状态文件。无该节时回 null，
+// 由 hasChangeRecordRow 的告警承接，不在此重复报同一事。
+function parseChangeRows(text) {
+  const m = text.match(/(?:^|\n)##\s*(?:[一二三四五六七八九十\d]+[、.．]?\s*)?变更记录[^\n]*\n([\s\S]*?)(?=\n## |$)/);
+  if (!m) return null;
+  const rows = [];
+  for (const line of m[1].split("\n")) {
+    if (!/^\s*\|/.test(line)) continue;
+    if (/^\s*\|[\s:|-]+\|?\s*$/.test(line)) continue; // 表头分隔行
+    const cells = line.split("|").slice(1, -1).map((c) => c.trim());
+    if (cells.length < 3 || /^轮次$/.test(cells[0])) continue;
+    rows.push({ type: cells[1], fingerprint: cells[2] });
+  }
+  return rows;
+}
+
+// 变更类型归类：重建属行为变更的特例（见「变更类型」条），故与行为变更同判；一格并列两类时归为已知之外
+function classifyChangeType(raw) {
+  const type = String(raw || "");
+  const behavior = /行为变更|重建/.test(type);
+  const refactor = /重构/.test(type);
+  if (behavior && refactor) return null;
+  if (behavior) return "behavior";
+  if (refactor) return "refactor";
+  return null;
+}
+
+// 指纹列取值：优先取反引号内码点，退而取整格去空白，与 templates 的书写形态兼容
+function changeFingerprint(cell) {
+  const s = String(cell || "");
+  const m = s.match(/`([^`]*)`/);
+  return (m ? m[1] : s).trim();
+}
+
+// 零 delta 拦截：以「变更记录」最新一轮相对上一轮的变更类型与契约指纹变化为判据，
+// 声明行为变更却指纹未变、或声明重构却指纹变化即报缺口；不足以判定时报无法判定，不静默通过。
+function checkChangeTypeDelta(text) {
+  const rows = parseChangeRows(text);
+  if (rows === null) return {};
+  if (rows.length < 2) return { undetermined: "「变更记录」不足两轮，无上一轮契约指纹可比，无法判定变更类型与指纹是否相符" };
+  const last = rows[rows.length - 1];
+  const prev = rows[rows.length - 2];
+  const kind = classifyChangeType(last.type);
+  if (!kind) return { undetermined: `「变更记录」最新一轮的变更类型「${last.type}」不在已知之列（重构、行为变更、重建），无法判定` };
+  const fpLast = changeFingerprint(last.fingerprint);
+  const fpPrev = changeFingerprint(prev.fingerprint);
+  if (!isWellFormedFingerprint(fpLast) || !isWellFormedFingerprint(fpPrev)) {
+    return { undetermined: "「变更记录」最新一轮或上一轮的契约指纹缺失或不足八位十六进制，无法判定" };
+  }
+  if (kind === "behavior" && fpLast === fpPrev) {
+    return { gap: `「变更记录」最新一轮声明「${last.type}」，但契约指纹与上一轮同为 ${fpLast}，属零 delta：声称有设计变更而指纹未变` };
+  }
+  if (kind === "refactor" && fpLast !== fpPrev) {
+    return { gap: `「变更记录」最新一轮声明重构，但契约指纹由上一轮 ${fpPrev} 变为 ${fpLast}：重构不应改变指纹` };
+  }
+  return { checked: true };
+}
+
 const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
 
 function check() {
@@ -77,6 +138,10 @@ function check() {
       if (issue) reasons.push(`${rel} ${issue}`);
       else checked.fingerprints++;
       if (!hasChangeRecordRow(text)) warnings.push(`${rel} 变更记录节无数据行，建议补记变更类型与依据`);
+      const delta = checkChangeTypeDelta(text);
+      if (delta.undetermined) warnings.push(`${rel} ${delta.undetermined}`);
+      if (delta.gap) reasons.push(`${rel} ${delta.gap}`);
+      if (delta.checked) checked.changeTypes = (checked.changeTypes || 0) + 1;
     }
   }
 

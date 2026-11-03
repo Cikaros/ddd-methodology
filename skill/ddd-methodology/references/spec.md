@@ -8,21 +8,22 @@
 | 1. 角色与交接 | spec-role.md |
 | 2. 质量门禁 | spec-gate.md |
 | 3. 缺陷四级路由 | spec-gate.md |
-| 4. 粒度与独立性 | spec-design.md |
-| 5. 接口先行与冻结 | spec-design.md |
-| 6. 并行实现与集成 | spec-design.md |
-| 7. 实现与测试分离 | spec-design.md |
-| 8. 测试阻塞防护 | spec-design.md |
-| 9. 需求变更 | spec-change.md |
-| 10. 二次开发 | spec-change.md |
-| 11. 渐进式改造 | spec-change.md |
-| 12. 声明面可验证与修剪 | spec-declare.md |
-| 13. 结构与注释的机械证据 | spec-declare.md |
-| 14. 本仓库适用边界 | spec-govern.md |
-| 15. 状态文件 | spec-govern.md |
-| 16. 结构与契约的演进治理 | spec-govern.md |
-| 17. 存量重建 | spec-rebuild.md |
-| 18. 绩效度量 | spec-metrics.md |
+| 4. 内敛次序 | spec-design.md |
+| 5. 粒度与独立性 | spec-design.md |
+| 6. 接口先行与冻结 | spec-design.md |
+| 7. 并行实现与集成 | spec-design.md |
+| 8. 实现与测试分离 | spec-design.md |
+| 9. 测试阻塞防护 | spec-design.md |
+| 10. 需求变更 | spec-change.md |
+| 11. 二次开发 | spec-change.md |
+| 12. 渐进式改造 | spec-change.md |
+| 13. 声明面可验证与修剪 | spec-declare.md |
+| 14. 结构与注释的机械证据 | spec-declare.md |
+| 15. 本仓库适用边界 | spec-govern.md |
+| 16. 状态文件 | spec-govern.md |
+| 17. 结构与契约的演进治理 | spec-govern.md |
+| 18. 存量重建 | spec-rebuild.md |
+| 19. 绩效度量 | spec-metrics.md |
 
 ## 子节对照
 
@@ -30,11 +31,11 @@
 
 | 子节 | 所在文件 |
 |---|---|
-| 16.1 契约指纹 | spec-govern.md |
-| 16.5 机械约束 | spec-govern.md |
-| 12.1 存量债务的登记与清偿 | spec-declare.md |
-| 17.8 开放与约束 | spec-rebuild.md |
-| 17.9 防堆叠约束 | spec-rebuild.md |
+| 17.1 契约指纹 | spec-govern.md |
+| 17.5 机械约束 | spec-govern.md |
+| 13.1 存量债务的登记与清偿 | spec-declare.md |
+| 18.8 开放与约束 | spec-rebuild.md |
+| 18.9 防堆叠约束 | spec-rebuild.md |
 
 ## 0. 问题与解法
 
