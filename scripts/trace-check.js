@@ -4,8 +4,9 @@
  *
  * 用法：node trace-check.js <项目根>
  * 校验链：REQUIREMENTS.md 需求编号 ↔ AC.md 总验收 ↔ 各 DESIGN.md 模块级验收要点 ↔ 各 TEST_PLAN.md 用例表
- * 输出形态：文本正文，含未覆盖（R 无 AC 承接 / 总 AC 无模块承接 / 模块 AC 无用例覆盖）、悬空引用（AC 引用了不存在的 R、模块引用了不存在的 AC、DESIGN 消费方引用了不存在的目录）、孤儿 AC、接口无设计来源与模块名拼写不一致
+ * 输出形态：文本正文，含未覆盖（R 无 AC 承接 / 总 AC 无模块承接 / 模块 AC 无用例覆盖）、悬空引用（AC 引用了不存在的 R、模块引用了不存在的 AC、DESIGN 消费方引用了不存在的目录）、孤儿 AC、无设计来源的接口（接口在代码侧无对应导出）与模块名拼写不一致
  * 新增判据的说明只在规范「结构与注释的机械证据」节的脚本消费契约表处展开，本脚本只落机械实现；判据无可机械判定形态时按「无法判定」告警并显式说明，不静默判过
+ * 无设计来源的接口复用签名级提取能力（见 lib/span-compare.js），语言推导不出、消费方列非文件路径或解析器未安装时报「无法判定」并说明，不把比对逻辑复制进本脚本
  * 末行机读结论：通过输出 `RESULT: pass`，存在缺口输出 `RESULT: gap`，方法论仓库自身输出 `RESULT: pass`（不适用）
  * 退出码：0 通过（含不适用与仅告警的无法判定），1 存在缺口。门禁地位：G2、G4 与 G5 门禁的脚本证据源
  * 输出上限：12000 字节，按 UTF-8 计量；超限截断明细，末行机读结论与截断计数行保留
@@ -26,6 +27,8 @@ const { readFileText } = require("./lib/text.js");
 const { checkContractFingerprint } = require("./fingerprint");
 const { absoluteDesignDir } = require("./design-root");
 const { walk, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
+const { isMethodologyRepo, methodologyReason, NOT_APPLICABLE_TAIL } = require("./lib/repo-scope.js");
+const { readContractTable, interfaceExported } = require("./lib/span-compare.js");
 
 const root = process.argv[2] || process.cwd();
 const problems = [];
@@ -55,14 +58,14 @@ function capTraceReport(head, details, tail) {
 }
 
 // ---- 0. 方法论仓库自身：报不适用而非缺口 ----
-// 判据取文件存在性而非根路径字面量：根含 skill/ddd-methodology/SKILL.md 且无 REQUIREMENTS.md 者即方法论仓库自身，
-// 此类仓库无 AC.md 等应用侧产物，G2/G4/G5 门禁无判定对象，按规范「本仓库适用边界」节报不适用并退出 0
-const METHODOLOGY_MARKER = ["skill", "ddd-methodology", "SKILL.md"];
-if (fs.existsSync(path.join(root, ...METHODOLOGY_MARKER)) && !fs.existsSync(path.join(root, "REQUIREMENTS.md"))) {
+// 判据取文件存在性而非根路径字面量，与 span-check 共用 lib/repo-scope.js 的同一实现：
+// 根含 skill/ddd-methodology/SKILL.md 且无 REQUIREMENTS.md 者即方法论仓库自身，此类仓库无 AC.md 等应用侧产物，
+// G2/G4/G5 门禁无判定对象，按规范「本仓库适用边界」节报不适用并退出 0
+if (isMethodologyRepo(root)) {
   const message = capTraceReport(
     ["=== DDD 追溯一致性校验 ==="],
-    ["[不适用] 本仓库为方法论自身：根含 skill/ddd-methodology/SKILL.md 且无 REQUIREMENTS.md，G2/G4/G5 门禁无判定对象，按规范「本仓库适用边界」节报不适用"],
-    ["", "结果：不适用（不产生缺口）", "RESULT: pass"],
+    [methodologyReason("G2/G4/G5 门禁无判定对象")],
+    NOT_APPLICABLE_TAIL,
   );
   console.log(message.join("\n"));
   process.exit(0);
@@ -280,19 +283,20 @@ if (reqReason) {
   for (const id of requirementIds) if (!coveredR.has(id)) problems.push(`N-8 覆盖缺口：需求 ${id} 未被任何 AC 承接`);
 }
 
-// N-9 断言三与 N-11 的 DESIGN 侧输入：逐份 DESIGN 取「对外接口与约定」的消费方列
+// N-9 断言二、断言三与 N-11 的 DESIGN 侧输入：逐份 DESIGN 取「对外接口与约定」契约表
 const designConsumers = [];
 const logicalConsumers = [];
-let interfaceRows = 0;
+const designContractRows = []; // 断言二输入：契约表接口名与消费方列，供签名级提取能力判定代码侧是否有对应导出
 for (const f of designFiles) {
   const rel = path.relative(root, f);
   const designText = readFileText(f);
+  // 契约表读取与接口存在性判定复用签名级模块的同一实现，不把比对逻辑复制到本脚本
+  for (const row of readContractTable(designText) || []) designContractRows.push({ rel, ...row });
   const table = readTable(sectionBody(designText, "对外接口与约定") || designText, /消费方/);
   if (!table) continue;
   const idx = table.headers.findIndex((h) => /消费方/.test(h));
   if (idx < 0) continue;
   for (const row of table.rows) {
-    interfaceRows++;
     for (const value of splitConsumers(row[idx] || "")) {
       designConsumers.push(value);
       if (fs.existsSync(path.join(root, value))) continue; // 能对应项目根下的目录或文件即通过
@@ -300,10 +304,6 @@ for (const f of designFiles) {
       else logicalConsumers.push(`${value}（${rel}）`);
     }
   }
-}
-// N-9 断言二：无设计来源的接口——三层链路以 AC 编号串联，接口无对应编号，判定来源须解析代码侧导出符号，非本脚本形态
-if (interfaceRows > 0) {
-  warnings.push("无法判定：无设计来源的接口（N-9 断言二）——三层链路以 AC 编号串联，接口无对应编号；判定接口来源须解析代码侧导出符号，本脚本无此可机械判定的形态，该断言未执行，不静默判过");
 }
 if (logicalConsumers.length) {
   warnings.push(`无法判定：消费方模块 ${logicalConsumers.join("、")} 为逻辑模块名而非路径，未做模糊匹配，N-9 断言三对这几项未执行`);
@@ -335,23 +335,39 @@ if (designConsumers.length) {
   }
 }
 
+// ---- 4.6 N-9 断言二：无设计来源的接口（复用签名级提取能力）----
+// 契约表接口在消费方模块所指代码文件中无对应导出者报缺口；语言推导不出、消费方列非文件路径或解析器未安装时报「无法判定」并说明，不静默判过
+async function checkInterfaceSources() {
+  for (const row of designContractRows) {
+    const result = await interfaceExported(root, row);
+    const label = `${row.rel} 的接口「${row.interfaceName || "（无接口名）"}」`;
+    if (result.ok && !result.found) problems.push(`N-9 无设计来源的接口：${label} 在代码侧 ${result.file} 无对应导出`);
+    else if (!result.ok) warnings.push(`无法判定：${result.reason} —— N-9 断言二（无设计来源的接口）对 ${label} 未执行，不静默判过`);
+  }
+}
+
 // ---- 5. 输出 ----
-const head = [
+async function main() {
+  await checkInterfaceSources();
+  const head = [
   "=== DDD 追溯一致性校验 ===",
   `总 AC：${totalACs.length} 条；需求编号：${requirementIds ? `${requirementIds.length} 条` : "未判定"}；DESIGN.md：${designFiles.length} 份；TEST_PLAN.md：${testFiles.length} 份；契约指纹已校验 ${fingerprintsChecked} 份`,
 ];
-const details = [];
-if (warnings.length) {
-  details.push("", "[警告]");
-  warnings.forEach((w) => details.push(`  ⚠ ${w}`));
-}
-if (problems.length) {
-  details.push("", "[缺口]（退出码 1）");
-  problems.forEach((p) => details.push(`  ✗ ${p}`));
-}
-const tail = problems.length
-  ? ["", `结果：未通过（${problems.length} 项缺口，${warnings.length} 项警告）`, "RESULT: gap"]
-  : ["", "结果：通过 ✓（可作为 G2 追溯性、G4 与 G5 门禁的机械证据）", "RESULT: pass"];
+  const details = [];
+  if (warnings.length) {
+    details.push("", "[警告]");
+    warnings.forEach((w) => details.push(`  ⚠ ${w}`));
+  }
+  if (problems.length) {
+    details.push("", "[缺口]（退出码 1）");
+    problems.forEach((p) => details.push(`  ✗ ${p}`));
+  }
+  const tail = problems.length
+    ? ["", `结果：未通过（${problems.length} 项缺口，${warnings.length} 项警告）`, "RESULT: gap"]
+    : ["", "结果：通过 ✓（可作为 G2 追溯性、G4 与 G5 门禁的机械证据）", "RESULT: pass"];
 
-console.log(capTraceReport(head, details, tail).join("\n"));
-process.exit(problems.length ? 1 : 0);
+  console.log(capTraceReport(head, details, tail).join("\n"));
+  process.exit(problems.length ? 1 : 0);
+}
+
+main();

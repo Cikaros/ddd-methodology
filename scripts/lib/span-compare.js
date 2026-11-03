@@ -1,6 +1,6 @@
 /**
  * 目标：把 DESIGN 契约表与代码侧的签名比对收敛为三态判定——一致、不一致、无法判定——并把语言的推导方式定为唯一实现。
- * 范围：契约表读取、由「消费方模块」列扩展名推导语言、逐行三态比对。
+ * 范围：契约表读取、由「消费方模块」列扩展名推导语言、逐行三态比对、接口来源的存在性判定（供 trace-check 承接 N-9 断言二复用）。
  * 不包含：解析器供给（见 span-parser.js）、提取（见 span-extract.js）、命令行装配与输出（见 scripts/span-check.js）。
  * 排除列：「错误语义」与「时序依赖与副作用」两列必须排除。语法层只能部分推断 `throws`、`Result<T,E>`、`(T, error)`，不等价，
  *   强行核对会使判据本身不可满足，故这两列不进入比对。
@@ -105,4 +105,16 @@ async function compareRow(root, row) {
   return { state: "不一致", reason: `「${target}」签名不符：设计 ${design.symbol.params}${design.symbol.returns ? ` -> ${design.symbol.returns}` : ""}；代码 ${got.params}${got.returns ? ` -> ${got.returns}` : ""}` };
 }
 
-module.exports = { readContractTable, deriveLanguage, compareRow, EXT_LANGUAGE };
+// 接口来源判定的复用入口：判定契约表接口在消费方模块所指代码文件中是否确有对应导出，只判存在不比对签名。
+// 承接 N-9 断言二（无设计来源的接口），供 trace-check 复用同一提取能力，不把 span 的比对逻辑复制到 trace-check
+async function interfaceExported(root, row) {
+  const target = String(row.interfaceName || "").trim();
+  if (!target) return { ok: false, reason: "该行无「接口名」列或为空，接口在代码侧的存在性无法判定" };
+  const language = deriveLanguage(root, row.consumer);
+  if (!language.ok) return { ok: false, reason: language.reason };
+  const code = await extractFile(language.abs, language.language);
+  if (!code.ok) return { ok: false, reason: code.reason };
+  return { ok: true, found: code.symbols.some((symbol) => symbol.name === target), file: language.file };
+}
+
+module.exports = { readContractTable, deriveLanguage, compareRow, interfaceExported, EXT_LANGUAGE };

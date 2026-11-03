@@ -3,8 +3,9 @@
  *
  * 目标：把甲类机械校验脚本注册为类型化工具，使父会话以工具调用替代文本解析与绝对路径拼装；
  *   工具回传结构化结果，模型只收到精简摘要与关键结论行，降低上下文负担。
- * 范围：五个工具与五个脚本一一对应——ddd_governance_check、ddd_trace_check、ddd_code_health、ddd_debt_check、ddd_metrics_report。
- * 不包含：全局规则注入与前置依赖探测（见同目录 ddd-context.ts）、结构治理守卫（见同目录 ddd-governance.ts）。
+ * 范围：六个工具与六个脚本一一对应——ddd_governance_check、ddd_trace_check、ddd_span_check、ddd_code_health、ddd_debt_check、ddd_metrics_report；
+ *   另以 registerCommand 提供解析器供给的用户入口 ddd-parser-install，仅用户触发，转交 scripts/install-parser.js，安装逻辑与版本清单不在扩展侧复写。
+ * 不包含：全局规则注入与前置依赖探测（见同目录 ddd-context.ts）、结构治理守卫（见同目录 ddd-governance.ts）、模型配比命令（见同目录 ddd-models.ts）。
  *
  * 脚本路径一律由本文件位置（import.meta.url）解析的包根拼出，不依赖调用方传入，不硬编码绝对路径。
  * 调用约定：node <脚本绝对路径> <项目根绝对路径>；机读状态取脚本末行 `RESULT: xxx` 的 xxx 或 JSON 输出的 verdict。
@@ -40,6 +41,13 @@ const TOOLS = [
 		snippet: "校验需求到 AC 的追溯一致性（trace-check）",
 	},
 	{
+		name: "ddd_span_check",
+		script: "span-check",
+		label: "DDD 签名级符合性校验",
+		description: "运行 span-check 比对 DESIGN 契约表签名与代码侧导出符号，输出 RESULT: pass 或 drift，作为 G5-INT 的接口签名一致性证据；需先经 /ddd-parser-install 安装解析器，解析器缺失时报无法判定而非缺口。root 传被开发项目根的绝对路径。",
+		snippet: "比对 DESIGN 契约签名与代码侧导出符号（span-check）",
+	},
+	{
 		name: "ddd_code_health",
 		script: "code-health",
 		label: "DDD 结构健康度量",
@@ -66,6 +74,9 @@ const PARAMETERS = Type.Object({
 	root: Type.String({ description: "被开发项目根的绝对路径" }),
 });
 
+// 解析器供给脚本：位置由包根解析，扩展侧不硬编码路径，也不读取版本清单
+const PARSER_INSTALL_SCRIPT = join(PACKAGE_ROOT, "scripts", "install-parser.js");
+
 // 结构化结果供脚本消费；字段与 structuredContent 同源
 const OUTPUT_SCHEMA = Type.Object({
 	script: Type.String({ description: "执行的脚本基名" }),
@@ -89,6 +100,14 @@ export default function (pi: ExtensionAPI) {
 			},
 		});
 	}
+	// 解析器供给：仅用户触发的 slash 命令，不注册为工具、不挂接事件、不在会话启动时安装；
+	// 版本清单与安装逻辑的唯一实现在 scripts/install-parser.js 与 scripts/lib/span-parser.js，此处只转交
+	pi.registerCommand("ddd-parser-install", {
+		description: "把签名级符合性校验所需的解析器与 grammar 安装到 ~/.pi/agent/ddd-parser/（仅用户触发，失败时报错）",
+		handler: async (_args, ctx) => {
+			await runParserInstall(pi, ctx);
+		},
+	});
 }
 
 async function runCheck(pi: ExtensionAPI, spec: { name: string; script: string }, root: string) {
@@ -195,4 +214,54 @@ function truncate(text: string, max: number): string {
 function describeError(error: unknown): string {
 	if (error && typeof (error as { message?: unknown }).message === "string") return (error as { message: string }).message;
 	return String(error);
+}
+
+// ---- 解析器供给入口的运行逻辑 ----
+
+// 先展示将安装的包与位置，再执行安装；两步都经 install-parser.js，扩展侧不读版本清单、不内置安装实现
+async function runParserInstall(pi: ExtensionAPI, ctx: unknown): Promise<void> {
+	if (!existsSync(PARSER_INSTALL_SCRIPT)) {
+		emit(ctx, `[ddd-parser-install] 安装脚本缺失：${PARSER_INSTALL_SCRIPT}。请确认该文件随包发布，且位置可由包根解析。`, false);
+		return;
+	}
+	const plan = await runNode(pi, [PARSER_INSTALL_SCRIPT]);
+	if (plan === null) {
+		emit(ctx, "[ddd-parser-install] 无法运行安装计划，安装中止。请确认 node 可用。", false);
+		return;
+	}
+	emit(ctx, `[ddd-parser-install] 即将安装的包与位置：\n${plan.text.trimEnd()}`, true);
+	const done = await runNode(pi, [PARSER_INSTALL_SCRIPT, "--install"]);
+	if (done === null) {
+		emit(ctx, "[ddd-parser-install] 安装执行失败，请确认 node 与 npm 可用。", false);
+		return;
+	}
+	emit(ctx, `[ddd-parser-install] ${done.text.trimEnd()}`, done.ok);
+}
+
+// 脚本调用：合并 stdout 与 stderr 为可读文本，返回退出码是否为零；执行抛错回 null 由调用方报错
+async function runNode(pi: ExtensionAPI, args: string[]): Promise<{ ok: boolean; text: string } | null> {
+	let result: { code?: unknown; stdout?: unknown; stderr?: unknown } | undefined;
+	try {
+		result = (await pi.exec("node", args, { timeout: EXEC_TIMEOUT_MS })) as typeof result;
+	} catch {
+		return null;
+	}
+	const stdout = result && typeof result.stdout === "string" ? result.stdout : "";
+	const stderr = result && typeof result.stderr === "string" ? result.stderr : "";
+	return { ok: !!result && result.code === 0, text: [stdout, stderr].filter((part) => part.trim() !== "").join("\n") };
+}
+
+// 呈现给用户：优先宿主 UI 通知；UI 不可用时退回控制台，保证输出不静默丢弃
+function emit(ctx: unknown, text: string, ok: boolean): void {
+	try {
+		const ui = (ctx as { ui?: { notify?: (message: string, type?: string) => void } } | undefined)?.ui;
+		if (ui && typeof ui.notify === "function") {
+			ui.notify(text, ok ? "info" : "error");
+			return;
+		}
+	} catch {
+		// UI 呈现失败不得升级为命令异常，落到控制台兜底
+	}
+	if (ok) console.log(text);
+	else console.error(text);
 }

@@ -3,12 +3,13 @@
  * 目标：把 DESIGN 契约表的签名列与代码侧导出符号的一致性外化为可复现的机械证据，清偿签名级符合性的机械校验盲区。
  * 范围：逐份 DESIGN 的「对外接口与约定」契约表，逐行推导语言、提取代码侧签名、三态比对。
  * 三态语义：一致、不一致、无法判定；仅前两态进机械门槛，不一致计入缺口并置退出码 1，无法判定只入报告不影响退出码。
+ * 不适用语义：本仓库为方法论自身、或确无设计文档或契约行时报「不适用」并说明缺什么，退出码 0，绝不零对象报通过；判定与口径见 lib/repo-scope.js，与 trace-check 同一实现。
  * 排除列：契约表的「错误语义」与「时序依赖与副作用」两列不参与比对——语法层只能部分推断 `throws`、`Result<T,E>`、`(T, error)`，
  *   不等价，不排除则判据本身不可满足。
  * 解析器：按需从 `~/.pi/agent/ddd-parser/` 供给（见 lib/span-parser.js），缺失时报「无法判定：解析器未安装」并给出安装指引，不静默通过。
  * 用法：node span-check.js <项目根>
  * 输出形态：文本正文；末行机读结论 `RESULT: pass`（无不一致）或 `RESULT: drift`（存在不一致）。
- * 退出码：0 无不一致，1 存在不一致。输出上限：12000 字节，按 UTF-8 计量；超限截断明细，末行结论保留。
+ * 退出码：0 无不一致或不适用，1 存在不一致。输出上限：12000 字节，按 UTF-8 计量；超限截断明细，末行结论保留。
  */
 
 const path = require("path");
@@ -17,14 +18,27 @@ const { walk, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk.js");
 const { absoluteDesignDir } = require("./design-root.js");
 const { installGuidance } = require("./lib/span-parser.js");
 const { readContractTable, compareRow } = require("./lib/span-compare.js");
+const { isMethodologyRepo, methodologyReason, NOT_APPLICABLE_TAIL } = require("./lib/repo-scope.js");
 
 const root = path.resolve(process.argv[2] || process.cwd());
 const LIMIT_BYTES = 12000; // 与甲类脚本在脚本消费契约表中的输出上限一致
 
+// 不适用出口：对象不存在与对象不合格是两件事，零对象不得报通过；尾部与 trace-check 逐字一致
+function emitNotApplicable(detail) {
+  const lines = ["=== 签名级符合性校验 ===", `仓库根：${root}`, detail, ...NOT_APPLICABLE_TAIL];
+  process.stdout.write(lines.join("\n") + "\n");
+  process.exit(0);
+}
+
 async function main() {
+  // 情形一：方法论仓库自身，判据与 trace-check 共用同一实现
+  if (isMethodologyRepo(root)) return emitNotApplicable(methodologyReason("签名级符合性无判定对象"));
+
   // 设计文档清单：设计树根路径解析复用 design-root 的唯一实现；设计树是待校验对象，故用不排除 docs/build 命名的遍历口径
   const designRoot = absoluteDesignDir(root);
   const designFiles = walk(designRoot.dir, DOC_TREE_SKIP_DIR_NAMES).filter((file) => /DESIGN.*\.md$/i.test(path.basename(file)));
+  // 情形二：非方法论仓库但确实无设计文档
+  if (!designFiles.length) return emitNotApplicable(`[不适用] 未发现设计文档：设计树 ${designRoot.dir} 下无 DESIGN 文档，签名级符合性无判定对象`);
 
   // 契约行收集：逐份 DESIGN 读「对外接口与约定」表，缺表者不产生行
   const rows = [];
@@ -34,6 +48,8 @@ async function main() {
     const rel = path.relative(root, file).split(path.sep).join("/");
     for (const row of table) rows.push({ rel, ...row });
   }
+  // 情形三：有设计文档但确实无契约行
+  if (!rows.length) return emitNotApplicable(`[不适用] 未发现契约行：${designFiles.length} 份设计文档的「对外接口与约定」节均无契约表，签名级符合性无判定对象`);
 
   const results = [];
   for (const row of rows) results.push({ row, ...(await compareRow(root, row)) });

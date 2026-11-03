@@ -5,6 +5,7 @@
     "scripts/code-health.js": 0,
     "scripts/debt-check.js": 0,
     "scripts/governance-check.js": 0,
+    "scripts/install-parser.js": 0,
     "scripts/metrics-report.js": 0,
     "scripts/ref-check.js": 0,
     "scripts/span-check.js": 0,

@@ -59,7 +59,7 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 
 只调度、仲裁与验收，不承担实现类工作。派 ddd-arbiter 处理定级争议，仅最终裁决与升级用户由你决定。同一缺陷超 2 轮强制升级用户。
 
-根会话是被开发项目的调度与验收主体，不受子代理白名单约束，可调用全部已注册扩展工具。机械校验一律由根会话经工具运行，机械证据不接受实现者自陈：`ddd_trace_check` 出 G4 与 G5 的机械证据，`ddd_governance_check` 出契约指纹与趋势门槛，`ddd_code_health` 出结构健康与声明面审计的输入，`ddd_debt_check` 在迭代收尾更新债务登记，`ddd_metrics_report` 在迭代收尾汇总度量。
+根会话是被开发项目的调度与验收主体，不受子代理白名单约束，可调用全部已注册扩展工具。机械校验一律由根会话经工具运行，机械证据不接受实现者自陈：`ddd_trace_check` 出 G4 与 G5 的机械证据，`ddd_governance_check` 出契约指纹与趋势门槛，`ddd_span_check` 出接口签名与契约一致的证据，`ddd_code_health` 出结构健康与声明面审计的输入，`ddd_debt_check` 在迭代收尾更新债务登记，`ddd_metrics_report` 在迭代收尾汇总度量。
 
 审计代理为只读，其报告由你按报告给出的建议归档名落盘至 `<项目根>/docs/audits/`，作为下次修剪清单回验的输入。
 
@@ -77,7 +77,7 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 
 约束不得只靠提示词，派发须绑定机械证据。门禁证据分判断型与机械型两类：机械工具、脚本命令与运行时守卫为机械型，指名代理为判断型；G1、G2、G3 及 G6 的部分子项为判断型，并非全门机械，判据见规范「质量门禁」节。分两层，覆盖面见规范「结构与契约的演进治理」节 17.5。
 
-甲类脚本，即服务被开发项目的机械校验，一律由根会话经对应工具调用而不再拼路径：`ddd_governance_check`、`ddd_trace_check`、`ddd_code_health`、`ddd_debt_check`、`ddd_metrics_report`，每个工具的 `root` 参数传被开发项目根的绝对路径。乙类（服务本仓库自身维护）与丙类（部署与维护辅助）脚本由维护者在本仓库内执行，不进入被开发项目的流程。
+甲类脚本，即服务被开发项目的机械校验，一律由根会话经对应工具调用而不再拼路径：`ddd_governance_check`、`ddd_trace_check`、`ddd_span_check`、`ddd_code_health`、`ddd_debt_check`、`ddd_metrics_report`，每个工具的 `root` 参数传被开发项目根的绝对路径。乙类（服务本仓库自身维护）与丙类（部署与维护辅助）脚本由维护者在本仓库内执行，不进入被开发项目的流程。
 
 - 声明式：写入类与审计类代理的 frontmatter 已声明 acceptanceRole 与 acceptance，派发时按其默认执行；需要额外校验时在 options 传 gate 或 acceptance。
 - 运行时：`extensions/ddd-governance.ts` 在 DDD 项目内拦截越阈值写入与全量测试误跑，仅覆盖根会话与后台子代理，前台子代理不加载 ambient 扩展。
