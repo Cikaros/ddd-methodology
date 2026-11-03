@@ -5,15 +5,19 @@
  * 为保持在单一能力域内，此处只做流程编排与状态推进，缺陷定级、任务文本构造、状态注入等紧密相关的辅助函数内聚于本文件。
  *
  * 用法：根会话中调用
- *   subagent({ workflow: "<skill目录>/workflows/ddd-workflow.js", args: { root: "<项目根绝对路径>" } })
+ *   subagent({ workflow: "<包根>/workflows/ddd-workflow.js", args: { root: "<项目根绝对路径>" } })
  * 必须通过 args.root 传入项目根绝对路径——workflow 脚本运行在沙箱中，
  * 没有 process 全局，唯一合法的数据通道就是冻结的 args。
+ *
+ * 机械校验的运行方：沙箱内无工具访问能力，本脚本只做阶段编排，机械校验不由被派代理执行，也不在步骤之间插入调用。
+ *   校验由根会话在加速档返回后统一经 `ddd_*` 工具执行——trace-check 出 G4 与 G5 证据，code-health 与 governance-check 出 G5-INT 证据。
+ *   本脚本的步骤文本不承载任何脚本路径，也不要求被派代理自行运行校验；依据：设计 N-5 与 M-16。
  *
  * 沙箱可用对象：runs.run、runs.all、runs.lanes、runs.steer、runs.status、runs.ref、emit、console、args。
  *   runs.parallel 与 runs.chain 不存在，属已废弃的旧顶层 API，误用即报 not a function；本轮改造中已因此踩坑，
  *   成本以分钟计，写此以免复踩。
  *
- * 前置条件：本脚本用到的 ddd-* 代理须已安装于 ~/.pi/agent/agents/，未安装将导致派发失败，脚本不自建存在性校验；安装状态可用 install.sh --check 或 install.bat --check 自检。
+ * 前置条件：宿主须已装 pi-subagents 扩展以提供 subagent 工具；本脚本用到的 ddd-* 代理随本包经 pi-subagents.agents 声明提供，无需单独安装。缺少 pi-subagents 时 extensions/ddd-context.ts 在会话启动即提示安装命令；脚本不自建存在性校验。
  *
  * 阶段键清单的权威源为 `references/spec-govern.md`「状态文件」节，本脚本的 stageRegistry 须与其一致，由 `scripts/ref-check.js` 的 C4 校验；
  * 阶段流的时序另由 `references/spec-role.md`「角色与交接」节的交接链定义。
@@ -258,7 +262,7 @@ const stages = [
     runKey: "ddd-decomposer",
     label: "分解设计产出文档树",
     agent: "ddd-decomposer",
-    task: `读取 ${root}/ARCHITECTURE.md 与 ${root}/AC.md，产出 docs/design/ 目录同构设计文档树（含签名级接口契约），分发模块级 AC。完成后附文档树清单。完成后运行 node ~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js <项目根>，将输出附入完成报告，作为 G4 证据。`,
+    task: `读取 ${root}/ARCHITECTURE.md 与 ${root}/AC.md，产出 docs/design/ 目录同构设计文档树（含签名级接口契约），分发模块级 AC。完成后附文档树清单。`,
   },
   {
     key: "interface-review",
@@ -374,7 +378,7 @@ if (!doneStages.includes("g5-int")) {
   const r = await runStage("ddd-int-check", {
     label: "G5-INT 集成收口检查",
     agent: "ddd-fixer",
-    task: `在项目根 ${root} 执行集成收口检查（G5-INT 门）：1) 全项目构建通过；2) 检查各接缝自测报告齐备且 TEST_PLAN 对齐说明完整，声明测试就绪；3) 运行 node ~/.pi/agent/skills/ddd-methodology/scripts/code-health.js <项目根> 并将输出附入门禁记录，作为 G5-INT 证据；4) 运行 node ~/.pi/agent/skills/ddd-methodology/scripts/trace-check.js <项目根> 并将输出附入门禁记录，作为 G5 证据；运行 node ~/.pi/agent/skills/ddd-methodology/scripts/governance-check.js <项目根> 并将输出附入门禁记录，作为 G5-INT 证据，governance-check 的退出码非零即视为阻断；5) 核对实现文件粒度与 DESIGN 预判一致，应拆未拆报告 C 级，同时核对各接缝实现者的约定遵循自检齐备；6) 修复因多接缝合并产生的集成问题，仅实现级修改。**禁止执行全量测试套件，全量测试由 ddd-tester 负责**。若发现设计级矛盾（集成暴露接口不匹配），停止并报告 B 级缺陷。` + stateNote("g5-int", ["implement-plan"]),
+    task: `在项目根 ${root} 执行集成收口检查（G5-INT 门）：1) 全项目构建通过；2) 检查各接缝自测报告齐备且 TEST_PLAN 对齐说明完整，声明测试就绪；3) 核对实现文件粒度与 DESIGN 预判一致，应拆未拆报告 C 级，同时核对各接缝实现者的约定遵循自检齐备；4) 修复因多接缝合并产生的集成问题，仅实现级修改。**禁止执行全量测试套件，全量测试由 ddd-tester 负责**。若发现设计级矛盾（集成暴露接口不匹配），停止并报告 B 级缺陷。` + stateNote("g5-int", ["implement-plan"]),
   }, { stage: "g5-int" });
   if (r && r.__failed) return r;
 } else {

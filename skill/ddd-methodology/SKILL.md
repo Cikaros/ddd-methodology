@@ -90,10 +90,10 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 需求明确且要求一键跑完全链时使用：
 
 ```
-subagent({ workflow: "<skill目录>/workflows/ddd-workflow.js", args: { root: "<项目根绝对路径>" } })
+subagent({ workflow: "<包根>/workflows/ddd-workflow.js", args: { root: "<项目根绝对路径>" } })
 ```
 
-前置条件为加速档用到的 `ddd-*` 代理已安装，未安装将导致派发失败。模型配比属使用者可选增强，由使用者在包目录内自行执行，不属被开发项目流程，模型不得自动触发。完整流程另有手工派发所用的 `ddd-doc-sync` 与 `ddd-arbiter`，不在加速档派发范围内。
+前置条件为宿主已装提供 `subagent` 工具的 `pi-subagents` 扩展；本包的 `ddd-*` 代理随包经 `pi-subagents.agents` 声明提供，无需单独安装，扩展缺失时 `extensions/ddd-context.ts` 在会话启动即提示安装命令。模型配比属使用者可选增强，由使用者在包目录内自行执行，不属被开发项目流程，模型不得自动触发。完整流程另有手工派发所用的 `ddd-doc-sync` 与 `ddd-arbiter`，不在加速档派发范围内。
 
 加速档覆盖九步，止于声明面审计。审计报告的落盘仍由根会话执行。
 
