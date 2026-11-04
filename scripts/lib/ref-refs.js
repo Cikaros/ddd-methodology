@@ -46,12 +46,13 @@ function createRefChecks(env) {
     }
     return out;
   }
-  // C2 裸章节号引用已清除：活文档与脚本文件中，编号须与语义化节名同行，规范允许编号附于语义化引用之后
+  // C2 裸章节号引用已清除：活文档与脚本文件中，编号须与语义化节名同行，规范允许编号附于语义化引用之后；
+  // 裸编号既有 § 符号形态，也有「第 N 条/节/章/项」无符号形态，两形态同属跨节引用，须一并扫描
   function checkBareSectionRefs() {
     const found = [];
     for (const file of liveDocPaths.concat(collectScanScripts())) {
       for (const row of withLineNumbers(readFileText(file))) {
-        if (!/§\s*\d/.test(row.line) || /见「[^」]+」节/.test(row.line)) continue;
+        if (!/§\s*\d|第\s*\d+\s*[条章节项]/.test(row.line) || /见「[^」]+」节/.test(row.line)) continue;
         found.push(drift("C2", relPath(file), row.no, "跨节引用须用语义化节名，编号不得独立出现", "形如 见「节标题」节 的引用", row.line.trim()));
       }
     }
