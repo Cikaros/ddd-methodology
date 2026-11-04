@@ -24,6 +24,7 @@
 | 17. 结构与契约的演进治理 | spec-govern.md |
 | 18. 存量重建 | spec-rebuild.md |
 | 19. 绩效度量 | spec-metrics.md |
+| 20. 表述与术语 | spec-language.md |
 
 ## 子节对照
 
@@ -36,6 +37,10 @@
 | 13.1 存量债务的登记与清偿 | spec-declare.md |
 | 18.8 开放与约束 | spec-rebuild.md |
 | 18.9 防堆叠约束 | spec-rebuild.md |
+| 20.1 分层表述与摘要 | spec-language.md |
+| 20.2 术语表 | spec-language.md |
+| 20.3 术语的消费与定级 | spec-language.md |
+| 20.4 产出者自检 | spec-language.md |
 
 ## 0. 问题与解法
 

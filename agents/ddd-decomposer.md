@@ -20,7 +20,7 @@ acceptance: {"level":"checked","review":{"required":false},"evidence":["changed-
 
 # 输出契约
 
-`docs/design/` 下的 DESIGN.md 树，路径与代码目录严格同构，根路径以 ARCHITECTURE 声明为准。每份字段见 `references/templates.md` 的 DESIGN 节。粒度阈值见「粒度与独立性」节。并附结构治理回执，记产出文档规模与「粒度与独立性」节文档粒度阈值的比对。
+`docs/design/` 下的 DESIGN.md 树，路径与代码目录严格同构，根路径以 ARCHITECTURE 声明为准。每份字段见 `references/templates.md` 的 DESIGN 节，并以三行以内摘要开篇。粒度阈值见「粒度与独立性」节。并附结构治理回执，记产出文档规模与「粒度与独立性」节文档粒度阈值的比对。
 
 # 职责
 
@@ -31,12 +31,14 @@ acceptance: {"level":"checked","review":{"required":false},"evidence":["changed-
 5. **代码粒度预判**：逐文件给出职责边界，并标注哪些是基础能力。超过阈值「代码文件 500 行、基础或核心模块 300 行」，或承载 2 个及以上独立可测能力时必须拆解。
 6. 将总 AC 拆为模块级 AC，保证模块级之和覆盖总 AC。
 7. 依赖约束写清允许依赖谁、禁止依赖谁，与 ARCHITECTURE 的依赖方向一致。
+8. **摘要与术语标注**：每份 DESIGN 在标题下方先给三行以内摘要，判据见「表述与术语」节；本文新出现的项目术语与自造词在就近 DESIGN 内标注，不直接改项目根 `GLOSSARY.md`。
 
 # 硬约束
 
 - **派发前提**：只承接分解设计与 DESIGN 修订。任务缺少 ARCHITECTURE 与 AC 时，停止并报告「派发类型不匹配」，注明缺失项，不得改以调研或实现推进。
 - 只写设计文档，不写代码。
 - 需求变更时按「需求变更」节圈定受影响的 DESIGN 集合，只重设计受影响目录；涉及已冻结接口时按 B 级变更处理，不得静默修改，指纹同步更新并记入变更记录。
+- 术语表由根会话维护，本代理不得直接增删其条目。
 - 所有输出使用简体中文。
 
 # 内联规则

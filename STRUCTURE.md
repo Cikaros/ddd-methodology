@@ -11,6 +11,7 @@ ddd-methodology/
 ├── README.md                     # 仓库定位与入口
 ├── STRUCTURE.md                  # 仓库结构与安装内容明细，本文件
 ├── CHANGELOG.md                  # 包变更记录（v0.1.0 起）
+├── GLOSSARY.md                   # 项目术语表，术语唯一权威处，字段判据见规范「表述与术语」节
 ├── LICENSE                       # 许可协议（MIT）
 ├── package.json                  # pi package 清单：扩展、skill 与子代理入口
 ├── package-lock.json             # npm 依赖锁定文件
@@ -33,6 +34,7 @@ ddd-methodology/
 │   │   ├── spec-govern.md        # 本仓库适用边界、状态文件、结构与契约的演进治理
 │   │   ├── spec-rebuild.md       # 存量重建
 │   │   ├── spec-metrics.md       # 绩效度量
+│   │   ├── spec-language.md      # 表述与术语
 │   │   ├── templates.md          # 产物模板库
 │   │   ├── templates-debts.md    # 存量债务登记簿模板
 │   │   └── templates-rebuild.md  # 存量重建与定向重构产物模板
