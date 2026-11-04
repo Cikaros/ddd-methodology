@@ -17,6 +17,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { notifyUser } from "./lib/notify.ts";
 import { type ExecResult, exitCodeOf } from "./lib/shared.ts";
 import { checkVersionInRange } from "./lib/version-range.ts";
 
@@ -88,7 +89,7 @@ function stripNonBody(text: string): string {
 function probeSubagent(pi: ExtensionAPI, ctx: unknown): void {
 	const names = collectToolNames(pi);
 	if (names === null || names.includes(SUBAGENT_TOOL)) return;
-	notify(
+	notifyUser(
 		ctx,
 		`缺少前置依赖 pi-subagents：未探测到 ${SUBAGENT_TOOL} 工具，子代理派发不可用。请运行「${PI_SUBAGENTS_INSTALL}」安装后重启 pi。`,
 		"error",
@@ -104,7 +105,7 @@ async function checkPiVersion(pi: ExtensionAPI, ctx: unknown): Promise<void> {
 		const detected = await detectPiVersion(pi);
 		if (!detected) return;
 		if (checkVersionInRange(detected, declared) !== "out-of-range") return;
-		notify(ctx, `本包实测支持的 pi 版本为 ${declared}，当前检测到 pi ${detected}。版本对应关系与建议动作见 docs/COMPATIBILITY.md。`, "warning");
+		notifyUser(ctx, `本包实测支持的 pi 版本为 ${declared}，当前检测到 pi ${detected}。版本对应关系与建议动作见 docs/COMPATIBILITY.md。`, "warning");
 	} catch {
 		// 有意降级：取不到版本、解析失败或比对异常均静默跳过，权威信息在 docs/COMPATIBILITY.md，降级无损
 	}
@@ -166,18 +167,4 @@ function collectToolNames(pi: ExtensionAPI): string[] | null {
 		return null;
 	}
 	return null;
-}
-
-// 呈现给用户：TUI 走宿主通知；无 UI 模式该调用是 no-op，故兜底写 stderr，使告警不被静默丢弃。
-function notify(ctx: unknown, message: string, type: "info" | "warning" | "error" = "warning"): void {
-	try {
-		const ui = (ctx as { ui?: { notify?: (text: string, type?: string) => void } } | undefined)?.ui;
-		if (ui && typeof ui.notify === "function") {
-			ui.notify(message, type);
-			return;
-		}
-	} catch {
-		// 通知失败不得升级为会话中断，落到 stderr 兜底
-	}
-	console.error(message);
 }

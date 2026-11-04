@@ -16,6 +16,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { Type } from "typebox";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { notifyUser } from "./lib/notify.ts";
 import { EXEC_TIMEOUT_MS, PACKAGE_ROOT, describeError, exitCodeOf, type ExecResult } from "./lib/shared.ts";
 
 const SUMMARY_MAX_CHARS = 1500; // 进模型上下文的摘要上限，与「降低上下文负担」的目标一致
@@ -213,21 +214,21 @@ function truncate(text: string, max: number): string {
 // 先展示将安装的包与位置，再执行安装；两步都经 install-parser.js，扩展侧不读版本清单、不内置安装实现
 async function runParserInstall(pi: ExtensionAPI, ctx: unknown): Promise<void> {
 	if (!existsSync(PARSER_INSTALL_SCRIPT)) {
-		emit(ctx, `[ddd-parser-install] 安装脚本缺失：${PARSER_INSTALL_SCRIPT}。请确认该文件随包发布，且位置可由包根解析。`, false);
+		notifyUser(ctx, `[ddd-parser-install] 安装脚本缺失：${PARSER_INSTALL_SCRIPT}。请确认该文件随包发布，且位置可由包根解析。`, "error");
 		return;
 	}
 	const plan = await runNode(pi, [PARSER_INSTALL_SCRIPT]);
 	if (plan === null) {
-		emit(ctx, "[ddd-parser-install] 无法运行安装计划，安装中止。请确认 node 可用。", false);
+		notifyUser(ctx, "[ddd-parser-install] 无法运行安装计划，安装中止。请确认 node 可用。", "error");
 		return;
 	}
-	emit(ctx, `[ddd-parser-install] 即将安装的包与位置：\n${plan.text.trimEnd()}`, true);
+	notifyUser(ctx, `[ddd-parser-install] 即将安装的包与位置：\n${plan.text.trimEnd()}`, "info");
 	const done = await runNode(pi, [PARSER_INSTALL_SCRIPT, "--install"]);
 	if (done === null) {
-		emit(ctx, "[ddd-parser-install] 安装执行失败，请确认 node 与 npm 可用。", false);
+		notifyUser(ctx, "[ddd-parser-install] 安装执行失败，请确认 node 与 npm 可用。", "error");
 		return;
 	}
-	emit(ctx, `[ddd-parser-install] ${done.text.trimEnd()}`, done.ok);
+	notifyUser(ctx, `[ddd-parser-install] ${done.text.trimEnd()}`, done.ok ? "info" : "error");
 }
 
 // 脚本调用：合并 stdout 与 stderr 为可读文本，返回退出码是否为零；执行抛错回 null 由调用方报错
@@ -241,19 +242,4 @@ async function runNode(pi: ExtensionAPI, args: string[]): Promise<{ ok: boolean;
 	const stdout = result && typeof result.stdout === "string" ? result.stdout : "";
 	const stderr = result && typeof result.stderr === "string" ? result.stderr : "";
 	return { ok: !!result && result.code === 0, text: [stdout, stderr].filter((part) => part.trim() !== "").join("\n") };
-}
-
-// 呈现给用户：优先宿主 UI 通知；UI 不可用时退回控制台，保证输出不静默丢弃
-function emit(ctx: unknown, text: string, ok: boolean): void {
-	try {
-		const ui = (ctx as { ui?: { notify?: (message: string, type?: string) => void } } | undefined)?.ui;
-		if (ui && typeof ui.notify === "function") {
-			ui.notify(text, ok ? "info" : "error");
-			return;
-		}
-	} catch {
-		// UI 呈现失败不得升级为命令异常，落到控制台兜底
-	}
-	if (ok) console.log(text);
-	else console.error(text);
 }

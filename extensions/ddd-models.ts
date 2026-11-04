@@ -17,6 +17,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { notifyUser } from "./lib/notify.ts";
 import { EXEC_TIMEOUT_MS, PACKAGE_ROOT, describeError, exitCodeOf, type ExecResult } from "./lib/shared.ts";
 
 // 脚本位于共享模块解析出的包根之 scripts/ 下，位置不硬编码，也不随本文件层级而变
@@ -49,14 +50,14 @@ function normalizeArgs(raw: unknown): string {
 
 async function runModels(pi: ExtensionAPI, ctx: unknown, raw: unknown): Promise<void> {
 	if (!existsSync(SCRIPT_PATH)) {
-		emit(ctx, `[ddd-models] 配比脚本缺失：${SCRIPT_PATH}。请确认该文件随包发布，且位置可由包根解析。`, false);
+		notifyUser(ctx, `[ddd-models] 配比脚本缺失：${SCRIPT_PATH}。请确认该文件随包发布，且位置可由包根解析。`, "error");
 		return;
 	}
 	let result: ExecResult | undefined;
 	try {
 		result = (await pi.exec("node", [SCRIPT_PATH, ...buildSubcommand(raw), "--repo", PACKAGE_ROOT], { timeout: EXEC_TIMEOUT_MS })) as ExecResult;
 	} catch (error) {
-		emit(ctx, `[ddd-models] 执行失败：${describeError(error)}`, false);
+		notifyUser(ctx, `[ddd-models] 执行失败：${describeError(error)}`, "error");
 		return;
 	}
 	const exitCode = exitCodeOf(result);
@@ -68,20 +69,5 @@ async function runModels(pi: ExtensionAPI, ctx: unknown, raw: unknown): Promise<
 	const text = ok
 		? body.trimEnd() || "[ddd-models] 完成，脚本无输出。"
 		: `[ddd-models] 失败（退出码 ${exitCode ?? "未正常返回"}）。\n${body.trimEnd()}`;
-	emit(ctx, text, ok);
-}
-
-// 呈现给用户：优先宿主 UI 通知；UI 不可用时退回控制台，保证输出不静默丢弃
-function emit(ctx: unknown, text: string, ok: boolean): void {
-	try {
-		const ui = (ctx as { ui?: { notify?: (message: string, type?: string) => void } } | undefined)?.ui;
-		if (ui && typeof ui.notify === "function") {
-			ui.notify(text, ok ? "info" : "error");
-			return;
-		}
-	} catch {
-		// UI 呈现失败不得升级为命令异常，落到控制台兜底
-	}
-	if (ok) console.log(text);
-	else console.error(text);
+	notifyUser(ctx, text, ok ? "info" : "error");
 }

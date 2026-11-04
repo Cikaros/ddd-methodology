@@ -24,6 +24,7 @@
 import { existsSync } from "node:fs";
 import { dirname, join, resolve, sep } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { notifyUser } from "./lib/notify.ts";
 import { describeError, readText } from "./lib/shared.ts";
 
 const GRANULARITY_LINE_LIMIT = 500;
@@ -61,7 +62,7 @@ export default function (pi: ExtensionAPI) {
 			if (toolName === "bash") return checkFullTestCommand(event, ctx); // H-2
 			return undefined;
 		} catch (error) {
-			warn(ctx, `tool_call 判定异常，已放行：${describeError(error)}`);
+			notifyUser(ctx, `[ddd-governance] tool_call 判定异常，已放行：${describeError(error)}`, "warning");
 			return undefined;
 		}
 	});
@@ -195,19 +196,4 @@ function countLines(text) {
 	if (typeof text !== "string" || text === "") return 0;
 	const trimmed = text.replace(/\n+$/, "");
 	return trimmed === "" ? 0 : trimmed.split("\n").length;
-}
-
-// 诊断输出：TUI 走宿主通知；宿主扩展上下文不含 log 成员，无 UI 模式（print 与 json）的通知调用是 no-op，故兜底写 stderr。
-// 诊断必须走 stderr，因 JSON 模式把 stdout 留给协议。
-function warn(ctx, message) {
-	const text = `[ddd-governance] ${message}`;
-	try {
-		if (ctx && ctx.hasUI && ctx.ui && typeof ctx.ui.notify === "function") {
-			ctx.ui.notify(text, "warning");
-			return;
-		}
-	} catch {
-		// 通知失败不得升级为错误，落到 stderr 兜底
-	}
-	console.error(text);
 }
