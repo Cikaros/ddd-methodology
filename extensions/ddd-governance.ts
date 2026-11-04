@@ -197,14 +197,17 @@ function countLines(text) {
 	return trimmed === "" ? 0 : trimmed.split("\n").length;
 }
 
+// 诊断输出：TUI 走宿主通知；宿主扩展上下文不含 log 成员，无 UI 模式（print 与 json）的通知调用是 no-op，故兜底写 stderr。
+// 诊断必须走 stderr，因 JSON 模式把 stdout 留给协议。
 function warn(ctx, message) {
+	const text = `[ddd-governance] ${message}`;
 	try {
 		if (ctx && ctx.hasUI && ctx.ui && typeof ctx.ui.notify === "function") {
-			ctx.ui.notify(`[ddd-governance] ${message}`, "warning");
-		} else if (ctx && typeof ctx.log === "function") {
-			ctx.log(`[ddd-governance] ${message}`);
+			ctx.ui.notify(text, "warning");
+			return;
 		}
 	} catch {
-		// 记警告本身失败不得升级为错误
+		// 通知失败不得升级为错误，落到 stderr 兜底
 	}
+	console.error(text);
 }

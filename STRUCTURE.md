@@ -16,6 +16,7 @@ ddd-methodology/
 ├── package-lock.json             # npm 依赖锁定文件
 ├── docs/                         # 面向读者的公开文档与维护者内部归档
 │   ├── README.md                # 文档索引
+│   ├── COMPATIBILITY.md         # 本包与宿主 pi 版本对应关系权威表
 │   ├── guide/                   # 方法论白皮书正文
 │   │   ├── ddd-methodology-whitepaper.docx
 │   │   └── ddd-methodology-whitepaper.pdf
@@ -64,7 +65,9 @@ ddd-methodology/
 │   ├── ddd-governance.ts         # 运行时守卫，仅 DDD 项目激活，拦截越阈值写入与全量测试误跑
 │   ├── ddd-models.ts             # 模型配比命令：以 slash 命令提供用户触发入口，复用 scripts/apply-models.js
 │   └── lib/
-│       └── shared.ts             # 扩展共享小工具：包根解析、执行超时、退出码归一、错误描述与安全读文本
+│       ├── shared.ts             # 扩展共享小工具：包根解析、执行超时、退出码归一、错误描述与安全读文本
+│       ├── version-range.ts      # pi 版本与声明范围的纯比对：版本解析、版本比较、范围满足判定
+│       └── version-range.test.ts # 版本范围比对的单元测试，node --test 运行
 └── scripts/
     ├── trace-check.js            # 追溯一致性校验脚本，G4 与 G5 门禁证据
     ├── apply-models.js           # 按代理模型配比的应用与可用性冒烟，仓库内部专用
@@ -130,7 +133,7 @@ ddd-methodology/
   - install-manifest-check 脚本位于 `scripts/install-manifest-check.js`，枚举仓库随包脚本集合，供 ref-check 的 C17 与安装内容明细双向比对
   - 其余门禁脚本 `fingerprint.js`、`design-root.js`、`decision-tables.js`、`roster-check.js`、`spec-index-check.js`、`debt-check.js` 与 `metrics-report.js` 同属该脚本清单，位于 `scripts/`
 - 存量重建 skill `ddd-rebuild` 与定向重构 skill `ddd-refactor`，分别位于 `skill/ddd-rebuild/` 与 `skill/ddd-refactor/`，两者与主 skill 同属一份清单，仅由用户显式调用
-- 运行时扩展位于 `extensions/`：`ddd-context.ts` 在会话开始时注入全局规则 section 并探测 subagent 前置依赖；`ddd-tools.ts` 把甲类机械校验脚本注册为 `ddd_*` 工具，并以 `/ddd-parser-install` 命令提供解析器供给的用户触发入口；`ddd-governance.ts` 仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默；`ddd-models.ts` 以 slash 命令 `/ddd-models` 提供模型配比的用户触发入口，转交仓库内部专用脚本 apply-models.js，不注册为工具；四者共用的纯工具（包根解析、执行超时、退出码归一、错误描述与安全读文本）集中在 `extensions/lib/shared.ts`，该子目录无 index.ts，不作为扩展入口加载
+- 运行时扩展位于 `extensions/`：`ddd-context.ts` 在会话开始时注入全局规则 section 并探测 subagent 前置依赖；`ddd-tools.ts` 把甲类机械校验脚本注册为 `ddd_*` 工具，并以 `/ddd-parser-install` 命令提供解析器供给的用户触发入口；`ddd-governance.ts` 仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默；`ddd-models.ts` 以 slash 命令 `/ddd-models` 提供模型配比的用户触发入口，转交仓库内部专用脚本 apply-models.js，不注册为工具；四者共用的纯工具（包根解析、执行超时、退出码归一、错误描述与安全读文本）集中在 `extensions/lib/shared.ts`，pi 版本与声明范围的纯比对集中在 `extensions/lib/version-range.ts` 并配套单元测试 `extensions/lib/version-range.test.ts`，该子目录无 index.ts，不作为扩展入口加载
 - 全局规则由 `extensions/ddd-context.ts` 以 sections 注入，不再改写用户全局文件
 - 模型配比记录文件 `~/.pi/agent/.ddd-model-overrides.json`，记录本方法论写入的代理、配比名与写入前原值，供精确回退；模型配比经扩展的 `/ddd-models` 命令转交仓库内部专用脚本 apply-models.js 应用或撤回
 - 12 个 agent 定义，位于 `agents/ddd-*.md`

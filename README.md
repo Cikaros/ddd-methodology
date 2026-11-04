@@ -67,6 +67,10 @@ skill、agent 与扩展的安装与移除均由 pi package 机制承担，不再
 
 被开发项目会在项目根产出并持续维护项目级指令文件 `AGENTS.md`：架构设计期出初版，迭代收尾由根会话做适应性更新，随能力、目录与约定演进持续对齐。其内容边界与整篇重写的判据见规范「项目级指令文件的维护」节，此处只作指针，不重复定义。
 
+## pi 版本要求
+
+本包在若干 pi 版本上已实测通过，逐版本的对应关系、实测日期与结论见 [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)。本包在 `package.json` 的 `pi.dddSupportedPiVersion` 声明已实测覆盖的 pi 版本范围，会话启动时若探测到宿主版本落在该范围之外，会在交互界面提示一次，无界面模式写入 stderr。若你使用的 pi 版本超出已实测范围，或看到该提示，请参考对应表选择合适的动作：优先把本包升级到覆盖该 pi 版本的较新行，或把 pi 调整到表中已实测的版本；对应表是本项信息的唯一权威。
+
 ## 版本管理
 
 版本以 `package.json` 的 `version` 为准，采用三段式语义化版本，tag 与之一致。安装命令默认跟随默认分支；需要固定版本时，把所需 tag 以 `@vX.Y.Z` 的形式拼进安装命令，即 `pi install git:github.com/Cikaros/ddd-methodology@vX.Y.Z`，并将 `vX.Y.Z` 换成具体 tag。示例不写具体版本号，以免每次发版后陈旧。规范修订后运行 `node scripts/ref-check.js .` 校验跨文档一致性，作为提交前检查。代理与 skill 清单的一致性判据由 `scripts/roster-check.js` 提供，`ref-check` 的 C5 代理清单校验与 C11 skill 清单校验均调用它。

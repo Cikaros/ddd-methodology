@@ -2,25 +2,33 @@
  * 会话上下文扩展
  *
  * 目标：让会话与子代理拿到必要上下文，并确认运行前提成立。其一，把包内全局规则注入系统提示的一个 section；
- *   其二，启动时探测 pi-subagents 的 subagent 工具是否可用，缺失则大声报错但不阻断启动。
- * 范围：仅 before_agent_start 的 section 注入与 session_start 的依赖探测两项。
+ *   其二，启动时探测 pi-subagents 的 subagent 工具是否可用，缺失则大声报错但不阻断启动；
+ *   其三，启动时比对宿主 pi 版本与本包声明的支持范围，不匹配则提示一次，取不到版本即静默跳过。
+ * 范围：仅 before_agent_start 的 section 注入与 session_start 的依赖探测、版本比对三项。
  * 不包含：子代理工具白名单、机械校验工具注册（见同目录 ddd-tools.ts）、结构治理守卫（见同目录 ddd-governance.ts）。
  *
  * 注入方式：以 `sections.ddd_global_rules` 就地叠加。返回 replacement systemPrompt 会摧毁 section 机制并使 prompt 缓存失效，故严禁。
  * 规则正文在会话开始时读盘一次并缓存，其后每轮只读缓存，不在每轮重复读盘；文件缺失或读取失败一律静默跳过。
  *
  * 生效范围：根会话与后台子代理；前台子代理不加载 ambient 扩展，本扩展对其不生效。
- * 依据：设计 N-3 与 N-6。
+ * 依据：设计 N-3 与 N-6；版本比对本轮需求见 docs/COMPATIBILITY.md。
  */
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { type ExecResult, exitCodeOf } from "./lib/shared.ts";
+import { checkVersionInRange } from "./lib/version-range.ts";
 
 const SECTION_NAME = "ddd_global_rules";
 const SUBAGENT_TOOL = "subagent";
 const GLOBAL_RULES_FILE = fileURLToPath(new URL("../global/APPEND_SYSTEM.md", import.meta.url));
 const PI_SUBAGENTS_INSTALL = "pi install npm:pi-subagents";
+// 声明范围的载体：包根 package.json 的 pi 对象下，键名以 ddd 前缀隔离 pi 自有字段
+const PACKAGE_MANIFEST = fileURLToPath(new URL("../package.json", import.meta.url));
+const DECLARED_PI_VERSION_KEY = "dddSupportedPiVersion";
+// 版本探测的短超时：探测为后台任务，超时或拿不到输出均按取不到处理
+const VERSION_PROBE_TIMEOUT_MS = 10_000;
 
 // 规则正文缓存：undefined 表示尚未加载，null 表示文件缺失或读取失败，字符串为剥离标记后的正文
 let rulesCache: string | null | undefined;
@@ -29,6 +37,7 @@ export default function (pi: ExtensionAPI) {
 	pi.on("session_start", (_event, ctx) => {
 		loadRules(); // 会话开始时读一次盘，供整个会话复用
 		probeSubagent(pi, ctx);
+		void checkPiVersion(pi, ctx); // 版本比对与会话启动无依赖，不 await，避免探测拖慢启动
 	});
 
 	pi.on("before_agent_start", (event) => {
@@ -82,7 +91,57 @@ function probeSubagent(pi: ExtensionAPI, ctx: unknown): void {
 	notify(
 		ctx,
 		`缺少前置依赖 pi-subagents：未探测到 ${SUBAGENT_TOOL} 工具，子代理派发不可用。请运行「${PI_SUBAGENTS_INSTALL}」安装后重启 pi。`,
+		"error",
 	);
+}
+
+// 宿主 pi 版本与本包声明范围的比对：提示层，唯一依赖未文档化运行时途径，故任何一步失败均静默跳过，不报错、不阻断。
+// 权威对应关系在 docs/COMPATIBILITY.md，取不到版本不损权威层，故降级无损。
+async function checkPiVersion(pi: ExtensionAPI, ctx: unknown): Promise<void> {
+	try {
+		const declared = readDeclaredRange();
+		if (!declared) return;
+		const detected = await detectPiVersion(pi);
+		if (!detected) return;
+		if (checkVersionInRange(detected, declared) !== "out-of-range") return;
+		notify(ctx, `本包实测支持的 pi 版本为 ${declared}，当前检测到 pi ${detected}。版本对应关系与建议动作见 docs/COMPATIBILITY.md。`, "warning");
+	} catch {
+		// 有意降级：取不到版本、解析失败或比对异常均静默跳过，权威信息在 docs/COMPATIBILITY.md，降级无损
+	}
+}
+
+// 版本获取按序尝试两条运行时途径，任一成功即止；两条都失败回 null，由调用方静默跳过（有意降级）
+async function detectPiVersion(pi: ExtensionAPI): Promise<string | null> {
+	// 首选：宿主包未文档化的运行时导出 VERSION。不依赖文件系统、PATH 与子进程，故为首选；导出缺失或形状不符即转次选。
+	try {
+		const mod = (await import("@earendil-works/pi-coding-agent")) as { VERSION?: unknown };
+		if (typeof mod.VERSION === "string" && mod.VERSION.trim() !== "") return mod.VERSION.trim();
+	} catch {
+		// 未文档化导出不可用，转次选途径
+	}
+	// 次选：pi --version。依赖 process.execPath 指向 pi 本体这一未文档化的 Bun 单文件打包事实；npm 安装形态下 execPath 为 node，该途径失效。
+	try {
+		const result = (await pi.exec(process.execPath, ["--version"], { timeout: VERSION_PROBE_TIMEOUT_MS })) as ExecResult;
+		const stdout = result && typeof result.stdout === "string" ? result.stdout : "";
+		if (exitCodeOf(result) === 0) {
+			const version = stdout.trim().split(/\s+/).pop() ?? "";
+			if (version !== "") return version;
+		}
+	} catch {
+		// 次选失败，回 null
+	}
+	return null;
+}
+
+// 声明范围取包内 package.json 的 pi 自建键，缺失或形状非法一律回 null
+function readDeclaredRange(): string | null {
+	try {
+		const manifest = JSON.parse(readFileSync(PACKAGE_MANIFEST, "utf8")) as { pi?: Record<string, unknown> };
+		const value = manifest?.pi?.[DECLARED_PI_VERSION_KEY];
+		return typeof value === "string" && value.trim() !== "" ? value : null;
+	} catch {
+		return null;
+	}
 }
 
 function collectToolNames(pi: ExtensionAPI): string[] | null {
@@ -109,11 +168,16 @@ function collectToolNames(pi: ExtensionAPI): string[] | null {
 	return null;
 }
 
-function notify(ctx: unknown, message: string): void {
+// 呈现给用户：TUI 走宿主通知；无 UI 模式该调用是 no-op，故兜底写 stderr，使告警不被静默丢弃。
+function notify(ctx: unknown, message: string, type: "info" | "warning" | "error" = "warning"): void {
 	try {
 		const ui = (ctx as { ui?: { notify?: (text: string, type?: string) => void } } | undefined)?.ui;
-		if (ui && typeof ui.notify === "function") ui.notify(message, "error");
+		if (ui && typeof ui.notify === "function") {
+			ui.notify(message, type);
+			return;
+		}
 	} catch {
-		// 报错本身失败不得升级为会话中断
+		// 通知失败不得升级为会话中断，落到 stderr 兜底
 	}
+	console.error(message);
 }

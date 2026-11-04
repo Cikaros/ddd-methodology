@@ -1,6 +1,6 @@
 {
   "repoItems": {
-    "files": 90,
+    "files": 93,
     "dirs": 15
   },
   "docHeadings": {
@@ -17,7 +17,7 @@
     "agents/ddd-test-planner.md": 7,
     "agents/ddd-tester.md": 7,
     "global/APPEND_SYSTEM.md": 6,
-    "README.md": 6,
+    "README.md": 7,
     "skill/ddd-methodology/references/spec-change.md": 3,
     "skill/ddd-methodology/references/spec-declare.md": 3,
     "skill/ddd-methodology/references/spec-design.md": 7,
