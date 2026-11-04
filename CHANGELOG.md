@@ -2,23 +2,23 @@
 
 本文件记录 pi package 形态的版本变更，版本号与仓库根 `package.json` 的 `version` 对应，采用三段式语义化版本；本包经 `pi install` 安装，例如 `pi install git:github.com/Cikaros/ddd-methodology`。方法论规范版本 v1.0 至 v2.21 的演进史已归档至 `docs/internal/history/spec-changelog.md`，属内部档案，不作为公开内容。
 
-## 0.2.0（2026-11-03）
+## 0.2.0 - 2026-11-03
 
 - **破坏性**：删除 `scripts/install.sh`、`install.bat`、`uninstall.sh`、`uninstall.bat`，模型配比的应用与撤回改由 `/ddd-models` 命令承担；对应撤除 `ref-check` 的 C13 与 C18 两项校验，校验项由十九项收为十七项。
 - **修正**：机械证据覆盖率的判据不识别工具名形态致其恒报零，已修正；证据源命名在门禁表中与其余门不一致，已对齐。
 - **内部**：消除两处真重复实现，抽取扩展共享模块；若干处与实际不符的规范与结构描述已修正。
 - **新增规则**：全局规则块增第 8 条，要求派发任务书凡涉及删除、重构、合并者先核验处置前提。
 
-## 0.1.2（2026-11-03）
+## 0.1.2 - 2026-11-03
 
 - **迁移脚本**：下一步安装提示改为从 `package.json` 的 `version` 动态读出，不再硬编码版本号，随发版自动更新；读取失败降级为不带版本的命令并提示自行确认。
 - **安装示例**：README 与 STRUCTURE.md 的安装示例不再写具体版本号，改为跟随默认分支；固定版本的写法在 README「版本管理」节以占位符说明。
 
-## 0.1.1（2026-11-03）
+## 0.1.1 - 2026-11-03
 
 - **安装文档**：README 安装段落补充网络提示，说明 pi 经 HTTPS clone `github.com`，通道不通时可改用 SSH 重写地址。
 
-## 0.1.0（2026-11-03）
+## 0.1.0 - 2026-11-03
 
 - **pi package 形态**：仓库根 `package.json` 声明 `pi.extensions`、`pi.skills` 与 `pi-subagents.agents`，可经 `pi install` 安装。
 - **许可**：新增 `LICENSE`，MIT 协议。
