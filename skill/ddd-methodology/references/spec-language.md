@@ -21,7 +21,7 @@
 | 用词 | 不含术语表未登记的术语 |
 | 索引性 | 每条指向本文后续节次或编号 |
 
-适用范围为 `REQUIREMENTS.md`、`ARCHITECTURE.md` 与每份 DESIGN；表格式产物 `AC.md` 与 `TEST_PLAN.md` 不适用。字段形态见 `templates.md` 的对应模板节，本节不重述。
+适用范围为 `REQUIREMENTS.md`、`ARCHITECTURE.md` 与每份 DESIGN；表格式产物 `AC.md` 与 `TEST_PLAN.md` 不适用。字段形态见 `templates.md` 中各产物模板节，本节不重述。
 
 `ARCHITECTURE.md` 另含「项目速览」节，面向首次进入项目者，不受三行限制，但不复述正文细节；摘要与项目速览共同承担新人可读，不另产独立文档。
 

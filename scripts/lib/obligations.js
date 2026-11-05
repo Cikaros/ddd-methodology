@@ -135,15 +135,21 @@ function checkNode(node, nodesRel, problems) {
   }
 }
 
-// 上一周期是否已交付：扫 docs/gates 下机读行，含 G6 且 verdict 为 pass 的记录即交付已过
+// 上一周期是否已交付：扫 docs/gates 下机读行并按 JSON 解析，含 G6 且 verdict 为 pass 的记录即交付已过
 function findDeliveredGate(root) {
   const dir = path.join(root, "docs", "gates");
   if (!fs.existsSync(dir)) return null;
   for (const file of fs.readdirSync(dir)) {
     if (!file.endsWith(".md")) continue;
     const text = readFileText(path.join(dir, file)) || "";
-    if (!/"id"s*:s*"G6"/.test(text)) continue;
-    if (/"verdict"s*:s*"pass"/.test(text)) return file;
+    for (const m of text.matchAll(/GATE:\s*(\{[^\n]*\})/g)) {
+      try {
+        const parsed = JSON.parse(m[1]);
+        if (parsed && parsed.id === "G6" && parsed.verdict === "pass") return file;
+      } catch {
+        // 机读行不可解析时跳过，其形态由门禁模板与注册断言约束
+      }
+    }
   }
   return null;
 }

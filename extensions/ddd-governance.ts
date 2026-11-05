@@ -2,12 +2,12 @@
  * DDD 结构治理运行时守卫
  *
  * 目标：为 DDD 项目补充过程拦截，机械判定结构粒度与测试分离两类门槛，覆盖声明式门禁覆盖不到的过程。
- * 范围：仅当 ctx.cwd 下存在 docs/design 或 docs/gates 时激活；对普通项目静默，所有处理函数立即返回 undefined。
+ * 范围：仅当 ctx.cwd 下存在 docs/gates 或声明的设计树根时激活，设计树根缺省回退 docs/design；对普通项目静默，所有处理函数立即返回 undefined。
  *
  * 判定编号摘要，与规范「结构与契约的演进治理」节的守卫判定表逐项一致：
  * - H-1 粒度守卫。触发点：tool_call 的 write/edit。判定条件：估算写入后行数超 500 行。动作：拦截，理由含文件路径、就近 DESIGN 路径与拆解要求。
  * - H-2 测试分离守卫。触发点：tool_call 的 bash。判定条件：命令属窄口径的全量测试调用形态，且 docs/.ddd-state.json 的 lastStage 为 g5-int。动作：拦截，指明全量测试的唯一主体是 ddd-tester。
- * - H-3 义务覆盖守卫。触发点：tool_call 的 write/edit。判定条件：目标为源码文件、任务树已启用，而该文件所属接缝的节点文件缺失或该文件未被任何义务节点覆盖。动作：拦截，理由含节点文件路径与登记方式。
+ * - H-3 义务覆盖守卫。触发点：tool_call 的 write/edit。判定条件：目标为源码文件、任务树已启用，而该文件所属接缝的节点文件缺失或该文件未被任何义务节点覆盖。动作：拦截，理由含节点文件路径与登记方式。覆盖边界：源目录内 DESIGN 组织不在覆盖内，设计树根取 ARCHITECTURE 的声明值，缺省回退 docs/design。
  * - H-4 门禁清零守卫。触发点：tool_call 的 write/edit。判定条件：目标为 docs/gates/ 下的门禁记录，且任务树存在未闭合义务节点。动作：拦截，理由含未闭合节点所在文件与逐项核销要求。
  *
  * 键关系：G5_INT_STAGE 的值为状态文件阶段键集合中的单键，即 docs/.ddd-state.json 的 doneStages 枚举成员之一；ref-check 的 C4 与 --fix 据此比对并单向校验其属于该集合，脚本不改本文件，值变更须人工处理。
@@ -23,11 +23,34 @@
  * 依据：规范「粒度与独立性」节、「实现与测试分离」节与「结构与契约的演进治理」节。
  */
 
+import { createRequire } from "node:module";
 import { existsSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { notifyUser } from "./lib/notify.ts";
 import { describeError, readText } from "./lib/shared.ts";
+
+// 设计树根解析复用脚本侧唯一实现，避免守卫与脚本两套口径；解析失败回退默认根 docs/design
+let designRootResolver = null;
+try {
+	const requireFromExtension = createRequire(import.meta.url);
+	designRootResolver = requireFromExtension("../scripts/design-root.js").absoluteDesignDir;
+} catch {
+	designRootResolver = null;
+}
+
+// 设计树根的绝对路径：以项目 ARCHITECTURE 的声明为源，解析实现与脚本侧同源；取不到时用默认值
+function designRootAbs(root) {
+	if (typeof designRootResolver === "function") {
+		try {
+			const resolved = designRootResolver(root);
+			if (resolved && typeof resolved.dir === "string" && resolved.dir !== "") return resolved.dir;
+		} catch {
+			// 解析异常按默认根处理
+		}
+	}
+	return join(root, "docs", "design");
+}
 
 const GRANULARITY_LINE_LIMIT = 500;
 const RUNTIME_EXCEPTION_MARK = "运行时例外";
@@ -133,14 +156,14 @@ function estimateProjectedLines(absPath, input) {
 	return Math.max(0, countLines(current) - removed) + incoming;
 }
 
-// 就近 DESIGN 取两种组织方式中先命中者：源目录自身的 DESIGN.md，与 docs/design 下的镜像路径。
+// 就近 DESIGN 取两种组织方式中先命中者：源目录自身的 DESIGN.md，与声明的设计树根下的镜像路径。
 function nearestDesignPath(cwd, absPath) {
 	const root = resolve(cwd);
 	let dir = dirname(resolve(absPath));
 	while (dir === root || dir.startsWith(root + sep)) {
 		const rel = dir === root ? "" : dir.slice(root.length + 1);
 		const candidates = [join(dir, "DESIGN.md")];
-		candidates.push(join(root, "docs", "design", rel, "DESIGN.md"));
+		candidates.push(join(designRootAbs(root), rel, "DESIGN.md"));
 		for (const candidate of candidates) {
 			if (existsSync(candidate)) return candidate;
 		}
@@ -154,12 +177,26 @@ function nearestDesignPath(cwd, absPath) {
 
 // ---- H-3 义务覆盖守卫 ----
 
-// 节点文件路径：由就近 DESIGN 推 docs/board 下的同构路径，不在设计树内返回 null
+// 节点文件路径：由声明的设计树根推 docs/board 下的同构路径；不在设计树内返回 null，
+// 源目录内 DESIGN 组织因此不在写入强制覆盖内，该边界见规范守卫表 H-3 行的当前覆盖列
 function nodesPathFor(designPath, cwd) {
 	const root = resolve(cwd);
-	const rel = relative(join(root, "docs", "design"), dirname(designPath));
+	const rel = relative(designRootAbs(root), dirname(designPath));
 	if (rel.startsWith("..")) return null;
 	return join(root, "docs", "board", rel, "NODES.md");
+}
+
+// 覆盖判定：节点表覆盖范围列须等于目标相对路径，或以该值为目录前缀，避免子串误命中
+function coversFile(nodeText, relFile) {
+	for (const line of nodeText.split("\n")) {
+		if (!line.trim().startsWith("|")) continue;
+		const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
+		if (cells.length < 6 || !cells[0] || cells[0] === "节点编号" || /^-+$/.test(cells[0])) continue;
+		const coverage = cells[5].replace(/`/g, "").replace(/\/$/, "");
+		if (!coverage) continue;
+		if (relFile === coverage || relFile.startsWith(coverage + "/")) return true;
+	}
+	return false;
 }
 
 function checkObligationCoverage(event, ctx) {
@@ -185,7 +222,7 @@ function checkObligationCoverage(event, ctx) {
 			].join("\n"),
 		};
 	}
-	if (nodeText.includes(relFile)) return undefined;
+	if (coversFile(nodeText, relFile)) return undefined;
 	return {
 		block: true,
 		reason: [
@@ -289,7 +326,9 @@ function readLastStage(cwd) {
 
 function isDddProject(cwd) {
 	if (typeof cwd !== "string" || cwd === "") return false;
-	return existsSync(join(cwd, "docs", "design")) || existsSync(join(cwd, "docs", "gates"));
+	const root = resolve(cwd);
+	if (existsSync(join(root, "docs", "gates"))) return true;
+	return existsSync(designRootAbs(root));
 }
 
 function isSourceFile(filePath) {
@@ -308,7 +347,6 @@ function countLines(text) {
 // ---- 看板注入 ----
 
 const OBLIGATION_SECTION_NAME = "ddd_open_obligations";
-
 
 // 启动时注入未闭合节点，使子代理不必依赖记忆；任务树未启用或已清空时不注入
 function loadOpenObligations(ctx) {

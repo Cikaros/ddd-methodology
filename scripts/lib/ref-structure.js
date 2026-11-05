@@ -1,6 +1,6 @@
 /**
  * 目标：把 STRUCTURE.md 的结构树与安装内容明细外化为机械可判的一致性，作为结构与安装内容明细的机械消费方。
- * 范围：C17 两项断言——其一，结构树内全部文件与目录条目在仓库中真实存在，且仓库内除点开头条目外的文件与目录均在树中列出，即双向一致；
+ * 范围：C17 两项断言、C21 命令入口清单一致性与 C22 模板章节引用一致性——C17 其一，结构树内全部文件与目录条目在仓库中真实存在，且仓库内除点开头条目外的文件与目录均在树中列出，即双向一致；
  *   树中以目录节点列出而无展开子项的目录视为未展开，其内容不作反向核对，只核对其自身存在性；
  *   反向核对只面向随仓库发布的条目，被 .gitignore 排除者不属漏登记，故按 git 忽略语义跳过；树内条目须真实存在的前向核对不跳过；
  *   其二，安装内容明细中列出的脚本名集合与随包脚本集合双向一致。
@@ -20,7 +20,7 @@ const WORKFLOW_SCRIPT_NAME = "ddd-workflow.js";
 const DETAIL_SCRIPT_RE = /^[a-z][a-z0-9-]*\.js$/;
 
 function createStructureChecks(env) {
-  const { root, shippedScripts } = env;
+  const { root, shippedScripts, liveDocPaths } = env;
 
   // 结构树解析：取「## 仓库结构」节内首个围栏块，按 tree 缩进（每级四字符）还原层级，回传仓库相对路径到条目的映射
   function parseTree(text) {
@@ -221,7 +221,39 @@ function createStructureChecks(env) {
     }
     return found;
   }
-  return { checkStructureDoc, checkEntryInventory };
+  // C22 模板章节引用一致性：只收「templates 系列 的 X 节」句式，标题与引用两侧各归一一次 .md 后缀，
+  // 使模板拆解或改名不会静默留下悬空引用；模板文件集限定为 references 下的 templates 系列
+  function checkTemplateSectionRefs() {
+    const found = [];
+    const refRe = /`?(?:references\/)?(templates(?:-[a-z]+)?)(\.md)?`?\s*的\s*([^。；，\n]+?)节/g;
+    const headingCache = new Map();
+    const headingsOf = (file) => {
+      if (!headingCache.has(file)) {
+        const text = readFileText(path.join(root, "skill", "ddd-methodology", "references", file)) || "";
+        headingCache.set(file, new Set([...text.matchAll(/^##\s+(.+)$/gm)].map((m) => m[1].trim().replace(/\.md$/i, ""))));
+      }
+      return headingCache.get(file);
+    };
+    for (const file of liveDocPaths) {
+      const rel = path.relative(root, file).split(path.sep).join("/");
+      const text = readFileText(file) || "";
+      for (const m of text.matchAll(refRe)) {
+        const target = m[1] + (m[2] || ".md");
+        const section = (m[3] || "").trim();
+        const headings = headingsOf(target);
+        if (headings.size === 0) {
+          found.push(drift("C22", rel, 0, "模板章节引用须指向存在的模板文件", `${target} 存在且含二级标题`, "文件不存在或无二级标题"));
+          continue;
+        }
+        if (!headings.has(section.replace(/\.md$/i, ""))) {
+          found.push(drift("C22", rel, 0, "模板章节引用须命中目标模板的二级标题", `${target} 含章节「${section}」`, "未检出"));
+        }
+      }
+    }
+    return found;
+  }
+
+  return { checkStructureDoc, checkEntryInventory, checkTemplateSectionRefs };
 }
 
 module.exports = { createStructureChecks };

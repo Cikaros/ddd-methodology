@@ -1,5 +1,5 @@
 /**
- * 设计文档树根路径解析的唯一实现，供 trace-check.js 与 governance-check.js 共用。
+ * 设计文档树根路径解析的唯一实现，供 trace-check.js、governance-check.js、code-health.js 与运行时守卫共用；缺省回退 docs/design，声明的根路径优先。
  *
  * 口径权威在规范「质量门禁」节的 G3 退出条件与 templates 的 ARCHITECTURE 节：
  * 优先读 ARCHITECTURE.md 的根路径声明，读不到回退 docs/design 并由调用方告警。

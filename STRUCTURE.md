@@ -104,7 +104,7 @@ ddd-methodology/
         ├── ref-debt-fields.js    # 登记簿字段集合一致性校验：C14
         ├── ref-coverage.js       # 校验项映射一致性校验：C15
         ├── ref-line-endings.js   # 工作区行尾一致性校验：C16
-        ├── ref-structure.js      # 结构树与安装内容明细一致性校验：C17
+        ├── ref-structure.js      # 结构树与安装内容明细、命令入口清单与模板章节引用校验：C17、C21、C22
         ├── ref-convergence.js    # 收敛度校验：C19
         ├── repo-scope.js         # 方法论仓库自身判定：不适用语义的共享实现，供 trace-check 与 span-check 复用
         ├── debt-history.js       # 债务历史快照与根因复发检测
@@ -142,7 +142,7 @@ ddd-methodology/
   - install-manifest-check 脚本位于 `scripts/install-manifest-check.js`，枚举仓库随包脚本集合，供 ref-check 的 C17 与安装内容明细双向比对
   - 其余门禁脚本 `fingerprint.js`、`design-root.js`、`decision-tables.js`、`roster-check.js`、`spec-index-check.js`、`debt-check.js` 与 `metrics-report.js` 同属该脚本清单，位于 `scripts/`
 - 存量重建 skill `ddd-rebuild` 与定向重构 skill `ddd-refactor`，分别位于 `skill/ddd-rebuild/` 与 `skill/ddd-refactor/`，两者与主 skill 同属一份清单，仅由用户显式调用
-- 运行时扩展位于 `extensions/`：`ddd-context.ts` 在会话开始时注入全局规则 section 并探测 subagent 前置依赖；`ddd-tools.ts` 把甲类机械校验脚本注册为 `ddd_*` 工具，并以 `/ddd-parser-install` 命令提供解析器供给的用户触发入口；`ddd-governance.ts` 仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默，激活后承担 H-1 至 H-4 四项拦截与启动时未闭合义务节点注入；`ddd-models.ts` 以 slash 命令 `/ddd-models` 提供模型配比的用户触发入口，转交仓库内部专用脚本 apply-models.js，不注册为工具；四者共用的纯工具（包根解析、执行超时、退出码归一、错误描述与安全读文本）集中在 `extensions/lib/shared.ts`，pi 版本与声明范围的纯比对集中在 `extensions/lib/version-range.ts` 并配套单元测试 `extensions/lib/version-range.test.ts`，四处宿主提示的单一实现集中在 `extensions/lib/notify.ts` 并配套单元测试 `extensions/lib/notify.test.ts`，该子目录无 index.ts，不作为扩展入口加载
+- 运行时扩展位于 `extensions/`：`ddd-context.ts` 在会话开始时注入全局规则 section 并探测 subagent 前置依赖；`ddd-tools.ts` 把甲类机械校验脚本注册为 `ddd_*` 工具，并以 `/ddd-parser-install` 命令提供解析器供给的用户触发入口；`ddd-governance.ts` 仅在含 docs/gates 或声明的设计树根（缺省 docs/design）的项目内激活，对其他项目静默，激活后承担 H-1 至 H-4 四项拦截与启动时未闭合义务节点注入；`ddd-models.ts` 以 slash 命令 `/ddd-models` 提供模型配比的用户触发入口，转交仓库内部专用脚本 apply-models.js，不注册为工具；四者共用的纯工具（包根解析、执行超时、退出码归一、错误描述与安全读文本）集中在 `extensions/lib/shared.ts`，pi 版本与声明范围的纯比对集中在 `extensions/lib/version-range.ts` 并配套单元测试 `extensions/lib/version-range.test.ts`，四处宿主提示的单一实现集中在 `extensions/lib/notify.ts` 并配套单元测试 `extensions/lib/notify.test.ts`，该子目录无 index.ts，不作为扩展入口加载
 - 全局规则由 `extensions/ddd-context.ts` 以 sections 注入，不再改写用户全局文件
 - 模型配比记录文件 `~/.pi/agent/.ddd-model-overrides.json`，记录本方法论写入的代理、配比名与写入前原值，供精确回退；模型配比经扩展的 `/ddd-models` 命令转交仓库内部专用脚本 apply-models.js 应用或撤回
 - 12 个 agent 定义，位于 `agents/ddd-*.md`
