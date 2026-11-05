@@ -288,7 +288,7 @@ for (const o of orphans) say(`  ✗ ${o} 未见引用`, true);
 say("");
 say(`[重复嫌疑] ${duplicates.length} 项同名声明跨文件出现，属弱信号，语义级重复需审计代理判定`);
 for (const d of duplicates.slice(0, 20)) say(`  ! ${d.name} :: ${d.files.join(", ")}`, true);
-if (duplicates.length > 20) say(`  ... 其余 ${duplicates.length - 20} 项见健康文件`, true);
+if (duplicates.length > 20) say(`  ... 其余 ${duplicates.length - 20} 项未列出，健康文件只存计数`, true);
 say("");
 say(`[注释质量] 违禁模式 ${bannedComments.length}，过时引用 ${staleComments.length}`);
 for (const o of bannedComments) say(`  ✗ ${o.file}:${o.line} ${o.why} :: ${o.text}`, true);

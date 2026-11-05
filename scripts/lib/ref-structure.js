@@ -221,32 +221,46 @@ function createStructureChecks(env) {
     }
     return found;
   }
-  // C22 模板章节引用一致性：只收「templates 系列 的 X 节」句式，标题与引用两侧各归一一次 .md 后缀，
-  // 使模板拆解或改名不会静默留下悬空引用；模板文件集限定为 references 下的 templates 系列
+  // C22 模板章节引用一致性：文档对模板文件与其章节的引用须落到实处，使模板拆解或改名不静默留下悬空引用。
+  // 两级判据：文件级校验 templates 系列文件名在 references 下存在；章节级校验「的 X 节／段／表」三式收尾形态，
+  // X 经标题侧归一 .md 与引用侧归一书名号及 .md 后须命中目标模板的二级或三级标题。泛称节名、动词收尾与文件级引用不判章节。
   function checkTemplateSectionRefs() {
     const found = [];
-    const refRe = /`?(?:references\/)?(templates(?:-[a-z]+)?)(\.md)?`?\s*的\s*([^。；，\n]+?)节/g;
+    const fileRe = /(templates(?:-[a-z]+)?)(?:\.md)?/g;
+    const sectionRe = /(templates(?:-[a-z]+)?)(?:\.md)?`?\s*的\s*「?([^。；，\n]+?)」?\s*(?:节|段|表)/g;
+    const genericRe = /对应|各产物|相应|该/;
+    const referencesDir = path.join(root, "skill", "ddd-methodology", "references");
     const headingCache = new Map();
     const headingsOf = (file) => {
       if (!headingCache.has(file)) {
-        const text = readFileText(path.join(root, "skill", "ddd-methodology", "references", file)) || "";
-        headingCache.set(file, new Set([...text.matchAll(/^##\s+(.+)$/gm)].map((m) => m[1].trim().replace(/\.md$/i, ""))));
+        const text = readFileText(path.join(referencesDir, file)) || "";
+        headingCache.set(file, new Set([...text.matchAll(/^#{2,3}\s+(.+)$/gm)].map((m) => m[1].trim().replace(/\.md$/i, ""))));
       }
       return headingCache.get(file);
     };
     for (const file of liveDocPaths) {
       const rel = path.relative(root, file).split(path.sep).join("/");
       const text = readFileText(file) || "";
-      for (const m of text.matchAll(refRe)) {
-        const target = m[1] + (m[2] || ".md");
-        const section = (m[3] || "").trim();
+      const seenFiles = new Set();
+      for (const m of text.matchAll(fileRe)) {
+        const target = `${m[1]}.md`;
+        if (seenFiles.has(target)) continue;
+        seenFiles.add(target);
+        if (!fs.existsSync(path.join(referencesDir, target))) {
+          found.push(drift("C22", rel, 0, "引用的模板文件须存在", `${target} 存在于 references`, "未检出"));
+        }
+      }
+      for (const m of text.matchAll(sectionRe)) {
+        const target = `${m[1]}.md`;
+        const section = m[2].trim().replace(/\.md$/i, "");
+        if (genericRe.test(section)) continue;
         const headings = headingsOf(target);
         if (headings.size === 0) {
-          found.push(drift("C22", rel, 0, "模板章节引用须指向存在的模板文件", `${target} 存在且含二级标题`, "文件不存在或无二级标题"));
+          found.push(drift("C22", rel, 0, "模板章节引用须指向存在的模板文件", `${target} 存在且含二级或三级标题`, "文件不存在或无标题"));
           continue;
         }
-        if (!headings.has(section.replace(/\.md$/i, ""))) {
-          found.push(drift("C22", rel, 0, "模板章节引用须命中目标模板的二级标题", `${target} 含章节「${section}」`, "未检出"));
+        if (!headings.has(section)) {
+          found.push(drift("C22", rel, 0, "模板章节引用须命中目标模板的标题", `${target} 含标题「${section}」`, "未检出"));
         }
       }
     }
