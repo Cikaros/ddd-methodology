@@ -37,11 +37,12 @@ skill、agent、扩展与提示模板的安装与移除均由 pi package 机制�
 /skill:ddd-methodology 按此方法论开发一个 <项目描述>
 ```
 
-或直接说「按 ddd 方法论开发……」触发。三个提示模板由用户显式调用，模型不会自动选中：
+或直接说「按 ddd 方法论开发……」触发。四个提示模板由用户显式调用，模型不会自动选中：
 
 | 命令 | 用途 |
 |---|---|
 | `/ddd-init` | 初始化项目级骨架，落 `AGENTS.md`、`GLOSSARY.md` 与两份项目级代理定义 |
+| `/ddd-parser-install` | 安装签名级符合性校验所需的解析器，先打印计划再执行 |
 | `/ddd-rebuild` | 存量重建，整体替换既有实现与文档 |
 | `/ddd-refactor` | 定向重构，范围限于用户指定的模块或问题 |
 
@@ -55,7 +56,7 @@ skill、agent、扩展与提示模板的安装与移除均由 pi package 机制�
 - 固定代理十个，位于 `agents/`：需求采集者、架构设计者、验收标准制定者、设计分解者、详细设计者、接口契约评审者、实现者、单元测试制定者、测试执行者与缺陷修复者。
 - 项目级代理模板两份与项目级规范文档模板两份，位于 `skills/ddd-methodology/assets/`，经 `/ddd-init` 落项目。
 - 扩展四模块，位于 `extensions/`：`ddd-context.ts` 注入全局规则与任务引导，`ddd-governance.ts` 承担运行时守卫，`ddd-tools.ts` 注册机械证据工具，`ddd-resources.ts` 按注入矩阵裁剪可得技能集。
-- 提示模板三份，位于 `prompts/`，一文件一命令。
+- 提示模板四份，位于 `prompts/`，一文件一命令。
 
 ## 脚本清单
 
@@ -79,7 +80,7 @@ skill、agent、扩展与提示模板的安装与移除均由 pi package 机制�
 | `scripts/toolchain-selftest.js` | 仓库专用 | 人工 | 脚本族可用的自证 |
 | `scripts/matrix-check.js` | 仓库专用 | 人工 | 注入矩阵与技能清单一致性 |
 
-编排脚本 `ddd-workflow.js` 走 A 主链，由根会话以 `subagent({ workflow, args: { root } })` 调用，按通道取阶段键序，只做编排不做机械校验。入口的命令行调用方式为 `node <脚本绝对路径> <项目根绝对路径>`。
+编排脚本两份，由根会话以 `subagent({ workflow, args: { root } })` 调用，按通道取各自阶段键序，只做编排不做机械校验：`ddd-workflow.js` 走 A 主链，`ddd-hotfix.js` 走 B 快速修复。接口冻结锚点的读写与「对外接口与约定」节的定向 diff 由共享层 `freeze.js` 承担，其单元测试 `freeze.test.js` 同目录。入口的命令行调用方式为 `node <脚本绝对路径> <项目根绝对路径>`。
 
 ## pi 版本要求
 
@@ -89,6 +90,4 @@ skill、agent、扩展与提示模板的安装与移除均由 pi package 机制�
 
 版本以 `package.json` 的 `version` 为准，采用三段式语义化版本，tag 与之一致。安装命令默认跟随默认分支；需要固定版本时，把所需 tag 以 `@vX.Y.Z` 的形式拼进安装命令，即 `pi install git:github.com/Cikaros/ddd-methodology@vX.Y.Z`，并将 `vX.Y.Z` 换成具体 tag。示例不写具体版本号，以免每次发版后陈旧。
 
-规范修订后运行 `node skills/ddd-methodology/scripts/ref-check.js .` 校验跨文档一致性，作为提交前检查。代理与 skill 清单的一致性判据由 `scripts/roster-check.js` 提供，`ref-check` 的 C5 代理清单校验与 C11 skill 清单校验均调用它。
-
-`ref-check` 默认只读，不写盘；加 `--fix` 时由规范「状态文件」节的键清单生成 `skills/ddd-methodology/scripts/ddd-workflow.js` 的 stageRegistry，并校验 `extensions/ddd-governance.ts` 的 `G5_INT_STAGE` 单键属于该集合，写盘范围限于 stageRegistry 数组块，改完须复跑默认模式确认无漂移。
+规范修订后运行 `node skills/ddd-methodology/scripts/ref-check.js .` 校验跨文档一致性，作为提交前检查。代理与 skill 清单的一致性判据由 `scripts/roster-check.js` 提供，`ref-check` 的 C5 代理清单校验与 C11 skill 清单校验均调用它。`ref-check` 只读，不写盘。

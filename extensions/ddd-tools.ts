@@ -1,11 +1,17 @@
 /**
  * 机械校验工具扩展
  *
+ * 交接说明（原 slash 命令 ddd-parser-install 改提示模板，模板本体由 prompts 域产出，本扩展不再注册该命令）：
+ *   模板落 prompts/ddd-parser-install.md；模板行为：用户触发后在当前项目依次运行
+ *     node <包根>/skills/ddd-methodology/scripts/install-parser.js            打印待安装的包与安装位置，
+ *     node <包根>/skills/ddd-methodology/scripts/install-parser.js --install  执行安装；
+ *   任一步失败即报错并中止。安装逻辑与版本清单的唯一实现在该脚本，模板不另写一套。
+ *
  * 目标：把甲类机械校验脚本注册为类型化工具，使父会话以工具调用替代文本解析与绝对路径拼装；
  *   工具回传结构化结果，模型只收到精简摘要与关键结论行，降低上下文负担。
  * 范围：六个机械证据工具与六个脚本一一对应——ddd_governance_check、ddd_trace_check、ddd_span_check、ddd_code_health、ddd_debt_check、ddd_metrics_report；
  *   另接入五个交叉检查节点的校验脚本入口 ddd_check_scope、ddd_check_design、ddd_check_file_design、ddd_check_code、ddd_check_consistency，脚本落 skills/ddd-methodology/scripts/，与 DESIGN-crosscheck.md 的五个执行点对应；
- *   另以 registerCommand 提供解析器供给的用户入口 ddd-parser-install，仅用户触发，转交 skills/ddd-methodology/scripts/install-parser.js，安装逻辑与版本清单不在扩展侧复写。
+ *   交叉检查工具由主链编排脚本在对应节点自动调用，手工复核同一检查时直接调用同一工具，两处共用同一工具面，不各写一套语义。
  * 不包含：全局规则注入与前置依赖探测（见同目录 ddd-context.ts）、结构治理守卫（见同目录 ddd-governance.ts）、技能裁剪与路径供给（见同目录 ddd-resources.ts）。
  *
  * 脚本路径一律由共享模块（lib/shared.ts）解析的包根拼出，不依赖调用方传入，不硬编码绝对路径。
@@ -17,7 +23,6 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { Type } from "typebox";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { notifyUser } from "./lib/notify.ts";
 import { EXEC_TIMEOUT_MS, PACKAGE_ROOT, describeError, exitCodeOf, type ExecResult } from "./lib/shared.ts";
 
 const SUMMARY_MAX_CHARS = 1500; // 进模型上下文的摘要上限，与「降低上下文负担」的目标一致
@@ -28,9 +33,9 @@ const TOOLS = [
 	{
 		name: "ddd_governance_check",
 		script: "governance-check",
-		label: "DDD 契约指纹与结构趋势校验",
-		description: "运行 governance-check 校验被开发项目的契约指纹与结构趋势，输出 verdict 作为 G5-INT 门槛证据。root 传被开发项目根的绝对路径。",
-		snippet: "校验被开发项目的契约指纹与结构趋势（governance-check）",
+		label: "DDD 接口冻结与结构趋势校验",
+		description: "运行 governance-check 校验被开发项目的接口节冻结与结构趋势，输出 verdict 作为 G5-INT 门槛证据。root 传被开发项目根的绝对路径。",
+		snippet: "校验被开发项目的接口冻结与结构趋势（governance-check）",
 	},
 	{
 		name: "ddd_trace_check",
@@ -113,8 +118,8 @@ const CROSS_CHECK_TOOLS = [
 	},
 ];
 
-// 解析器供给脚本：位置由包根解析，扩展侧不硬编码路径，也不读取版本清单
-const PARSER_INSTALL_SCRIPT = join(PACKAGE_ROOT, "skills", "ddd-methodology", "scripts", "install-parser.js");
+// 交叉检查工具的调用时机说明：编排自动执行与手工复核共用同一工具面，措辞单一权威，避免两处各写一套语义
+const CROSS_CHECK_USAGE = "调用时机：主链编排脚本在对应交叉检查节点自动调用本工具；根会话或人工在节点外手工复核同一检查时直接调用本工具，两处共用本工具面，语义唯一。";
 
 // 结构化结果供脚本消费；字段与 structuredContent 同源
 const OUTPUT_SCHEMA = Type.Object({
@@ -126,7 +131,11 @@ const OUTPUT_SCHEMA = Type.Object({
 });
 
 export default function (pi: ExtensionAPI) {
-	for (const spec of [...TOOLS, ...CROSS_CHECK_TOOLS]) {
+	const specs = [
+		...TOOLS,
+		...CROSS_CHECK_TOOLS.map((spec) => ({ ...spec, description: `${spec.description} ${CROSS_CHECK_USAGE}` })),
+	];
+	for (const spec of specs) {
 		pi.registerTool({
 			name: spec.name,
 			label: spec.label,
@@ -139,14 +148,6 @@ export default function (pi: ExtensionAPI) {
 			},
 		});
 	}
-	// 解析器供给：仅用户触发的 slash 命令，不注册为工具、不挂接事件、不在会话启动时安装；
-	// 版本清单与安装逻辑的唯一实现在 skills/ddd-methodology/scripts/install-parser.js 与 skills/ddd-methodology/scripts/lib/span-parser.js，此处只转交
-	pi.registerCommand("ddd-parser-install", {
-		description: "把签名级符合性校验所需的解析器与 grammar 安装到 ~/.pi/agent/ddd-parser/（仅用户触发，失败时报错）",
-		handler: async (_args, ctx) => {
-			await runParserInstall(pi, ctx);
-		},
-	});
 }
 
 async function runCheck(pi: ExtensionAPI, spec: { name: string; script: string }, root: string) {
@@ -171,7 +172,7 @@ async function runCheck(pi: ExtensionAPI, spec: { name: string; script: string }
 	const status = parseStatus(stdout);
 	const ok = exitCode === 0;
 	return {
-		content: [{ type: "text", text: buildSummary(spec, root, exitCode, status, stdout, stderr) }],
+		content: [{ type: "text", text: buildSummary(spec, scriptPath, root, exitCode, status, stdout, stderr) }],
 		details: { script: spec.script, root, exitCode, status },
 		structuredContent: { script: spec.script, root, exitCode, status, ok },
 		isError: !ok,
@@ -216,6 +217,7 @@ function extractKeyLines(stdout: string): string[] {
 
 function buildSummary(
 	spec: { name: string; script: string },
+	scriptPath: string,
 	root: string,
 	exitCode: number,
 	status: string | null,
@@ -232,7 +234,8 @@ function buildSummary(
 	}
 	if (stderr.trim()) lines.push(`stderr：${truncate(stderr.trim(), 300)}`);
 	let text = lines.join("\n");
-	if (text.length > SUMMARY_MAX_CHARS) text = `${text.slice(0, SUMMARY_MAX_CHARS)}\n…摘要已截断，完整输出请直接运行 skills/ddd-methodology/scripts/${spec.script}.js。`;
+	// 回看提示用经包根解析的绝对脚本路径，不用仅相对调用方 cwd 才成立的相对路径
+	if (text.length > SUMMARY_MAX_CHARS) text = `${text.slice(0, SUMMARY_MAX_CHARS)}\n…摘要已截断，完整输出请直接运行 ${scriptPath}。`;
 	return text;
 }
 
@@ -248,39 +251,4 @@ function tryParseJson(text: string): Record<string, unknown> | null {
 
 function truncate(text: string, max: number): string {
 	return text.length > max ? `${text.slice(0, max)}…` : text;
-}
-
-// ---- 解析器供给入口的运行逻辑 ----
-
-// 先展示将安装的包与位置，再执行安装；两步都经 install-parser.js，扩展侧不读版本清单、不内置安装实现
-async function runParserInstall(pi: ExtensionAPI, ctx: unknown): Promise<void> {
-	if (!existsSync(PARSER_INSTALL_SCRIPT)) {
-		notifyUser(ctx, `[ddd-parser-install] 安装脚本缺失：${PARSER_INSTALL_SCRIPT}。请确认该文件随包发布，且位置可由包根解析。`, "error");
-		return;
-	}
-	const plan = await runNode(pi, [PARSER_INSTALL_SCRIPT]);
-	if (plan === null) {
-		notifyUser(ctx, "[ddd-parser-install] 无法运行安装计划，安装中止。请确认 node 可用。", "error");
-		return;
-	}
-	notifyUser(ctx, `[ddd-parser-install] 即将安装的包与位置：\n${plan.text.trimEnd()}`, "info");
-	const done = await runNode(pi, [PARSER_INSTALL_SCRIPT, "--install"]);
-	if (done === null) {
-		notifyUser(ctx, "[ddd-parser-install] 安装执行失败，请确认 node 与 npm 可用。", "error");
-		return;
-	}
-	notifyUser(ctx, `[ddd-parser-install] ${done.text.trimEnd()}`, done.ok ? "info" : "error");
-}
-
-// 脚本调用：合并 stdout 与 stderr 为可读文本，返回退出码是否为零；执行抛错回 null 由调用方报错
-async function runNode(pi: ExtensionAPI, args: string[]): Promise<{ ok: boolean; text: string } | null> {
-	let result: ExecResult | undefined;
-	try {
-		result = (await pi.exec("node", args, { timeout: EXEC_TIMEOUT_MS })) as ExecResult;
-	} catch {
-		return null;
-	}
-	const stdout = result && typeof result.stdout === "string" ? result.stdout : "";
-	const stderr = result && typeof result.stderr === "string" ? result.stderr : "";
-	return { ok: !!result && result.code === 0, text: [stdout, stderr].filter((part) => part.trim() !== "").join("\n") };
 }

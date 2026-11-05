@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
  * 目标：把本仓库跨文档引用、常量、清单与冻结短语的一致性外化为可复现的机械证据，供文档同步链在提交前校验。
- * 范围：二十三项校验，编号沿用 C1 至 C25，其中 C13 与 C18 无对应校验项；编号不复用，以免既有引用与教训回写映射漂移；
- *   默认只读不落盘，仅 --fix 写盘，写盘范围限 workflow 的阶段注册表块；C19 的收敛度基线在缺失时首次生成。
+ * 范围：二十三项校验，编号沿用 C1 至 C25，其中 C13 与 C18 无对应校验项、C9 按废弃处置只报不适用；编号不复用，以免既有引用与教训回写映射漂移；
+ *   默认只读不落盘；C19 的收敛度基线在缺失时首次生成。
  * 校验实现按域外置于 ./lib/：规范读取面见 spec-doc.js，引用形态见 ref-refs.js，常量集合见 ref-constants.js，
  *   阶段键见 ref-stages.js，冻结短语见 ref-phrases.js，登记簿字段集合见 ref-debt-fields.js，校验项映射见 ref-coverage.js，
  *   工作区行尾见 ref-line-endings.js，结构树与安装内容明细、命令入口清单与模板章节引用见 ref-structure.js，
  *   提示模板集与基线键见 ref-inventory.js，矩阵与技能清单一致性见 matrix.js；随装脚本枚举见顶层 ./install-manifest-check.js。本脚本只作装配与输出。
  * 清单类校验 C5 与 C11 由 ./roster-check.js 提供，本脚本只作调用。
  * 索引表校验 C12 由 ./spec-index-check.js 提供，本脚本只作调用并注入已枚举的规范文件清单与索引入口路径。
- * 用法：node ref-check.js <仓库根> [--fix]；--fix 从 spec 键清单生成 workflow 阶段注册表并输出改动清单。
+ * 用法：node ref-check.js <仓库根>；只读不落盘。
  * 输出形态：文本正文；末行机读结论 `RESULT: pass`（无漂移）或 `RESULT: drift`（存在漂移）
  * 退出码：0 通过，1 存在漂移。门禁地位：本仓库文档同步链，不作被开发项目的门禁证据。
  * 输出上限：12000 字节，按 UTF-8 计量；超限截断明细，末行结论与明细计数行保留。
@@ -44,16 +44,17 @@ const rosterCheck = require("./roster-check.js");
 const specIndexCheck = require("./spec-index-check.js");
 
 const argv = process.argv.slice(2);
-const fixMode = argv.includes("--fix");
 const root = path.resolve(argv.find((a) => !a.startsWith("--")) || process.cwd());
+// --fix 已去除：其唯一写盘目标（编排脚本 stageRegistry）属「编排脚本重建」范围且写盘会破坏编排，故本脚本只读；保留提示避免静默忽略
+if (argv.includes("--fix")) process.stdout.write("[提示] --fix 已去除：编排脚本重建不在本校验范围，本脚本只读不落盘\n");
 const SKIP_FILE_NAMES = new Set([CHANGELOG_NAME]);
-// workflow 与守卫扩展的固定路径：C4 与 C9 的受控副本载体，只在装配处定义一次
+// workflow 与守卫扩展的固定路径：C4 以守卫单键作判定、以 workflow 阶段注册表作非漂移备注，只在装配处定义一次
 const WORKFLOW_REL = ["skills", "ddd-methodology", "scripts", "ddd-workflow.js"];
 const GUARD_REL = ["extensions", "ddd-governance.ts"];
 // 活文档遍历的专用排除集：共享 walk 会连 build、dist 等产物目录一并排除，使扫描面窄于设计声称的对外行为；此处只排除项目侧证据与依赖目录
 const REF_EXCLUDE_DIRS = new Set(["node_modules", "docs"]);
 
-// 路径归一绑定仓库根：供各校验项与 --fix 的改动清单统一输出
+// 路径归一绑定仓库根：供各校验项统一输出
 const relPath = (file) => toRelPath(root, file);
 
 // 活文档遍历：深度优先，跳过点开头条目与专用排除集；不可读目录静默跳过
@@ -88,20 +89,6 @@ const convergenceChecks = createConvergenceChecks(env);
 const obligationChecks = createObligationChecks(env);
 const inventoryChecks = createInventoryChecks(env);
 
-// --fix 唯一写盘点：只重写 workflow 的阶段注册表块，写盘前先比对，无差异不写盘；guard 只校验不写
-function runFix(src) {
-  if (!src.specKeys) return { error: "spec 状态文件节的键清单不可解析", changes: [] };
-  if (!src.stageRegistryBlock) return { error: "workflow 的 stageRegistry 数组块不可解析", changes: [] };
-  const expected = stageChecks.renderStageRegistry(src.specKeys);
-  const changes = [];
-  if (src.stageRegistryBlock[0] !== expected) {
-    const next = src.workflowText.slice(0, src.stageRegistryBlock.index) + expected + src.workflowText.slice(src.stageRegistryBlock.index + src.stageRegistryBlock[0].length);
-    fs.writeFileSync(src.workflowPath, next);
-    changes.push(`${relPath(src.workflowPath)}：阶段注册表已按 spec 键清单重写（${src.specKeys.length} 项）`);
-  }
-  return { changes, guardOk: !!src.guardKey && src.specKeys.includes(src.guardKey), guardKey: src.guardKey };
-}
-
 const CHECKS = [
   ["C1", "语义化节引用有效", refChecks.checkSemanticRefs],
   ["C2", "裸章节号引用已清除", refChecks.checkBareSectionRefs],
@@ -111,7 +98,7 @@ const CHECKS = [
   ["C6", "门号一致性", constantChecks.checkGateIds],
   ["C7", "脚本名一致性", refChecks.checkScriptNames],
   ["C8", "冻结短语一致性", phraseChecks.checkFrozenPhrases],
-  ["C9", "守卫编号一致性", constantChecks.checkGuardIds],
+  ["C9", "守卫编号一致性（守卫表权威在 DESIGN-extensions，已按废弃处置）", constantChecks.checkGuardIds],
   ["C10", "判定表默认分支", () => decisionTables.checkJudgmentDefault(liveDocPaths.map(relPath), (rel) => readFileText(path.join(root, rel)))],
   ["C11", "skill 清单一致性", () => rosterCheck.checkSkillRoster(root)],
   ["C12", "规范索引表一致性", () => specIndexCheck.checkSpecIndex(root, specDocs.map((doc) => doc.rel), SPEC_INDEX_REL)],
@@ -128,9 +115,6 @@ const CHECKS = [
   ["C25", "矩阵与技能清单一致性", () => checkMatrix(root)],
 ];
 
-// --fix 先于校验写盘，使报告与末行结论反映修复后状态；默认模式不触盘
-const fixResult = fixMode ? runFix(stageChecks.readStageKeySources()) : null;
-
 // 每项独立执行：单项异常记入漂移清单后继续，不中断其余项
 const checkResults = [];
 for (const [id, title, run] of CHECKS) {
@@ -140,7 +124,7 @@ for (const [id, title, run] of CHECKS) {
     checkResults.push({ id, title, drifts: [drift(id, "skills/ddd-methodology/scripts/ref-check.js", 0, "单项校验异常须记入漂移清单并继续", "该单项正常完成", String((error && error.message) || error))] });
   }
 }
-const totalDrifts = checkResults.reduce((sum, result) => sum + result.drifts.length, 0) + (fixResult && fixResult.error ? 1 : 0);
+const totalDrifts = checkResults.reduce((sum, result) => sum + result.drifts.length, 0);
 
 // 输出按明细与固定行分离：超限时自尾部回撤明细，计数行、各项小结与末行结论保留
 function capRefReport(entries) {
@@ -165,15 +149,6 @@ function capRefReport(entries) {
 }
 
 const entries = [{ droppable: false, text: "=== 跨文档引用一致性校验 ===" }, { droppable: false, text: `仓库根：${root}` }, { droppable: false, text: `活文档：${liveDocPaths.length} 份；校验项：${CHECKS.length} 项` }];
-// --fix 的改动清单入报告：列出写盘项，或声明无需改动；guard 单键只校验不写
-if (fixResult) {
-  entries.push({ droppable: false, text: "=== --fix 生成模式 ===" });
-  if (fixResult.error) entries.push({ droppable: false, text: `  ✗ 中止：${fixResult.error}` });
-  else {
-    for (const line of fixResult.changes.length ? fixResult.changes : ["无需改动：受控副本已与 spec 键清单一致"]) entries.push({ droppable: false, text: `  · ${line}` });
-    entries.push({ droppable: false, text: `  · guard 单键「${fixResult.guardKey}」${fixResult.guardOk ? "属于期望集合，未写该文件" : "不属于期望集合，须人工处理"}` });
-  }
-}
 for (const result of checkResults) {
   const passed = !result.drifts.length;
   entries.push({ droppable: false, text: passed ? `[${result.id} ${result.title}] 通过` : `[${result.id} ${result.title}] 漂移 ${result.drifts.length} 项` });

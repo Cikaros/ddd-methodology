@@ -25,7 +25,7 @@ const path = require("path");
 // 读取失败回空串而非中断：AC.md 与追溯文档读不到时仍给出结构化缺口结论，消费端不以栈信息判读
 const { readFileText } = require("./lib/text.js");
 const { capLines } = require("./lib/truncate.js");
-const { checkContractFingerprint } = require("./fingerprint");
+const { interfaceFreezeFindings } = require("./lib/freeze");
 const { absoluteDesignDir } = require("./design-root");
 const { walk, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
 const { isMethodologyRepo, methodologyReason, NOT_APPLICABLE_TAIL } = require("./lib/repo-scope.js");
@@ -137,15 +137,16 @@ function variantCheck(text, label) {
   if (loose > std) warnings.push(`${label} 检测到非标准 AC 编号格式变体（如 AC-1/小写），请统一为 AC-XXX（三位数字），否则可能被静默漏计`);
 }
 
-// ---- 3.5 契约指纹一致性（规范「结构与契约的演进治理」节的契约指纹条）——无 docs/design 时 designFiles 为空，自然跳过 ----
-let fingerprintsChecked = 0;
-for (const f of designFiles) {
-  const rel = path.relative(root, f);
-  const text = readFileText(f);
-  const issue = checkContractFingerprint(text);
-  if (issue) problems.push(`${rel} ${issue}`);
-  else fingerprintsChecked++;
-}
+// ---- 3.5 接口冻结一致性（规范「结构与契约的演进治理」节的冻结锚点条）——无 docs/design 时 designFiles 为空，自然跳过 ----
+// 判据由接口节 diff 承接：diff 非空即行为变更，与「变更记录」声明的变更类型不符（含未声明）即判缺口；口径唯一在 lib/freeze.js
+const freezeFindings = interfaceFreezeFindings({
+  root,
+  designRootRel: path.relative(root, designRoot.dir).split(path.sep).join("/"),
+  designFiles,
+  relPath: (f) => path.relative(root, f),
+});
+problems.push(...freezeFindings.problems);
+warnings.push(...freezeFindings.warnings);
 
 // ---- 4. 校验 ----
 // G4：总 AC 被模块承接
@@ -331,7 +332,7 @@ async function main() {
   await checkInterfaceSources();
   const head = [
   "=== DDD 追溯一致性校验 ===",
-  `总 AC：${totalACs.length} 条；需求编号：${requirementIds ? `${requirementIds.length} 条` : "未判定"}；DESIGN.md：${designFiles.length} 份；TEST_PLAN.md：${testFiles.length} 份；契约指纹已校验 ${fingerprintsChecked} 份`,
+  `总 AC：${totalACs.length} 条；需求编号：${requirementIds ? `${requirementIds.length} 条` : "未判定"}；DESIGN.md：${designFiles.length} 份；TEST_PLAN.md：${testFiles.length} 份；接口节冻结已校验 ${freezeFindings.checked.unchanged + freezeFindings.checked.changed} 份（diff 非空 ${freezeFindings.checked.changed} 份，无法判定 ${freezeFindings.checked.undetermined} 份）`,
 ];
   const details = [];
   if (warnings.length) {

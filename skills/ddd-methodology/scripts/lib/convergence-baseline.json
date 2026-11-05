@@ -1,7 +1,7 @@
 {
   "repoItems": {
-    "files": 142,
-    "dirs": 40
+    "files": 150,
+    "dirs": 41
   },
   "docHeadings": {
     "agents/ddd-acceptance.md": 7,
@@ -17,6 +17,10 @@
     "extensions/rules/global-rules.md": 6,
     "GLOSSARY.md": 1,
     "README.md": 8,
+    "prompts/ddd-init.md": 0,
+    "prompts/ddd-parser-install.md": 0,
+    "prompts/ddd-rebuild.md": 0,
+    "prompts/ddd-refactor.md": 0,
     "skills/ddd-methodology/assets/agent-templates/ddd-auditor.md": 8,
     "skills/ddd-methodology/assets/agent-templates/ddd-doc-sync.md": 8,
     "skills/ddd-methodology/assets/project-templates/AGENTS.md": 6,

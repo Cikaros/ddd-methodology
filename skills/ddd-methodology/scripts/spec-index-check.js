@@ -1,6 +1,6 @@
 /**
- * 目标：把规范索引表、子节对照表同八份规范文件实际标题的一致性外化为可复现的机械证据，供文档同步链在提交前校验。
- * 范围：解析 spec.md 索引表的节编号、节标题与所在文件三列，与八份 spec*.md 的顶层二级标题按所在文件作双向三列比对；
+ * 目标：把规范索引表、子节对照表同全部规范文件实际标题的一致性外化为可复现的机械证据，供文档同步链在提交前校验。
+ * 范围：解析 spec.md 索引表的节编号、节标题与所在文件三列，与全部 spec*.md 的顶层二级标题按所在文件作双向三列比对；
  *   另解析 spec.md 子节对照表的子节标题与所在文件两列，逐条核对其在所属文件中逐字存在；任一项不符即回传漂移项。
  * 不包含：子节对照的反向核对（不以规范标题反查对照表，对照表是所引子节的清单而非文件标题的清单）、其他校验项、目录遍历与路径解析、命令行入口。
  * 调用形态：checkSpecIndex(root, specFileRels, indexRel)；root 为仓库根；规范文件清单与索引入口路径由调用方注入，
@@ -82,7 +82,7 @@ function describeSiblings(list) {
   return list.length ? list.map((r) => `「${r.number}. ${r.title}」于 ${r.file}`).join("、") : "无同编号条目";
 }
 
-// C12 规范索引表一致性：索引表与八份规范二级标题三列双向比对，子节对照表逐条核对所属文件标题，任一项不符即漂移
+// C12 规范索引表一致性：索引表与全部规范二级标题三列双向比对，子节对照表逐条核对所属文件标题，任一项不符即漂移
 function checkSpecIndex(root, specFileRels, indexRel) {
   const indexText = readFileText(path.join(root, indexRel));
   const indexRows = parseIndexRows(indexText);
@@ -91,7 +91,7 @@ function checkSpecIndex(root, specFileRels, indexRel) {
   const specFiles = specFileRels
     .map((rel) => ({ rel, name: path.basename(rel) }))
     .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
-  if (!specFiles.length) return [drift("C12", path.posix.dirname(indexRel), 0, "规范目录须含 spec 文件", "八份 spec*.md")];
+  if (!specFiles.length) return [drift("C12", path.posix.dirname(indexRel), 0, "规范目录须含 spec 文件", "至少一份 spec*.md")];
 
   const actual = [];
   for (const { rel, name } of specFiles) {

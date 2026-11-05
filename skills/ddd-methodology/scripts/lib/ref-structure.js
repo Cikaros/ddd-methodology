@@ -14,10 +14,8 @@ const { spawnSync } = require("child_process");
 const { readFileText, drift } = require("./text.js");
 
 const STRUCTURE_REL = "STRUCTURE.md";
-// workflow 脚本经 skills/ddd-methodology/scripts/ 目录单独随装，不在随包脚本白名单内，故明细比对时排除
-const WORKFLOW_SCRIPT_NAME = "ddd-workflow.js";
-// 明细中的脚本名形态：小写字母起、其后为字母数字或连字符，点分扩展名为 js
-const DETAIL_SCRIPT_RE = /^[a-z][a-z0-9-]*\.js$/;
+// 明细中的脚本名形态：小写字母起、其后为字母数字、连字符或点（点用于 matrix.test.js 一类带点基名），点分扩展名为 js
+const DETAIL_SCRIPT_RE = /^[a-z][a-z0-9.-]*\.js$/;
 
 function createStructureChecks(env) {
   const { root, shippedScripts, liveDocPaths } = env;
@@ -124,12 +122,13 @@ function createStructureChecks(env) {
     return end < 0 ? tail : tail.slice(0, end + 1);
   }
 
-  // 明细中列出的脚本名：取反引号内 token 的基名（脚本可能以完整安装路径出现），workflow 脚本另行随装故排除
+  // 明细中列出的脚本名：取反引号内 token 的基名（脚本可能以完整安装路径出现）；
+  // 口径与随包脚本集合一一对应，不单侧排除 workflow——编排脚本同属 scripts/ 下的 .js，已在安装内容明细中列出
   function collectDetailScripts(section) {
     const names = new Set();
     for (const m of section.matchAll(/`([^`]+)`/g)) {
       const base = m[1].trim().split("/").pop();
-      if (!DETAIL_SCRIPT_RE.test(base) || base === WORKFLOW_SCRIPT_NAME) continue;
+      if (!DETAIL_SCRIPT_RE.test(base)) continue;
       names.add(base);
     }
     return names;

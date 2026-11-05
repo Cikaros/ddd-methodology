@@ -20,7 +20,7 @@
 - 结论：通过 / 退回，退回注明对象与原因
 ```
 
-G4 与 G5 附由根会话运行的 trace-check 输出，其中含契约指纹校验结果；G4.5 记录附契约指纹；G5-INT 附 code-health 输出、governance-check 的 verdict 与结构治理回执；G6 附审计报告全文，报告节次以审计代理输出契约为准。
+G4 与 G5 附由根会话运行的 trace-check 输出，其中含接口节冻结一致性结果；G4.5 记录附冻结锚点；G5-INT 附 code-health 输出、governance-check 的 verdict 与结构治理回执；G6 附审计报告全文，报告节次以审计代理输出契约为准。
 
 审计报告由根会话按报告给出的建议归档名落盘至 `<项目根>/docs/audits/`，命名格式为 G6-序号-版本，作为下次回验的输入。
 

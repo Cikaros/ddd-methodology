@@ -1,36 +1,36 @@
 #!/usr/bin/env node
 /**
- * 目标：把契约指纹与结构趋势的门禁判定收敛为单个 JSON 文档，作为 G4、G4.5、G5、G5-INT 与 G6 的 typed gate 证据源。
- * 范围：五项机械可判定事项——各 DESIGN.md 契约指纹齐备且与契约段实算值一致；存在设计文档树时其根路径已在
- *   ARCHITECTURE.md 声明（未声明即阻断，不得回退 docs/design 而放行）；docs/health.json 最新一条相对上一条
- *   问题类计数未增加（问题类计数的键集合以本脚本内的 TREND_BLOCKING_KEYS 常量为唯一权威，规范只作抽象描述并指向本脚本）；
- *   已记录指纹的 DESIGN 其「变更记录」节是否有数据行（无则仅告警不阻断）；「变更记录」最新一轮的变更类型与该轮相对上一轮的
- *   契约指纹变化相符（声明行为变更或重建却指纹未变、声明重构却指纹变化即阻断；不足两轮或类型不在已知之列时报无法判定并说明，不静默通过）。
- * 不包含：行为等价性、用例集合增减方向、变更类型声明与行为产物是否相符、结构度量是否真改善等需语义判断的事项，交由 ddd-tester 与 ddd-auditor。
- * 零 delta 拦截的对象是「变更记录」表最新一轮相对上一轮的类型与指纹，两轮的比对基准是表内自带的上一轮契约指纹。
- * 用法：node governance-check.js <项目根>
- * 输出形态：单个 JSON 文档，且仅此一个；字段 limitBytes 给出输出上限，供消费端自证口径。
+ * 目标：把接口冻结与结构趋势的门禁判定收敛为单个 JSON 文档，作为 G4、G4.5、G5、G5-INT 与 G6 的 typed gate 证据源。
+ * 范围：四项机械可判定事项——存在设计文档树时其根路径已在 ARCHITECTURE.md 声明（未声明即阻断，不得回退 docs/design 而放行）；
+ *   docs/health.json 最新一条相对上一条问题类计数未增加（问题类计数的键集合以本脚本内的 TREND_BLOCKING_KEYS 常量为唯一权威，规范只作抽象描述并指向本脚本）；
+ *   已记录冻结锚点的 DESIGN 其「变更记录」节是否有数据行（无则仅告警不阻断）；每份 DESIGN 的接口节相对冻结锚点的 diff 与
+ *   「变更记录」最新一轮声明的变更类型相符（diff 非空即行为变更，须声明行为变更或重建并同步 AC；声明重构却 diff 非空、或 diff 非空却未声明即阻断，即受影响 AC 未同步）。
+ * 不包含：行为等价性、用例集合增减方向、编译产物是否等价等需语义判断的事项，交由 ddd-tester 与 ddd-auditor；AC 文本是否真同步属语义判定，机械侧以变更类型声明为代理。
+ * 接口节定位与 diff 的口径唯一在 ./lib/freeze.js，本脚本只消费其结论，不另写一份比对逻辑。
+ * 用法：node governance-check.js <项目根>；加 --freeze 时把当前 commit 记为冻结锚点写入设计树根下的冻结清单，供接口冻结节点使用，默认只读不落盘。
+ * 输出形态：只读时输出单个 JSON 文档，且仅此一个；字段 limitBytes 给出输出上限，供消费端自证口径。
  * 末行机读结论：`verdict` 字段，取值 ok 或 blocked
  * 退出码：0 通过，1 阻断。门禁地位：G5-INT 门槛证据，退出码非零即 blocked
  * 输出上限：12000 字节，按 UTF-8 字节计量；超限截断 reasons，并在 warnings 给出总数与已列数
- * 非目标项目：无设计文档树时零考察，verdict 为 ok，确保对本方法论仓库自身等场景零误伤；未声明根路径的阻断仅在
+ * 非目标项目：无设计文档树时零考察，输出 `applicable:false` 与 `notApplicable` 说明，verdict 为 ok，确保对本方法论仓库自身等场景零误伤；未声明根路径的阻断仅在
  *   设计文档树实际存在时生效，无树的项目不受影响。
- * 依赖：文本读取取 ./lib/text.js 的 readFileText，本脚本不再内联读取实现。
+ * 依赖：文本读取取 ./lib/text.js 的 readFileText，本脚本不再内联读取实现；冻结锚点与接口节 diff 取 ./lib/freeze.js。
  * 规范依据：规范「质量门禁」节的 G5-INT 证据源行、「结构与注释的机械证据」节的脚本消费契约表，
- *   与「结构与契约的演进治理」节的指纹门槛条。
+ *   与「结构与契约的演进治理」节的冻结锚点条。
  */
 
 const fs = require("fs");
 const path = require("path");
-// 读取失败回空串而非中断：DESIGN 读不到时仍走指纹校验并给出结构化结论，消费端不以栈信息判读
+// 读取失败回空串而非中断：DESIGN 读不到时仍走接口冻结校验并给出结构化结论，消费端不以栈信息判读
 const { readFileText, num } = require("./lib/text.js");
 const { DEFAULT_LIMIT_BYTES, capText } = require("./lib/truncate.js");
 const { HEALTH_REL, artifactReadPath } = require("./lib/paths.js");
-const { checkContractFingerprint, isWellFormedFingerprint } = require("./fingerprint");
+const { interfaceFreezeFindings, headCommit, writeFreeze } = require("./lib/freeze");
 const { absoluteDesignDir } = require("./design-root");
 const { walk, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
 
-const root = process.argv[2] || process.cwd();
+const argv = process.argv.slice(2);
+const root = path.resolve(argv.find((a) => !a.startsWith("--")) || process.cwd());
 
 // 趋势阻断面：问题类计数键集合，本常量为唯一权威，规范只作抽象描述并指向本脚本。
 // 超限类、死代码类与注释质量类属问题类计数，最新一条相对上一条上升即阻断。
@@ -48,6 +48,11 @@ const TREND_BLOCKING_KEYS = [
 // 非阻断项：接近上限类属预警阈值、未构成问题，弱信号重复类需语义判定，二者不阻断，只在报告中列出
 const TREND_NON_BLOCKING_KEYS = ["nearLimit", "docNearLimit", "contractNearLimit", "duplicates"];
 
+// 设计树根的仓库相对路径：冻结清单随根存放，路径按 posix 归一，避免平台分隔符渗入清单 scope
+function designRootRel(designRoot) {
+  return path.relative(root, designRoot.dir).split(path.sep).join("/");
+}
+
 // 「变更记录」节是否存在至少一条数据行（表头与分隔行不计）
 function hasChangeRecordRow(text) {
   const m = text.match(/(?:^|\n)##\s*(?:[一二三四五六七八九十\d]+[、.．]?\s*)?变更记录[^\n]*\n?([\s\S]*?)(?=\n## |$)/);
@@ -57,73 +62,16 @@ function hasChangeRecordRow(text) {
   return nonSep.length > 1; // 去掉表头后仍有数据行
 }
 
-// 「变更记录」表列序固定为 轮次 | 变更类型 | 契约指纹 | 结构度量 | 依据，取自 templates.md 的 DESIGN 模板；
-// 该表是变更类型与契约指纹的既有承载，本脚本复用其机读形态，不新造并行的状态文件。无该节时回 null，
-// 由 hasChangeRecordRow 的告警承接，不在此重复报同一事。
-function parseChangeRows(text) {
-  const m = text.match(/(?:^|\n)##\s*(?:[一二三四五六七八九十\d]+[、.．]?\s*)?变更记录[^\n]*\n([\s\S]*?)(?=\n## |$)/);
-  if (!m) return null;
-  const rows = [];
-  for (const line of m[1].split("\n")) {
-    if (!/^\s*\|/.test(line)) continue;
-    if (/^\s*\|[\s:|-]+\|?\s*$/.test(line)) continue; // 表头分隔行
-    const cells = line.split("|").slice(1, -1).map((c) => c.trim());
-    if (cells.length < 3 || /^轮次$/.test(cells[0])) continue;
-    rows.push({ type: cells[1], fingerprint: cells[2] });
-  }
-  return rows;
-}
-
-// 变更类型归类：重建属行为变更的特例（见「变更类型」条），故与行为变更同判；一格并列两类时归为已知之外
-function classifyChangeType(raw) {
-  const type = String(raw || "");
-  const behavior = /行为变更|重建/.test(type);
-  const refactor = /重构/.test(type);
-  if (behavior && refactor) return null;
-  if (behavior) return "behavior";
-  if (refactor) return "refactor";
-  return null;
-}
-
-// 指纹列取值：优先取反引号内码点，退而取整格去空白，与 templates 的书写形态兼容
-function changeFingerprint(cell) {
-  const s = String(cell || "");
-  const m = s.match(/`([^`]*)`/);
-  return (m ? m[1] : s).trim();
-}
-
-// 零 delta 拦截：以「变更记录」最新一轮相对上一轮的变更类型与契约指纹变化为判据，
-// 声明行为变更却指纹未变、或声明重构却指纹变化即报缺口；不足以判定时报无法判定，不静默通过。
-function checkChangeTypeDelta(text) {
-  const rows = parseChangeRows(text);
-  if (rows === null) return {};
-  if (rows.length < 2) return { undetermined: "「变更记录」不足两轮，无上一轮契约指纹可比，无法判定变更类型与指纹是否相符" };
-  const last = rows[rows.length - 1];
-  const prev = rows[rows.length - 2];
-  const kind = classifyChangeType(last.type);
-  if (!kind) return { undetermined: `「变更记录」最新一轮的变更类型「${last.type}」不在已知之列（重构、行为变更、重建），无法判定` };
-  const fpLast = changeFingerprint(last.fingerprint);
-  const fpPrev = changeFingerprint(prev.fingerprint);
-  if (!isWellFormedFingerprint(fpLast) || !isWellFormedFingerprint(fpPrev)) {
-    return { undetermined: "「变更记录」最新一轮或上一轮的契约指纹缺失或不足八位十六进制，无法判定" };
-  }
-  if (kind === "behavior" && fpLast === fpPrev) {
-    return { gap: `「变更记录」最新一轮声明「${last.type}」，但契约指纹与上一轮同为 ${fpLast}，属零 delta：声称有设计变更而指纹未变` };
-  }
-  if (kind === "refactor" && fpLast !== fpPrev) {
-    return { gap: `「变更记录」最新一轮声明重构，但契约指纹由上一轮 ${fpPrev} 变为 ${fpLast}：重构不应改变指纹` };
-  }
-  return { checked: true };
-}
-
-
 function check() {
   const reasons = [];
   const warnings = [];
-  const checked = { designs: 0, fingerprints: 0, thresholdFiles: 0, thresholdBaseFiles: 0, trend: "none" };
+  const checked = { designs: 0, interfaceFreeze: { anchors: 0, unchanged: 0, changed: 0, undetermined: 0 }, thresholdFiles: 0, thresholdBaseFiles: 0, trend: "none" };
 
   const designRoot = absoluteDesignDir(root);
   const hasDesignDir = fs.existsSync(designRoot.dir);
+  // 无设计文档树时接口冻结与变更判定无判定对象，报不适用而非零对象判过：applicable 明示这一点，verdict 仍为 ok、退出码零
+  const applicable = hasDesignDir;
+  const notApplicable = hasDesignDir ? null : "无设计文档树，接口冻结与变更判定无判定对象";
   // 存在设计文档树却未声明根路径即阻断：回退 docs/design 会绕过「根路径须在 ARCHITECTURE 声明」的要求，机械门不得据此放行。
   if (hasDesignDir && !designRoot.declared) reasons.push("ARCHITECTURE.md 未声明设计文档树根路径，存在设计文档树却无法确认其权威根路径");
   // 无设计文档树时不判定：非 DDD 项目零考察，避免误伤。
@@ -133,16 +81,12 @@ function check() {
     checked.designs = designFiles.length;
     for (const f of designFiles) {
       const rel = path.relative(root, f).split(path.sep).join("/");
-      const text = readFileText(f);
-      const issue = checkContractFingerprint(text);
-      if (issue) reasons.push(`${rel} ${issue}`);
-      else checked.fingerprints++;
-      if (!hasChangeRecordRow(text)) warnings.push(`${rel} 变更记录节无数据行，建议补记变更类型与依据`);
-      const delta = checkChangeTypeDelta(text);
-      if (delta.undetermined) warnings.push(`${rel} ${delta.undetermined}`);
-      if (delta.gap) reasons.push(`${rel} ${delta.gap}`);
-      if (delta.checked) checked.changeTypes = (checked.changeTypes || 0) + 1;
+      if (!hasChangeRecordRow(readFileText(f))) warnings.push(`${rel} 变更记录节无数据行，建议补记变更类型与依据`);
     }
+    const freeze = interfaceFreezeFindings({ root, designRootRel: designRootRel(designRoot), designFiles, relPath: (f) => path.relative(root, f) });
+    checked.interfaceFreeze = freeze.checked;
+    reasons.push(...freeze.problems);
+    warnings.push(...freeze.warnings);
   }
 
   const healthPath = artifactReadPath(root, HEALTH_REL);
@@ -184,10 +128,23 @@ function check() {
     }
   }
 
-  return { checked, reasons, warnings };
+  return { checked, reasons, warnings, applicable, notApplicable };
 }
 
-const { checked, reasons, warnings } = check();
+// 接口冻结写入：把当前 commit 记为锚点，scope 取设计树根的仓库相对路径，使清单随根迁移
+if (argv.includes("--freeze")) {
+  const designDir = designRootRel(absoluteDesignDir(root));
+  const anchor = headCommit(root);
+  if (!anchor) {
+    process.stdout.write("冻结失败：本仓库不是 git 仓库或尚无 HEAD 提交，无法记锚点\n");
+    process.exit(1);
+  }
+  const rel = writeFreeze(root, designDir, { anchor, at: new Date().toISOString(), scope: designDir });
+  process.stdout.write(`冻结清单已写入 ${rel}：anchor=${anchor}\n`);
+  process.exit(0);
+}
+
+const { checked, reasons, warnings, applicable, notApplicable } = check();
 const verdict = reasons.length ? "blocked" : "ok";
 // JSON 内的 limitBytes 与 emit 的收缩上限同源，避免消费端与脚本各持一套口径
 
@@ -198,6 +155,8 @@ function emit(payload, limitBytes) {
   const pack = (kept) =>
     JSON.stringify({
       verdict: payload.verdict,
+      applicable: payload.applicable,
+      ...(payload.notApplicable ? { notApplicable: payload.notApplicable } : {}),
       limitBytes,
       reasons: payload.reasons.slice(0, kept),
       warnings: kept < payload.reasons.length ? [`明细超 ${limitBytes} 字节上限，已截断`, countNote(payload.reasons.length, kept)] : payload.warnings,
@@ -206,5 +165,5 @@ function emit(payload, limitBytes) {
   return capText({ total: payload.reasons.length, limit: limitBytes, build: pack });
 }
 
-process.stdout.write(emit({ verdict, reasons, warnings, checked }, DEFAULT_LIMIT_BYTES));
+process.stdout.write(emit({ verdict, reasons, warnings, checked, applicable, notApplicable }, DEFAULT_LIMIT_BYTES));
 process.exit(verdict === "blocked" ? 1 : 0);

@@ -3,7 +3,7 @@
  *
  * 目标：收敛四个扩展各自的重复小工具，承载包根解析、脚本执行超时、pi.exec 退出码归一、错误描述与安全读文本五项，供扩展复用。
  * 范围：只放与宿主及具体扩展无关的纯工具；无默认导出，不挂接任何事件、不注册工具与命令。
- * 不包含：各扩展的入口与注册逻辑（见同目录上层的 ddd-context、ddd-tools、ddd-governance、ddd-models 四个文件）。
+ * 不包含：各扩展的入口与注册逻辑（见同目录上层的 ddd-context、ddd-governance、ddd-tools、ddd-resources 四个文件）。
  *
  * 发现面：本文件位于 extensions/ 的子目录 lib/ 且该目录无 index.ts，pi 只把 extensions/ 下的一层 .ts/.js 文件与含
  *   index.ts 或 index.js 的子目录当作扩展入口（见 pi 文档 extensions 的 Add it to Pi 节），故本文件不会被当作入口加载。

@@ -9,7 +9,7 @@
 | 注入矩阵 | 项目术语 | 以节点为键，按约束、语言、工具三维给出该节点可得技能集与读取时机的矩阵 | 不指技能正文本身 | `skills/ddd-methodology/assets/injection-matrix.json` | 哪个节点该看到哪些技能的一张对照表 |
 | 交叉检查 | 项目术语 | 五个节点交出后立即执行的机械校对，结论并入前驱所属门作子项 | 不指事后评审 | `skills/ddd-methodology/scripts/lib/cross-check.js` | 交出产物后当场机器核对，不等到事后评审 |
 | 设计文档树 | 项目术语 | `docs/design/` 下与代码目录严格同构的 DESIGN.md 集合 | 不指 `docs/` 下的内部归档 | `skills/ddd-methodology/scripts/design-root.js` | 设计文档的目录结构与代码目录一一对应 |
-| 契约指纹 | 项目术语 | DESIGN 的「对外接口与约定」整节内容取哈希所得的前八位 | 不指代码文件的哈希 | `skills/ddd-methodology/scripts/fingerprint.js` | 接口段落的指纹，用于判断接口有没有被改动 |
+| 冻结锚点 | 项目术语 | 冻结时刻的 git commit 引用，记于设计文档树的冻结清单 `docs/design/FREEZE.json`，作为变更判定的比对基线 | 不指对接口节取哈希所得的契约指纹，该机制已废弃 | `skills/ddd-methodology/scripts/lib/freeze.js` | 接口冻结时记下的 git 定位点，用它与「对外接口与约定」节的定向 diff 判断接口有没有被改动 |
 | 声明面 | 项目术语 | 接口契约、公开导出、能力清单、规则条款、配置项、模板字段与依赖项的总称 | 不指运行时产生的数据 | `skills/ddd-methodology/assets/agent-templates/ddd-auditor.md` | 项目对外作出的全部承诺 |
 | 机械证据 | 项目术语 | 可由脚本或工具复现的门禁证据 | 不指代理的文字自查 | `extensions/ddd-tools.ts` | 机器跑出来的结论，不接受口头自陈 |
 | 判断型证据 | 项目术语 | 由指名代理按判据给出的门禁证据 | 不指脚本输出 | `skills/ddd-methodology/references/spec-gate.md` | 由指定角色判断后给出的结论 |

@@ -2,7 +2,7 @@
  * 目标：脚本共享层的交付质量类与声明面类度量，按规范「绩效度量」节的交付质量类与声明面类口径计算六项——八道门一次通过率与过门轮次、返工轮次分布、
  *   缺陷四级分布、缺陷密度、无消费方声明占比、机械证据覆盖率，作为绩效度量的交付与声明二面实现。
  * 范围：读 docs/gates/ 与 docs/reports/ 的门禁记录、缺陷路由单与测试报告，读 docs/audits/ 最新审计报告的逐项审计表，
- *   读规范「质量门禁」节门禁表的证据源列，读扩展注册处 extensions/ddd-tools.ts 的甲类工具名；来源目录缺失或字段不全时相应度量记空并说明，不改口径、不判失败。
+ *   读主技能 SKILL.md 第四节门禁表的证据类型列；来源目录缺失或字段不全时相应度量记空并说明，不改口径、不判失败。
  * 不包含：结构与债务类度量（见 metrics-structure.js）、来源读取原语（见 metrics-sources.js）、文本报告装配与产物落盘、命令行入口。不引入第三方依赖。
  */
 
@@ -18,14 +18,9 @@ const GATES_DIR_REL = "docs/gates";
 const REPORTS_DIR_REL = "docs/reports";
 const AUDITS_DIR_REL = "docs/audits";
 const GATE_TOTAL = 8;
-// 规范门禁表的两种解析布局：仓库内布局与安装后布局，相对调用脚本自身定位
-const SPEC_GATE_REL = ["skills", "ddd-methodology", "references", "spec-gate.md"];
-const SPEC_GATE_ABS = path.resolve(__dirname, "..", "..", "references", "spec-gate.md");
-// 甲类工具的注册处：工具名单一权威落在扩展注册处，本模块按名判定机械证据而不另写一份名单；路径随包根定位，两种布局同形
-const TOOLS_EXT_REL = ["extensions", "ddd-tools.ts"];
-const TOOLS_EXT_ABS = path.resolve(__dirname, "..", "..", "..", "..", "extensions", "ddd-tools.ts");
-// 注册项的工具名声明形态，与注册处的 name 字段一一对应
-const TOOL_NAME_RE = /name:\s*"(ddd_[a-z0-9_]+)"/g;
+// 门禁表的两种解析布局：仓库内布局（按调用方传入的仓库根）与随包布局（相对调用脚本自身定位）；门禁表本体在主技能 SKILL.md 第四节
+const SPEC_GATE_REL = ["skills", "ddd-methodology", "SKILL.md"];
+const SPEC_GATE_ABS = path.resolve(__dirname, "..", "..", "SKILL.md");
 // 无消费方声明占比的分子：逐项审计表结论中的三类问题取值，其余取值视为有效不计入分子
 const PROBLEMATIC_CONCLUSIONS = ["无消费方", "纸面消费方", "消费不正确"];
 
@@ -153,13 +148,13 @@ function computeUnconsumedDeclarations(root) {
   return { status: "ok", source, total: parsed.total, problematic: parsed.problematic, ratio: Number((parsed.problematic / parsed.total).toFixed(4)), notes: [] };
 }
 
-// 门禁表解析：定位规范「质量门禁」节首张表，证据源列按表头名称定位，越界回退末列；缺证据源列或门列即判不可解析
+// 门禁表解析：定位主技能第四节「门禁」首张表，证据类型列按表头名称定位（以「证据」匹配，兼容「证据类型」「证据源」），越界回退末列；缺证据列或门号列即判不可解析
 function parseGateTable(text) {
-  const rows = firstTableAfter(String(text || "").split("\n"), /^##\s+.*质量门禁/);
+  const rows = firstTableAfter(String(text || "").split("\n"), /^\s*#{2,4}\s+.*门禁/);
   if (!rows) return null;
   const header = rows[0];
-  if (!header.includes("证据源") || !header.includes("门")) return null;
-  const col = header.indexOf("证据源");
+  const col = header.findIndex((cell) => /证据/.test(cell));
+  if (col < 0 || !header.some((cell) => /门号|门/.test(cell))) return null;
   const gates = [];
   for (let i = 1; i < rows.length; i++) {
     const cells = rows[i];
@@ -170,33 +165,22 @@ function parseGateTable(text) {
   return gates;
 }
 
-// 已注册工具名：从注册处取声明，两处布局均找不到时回 null 由调用方记空，避免本模块另写一份工具名单
-function readRegisteredToolNames(root) {
-  const candidates = [path.join(root, ...TOOLS_EXT_REL), TOOLS_EXT_ABS];
-  const file = candidates.find((candidate) => fs.existsSync(candidate));
-  if (!file) return null;
-  return [...readFileText(file).matchAll(TOOL_NAME_RE)].map((match) => match[1]);
+// 机械型证据判定：门禁表证据类型列直接标注类型，含「机械」者即含机械型证据源（「判断加机械」视同含机械型）
+function isMechanicalEvidence(evidence) {
+  return /机械/.test(evidence);
 }
 
-// 机械型证据判定：命令形态、运行时守卫与甲类工具名三者为机械型，指名代理为判断型；含任一机械型来源即计该门
-function isMechanicalEvidence(evidence, toolNames) {
-  if (/\bnode\b/.test(evidence) || /运行时守卫/.test(evidence)) return true;
-  return toolNames.some((name) => evidence.includes(name));
-}
-
-// 度量九：机械证据覆盖率。从规范「质量门禁」节门禁表的证据源列判各门，含机械型证据源的门数除以门的总数，计门不计项；
-// 规范文件按仓库内布局与安装后布局两处解析，两处均找不到时记空并说明
+// 度量九：机械证据覆盖率。从主技能第四节门禁表的证据类型列判各门，含机械型证据源的门数除以门的总数，计门不计项；
+// 主技能文件按仓库内布局与随包布局两处解析，两处均找不到时记空并说明
 function computeMechanicalEvidenceCoverage(root) {
   const empty = { status: "unavailable", total: null, mechanical: null, ratio: null, source: null, notes: [] };
   const candidates = [path.join(root, ...SPEC_GATE_REL), SPEC_GATE_ABS];
   const file = candidates.find((candidate) => fs.existsSync(candidate));
-  if (!file) return { ...empty, source: SPEC_GATE_REL.join("/"), notes: [`规范门禁表未找到，已查仓库内布局 ${SPEC_GATE_REL.join("/")} 与安装后布局 references/spec-gate.md，机械证据覆盖率不可采集`] };
+  if (!file) return { ...empty, source: SPEC_GATE_REL.join("/"), notes: [`门禁表未找到，已查仓库内布局 ${SPEC_GATE_REL.join("/")} 与随包布局 SKILL.md，机械证据覆盖率不可采集`] };
   const shown = file.split(path.sep).join("/");
   const gates = parseGateTable(readFileText(file));
   if (!gates) return { ...empty, source: shown, notes: [`${shown} 未解析到门禁表，机械证据覆盖率不可采集`] };
-  const toolNames = readRegisteredToolNames(root);
-  if (toolNames === null) return { ...empty, source: shown, notes: [`甲类工具注册处未找到，已查 ${TOOLS_EXT_REL.join("/")} 与同包布局，工具名形态无法判定，机械证据覆盖率不可采集`] };
-  const mechanical = gates.filter((evidence) => isMechanicalEvidence(evidence, toolNames)).length;
+  const mechanical = gates.filter((evidence) => isMechanicalEvidence(evidence)).length;
   return { status: "ok", source: shown, total: gates.length, mechanical, ratio: Number((mechanical / gates.length).toFixed(4)), notes: [] };
 }
 

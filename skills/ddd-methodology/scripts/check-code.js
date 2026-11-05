@@ -15,7 +15,7 @@
 const fs = require("fs");
 const path = require("path");
 const { readFileText } = require("./lib/text.js");
-const { runCrossCheck, finding, designDir, designDocs, sourceFiles } = require("./lib/cross-check.js");
+const { runCrossCheck, finding, designDocs } = require("./lib/cross-check.js");
 const { sectionBody, readTable } = require("./lib/span-compare.js");
 
 const root = process.argv[2] || process.cwd();

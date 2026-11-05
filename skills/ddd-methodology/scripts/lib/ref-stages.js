@@ -1,79 +1,117 @@
 /**
- * 目标：把 ref-check 中阶段键这一域的读取与比对外置为单一模块，使 C4 与 --fix 生成共用同一解析。
- * 范围：C4 阶段键三方一致性（spec 键清单、workflow 阶段注册表、guard 单键）、阶段注册表文本渲染、三处副本的读取入口。
+ * 目标：把 ref-check 中阶段键这一域的读取与比对外置为单一模块。
+ * 范围：C4 阶段键一致性——以主技能调度模型节的通道表为权威源，双向比对节点全集节按通道聚集的节点键，
+ *   并校验 guard 单键属于该集合、规范状态文件节以固定句把 doneStages 键集合绑定到该表；
+ *   编排脚本的 stageRegistry 属「编排脚本重建」范围，只作非漂移备注，不计入判定。
  * 不包含：引用形态（见 ref-refs.js）、常量集合（见 ref-constants.js）、冻结短语（见 ref-phrases.js）、规范读取面（见 spec-doc.js）、命令行入口。不引入第三方依赖。
  */
 
 const path = require("path");
 const { readFileText, withLineNumbers, drift } = require("./text.js");
+const { sectionInText } = require("./spec-doc.js");
+
+// 阶段键权威源：主技能第一节调度模型的通道表；节点全集按通道聚集，状态文件 schema 落在规范状态文件节
+const MAIN_SKILL_REL = ["skills", "ddd-methodology", "SKILL.md"];
+const STATE_SCHEMA_REL = ["skills", "ddd-methodology", "references", "spec-govern.md"];
+const CHANNELS = ["A", "B", "C"];
+// 节点键形态：英文 kebab-case，用以从节点表行中取键并跳过表头与分隔行
+const NODE_KEY_RE = /^[a-z][a-z0-9-]*$/;
+const sorted = (list) => [...list].sort().join("、");
+
+// 表行拆格：竖线分隔，去反引号与首尾空白；表头与分隔行由调用方的键形态判据跳过
+function tableRows(section) {
+  const rows = [];
+  for (const row of withLineNumbers(section.body)) {
+    const line = row.line.trim();
+    if (!line.startsWith("|")) continue;
+    rows.push(line.split("|").slice(1, -1).map((cell) => cell.replace(/`/g, "").trim()));
+  }
+  return rows;
+}
 
 function createStageChecks(env) {
-  // workflowRel 与 guardRel 由 ref-check 注入，路径只在调用方定义一次
-  const { root, relPath, spec, workflowRel, guardRel } = env;
+  // guardRel 与 workflowRel 由 ref-check 注入，路径只在调用方定义一次
+  const { root, relPath, guardRel, workflowRel } = env;
 
-  function extractSpecStageKeys() {
-    const section = spec.findSection("状态文件");
+  function mainSkillSection(title) {
+    return sectionInText(readFileText(path.join(root, ...MAIN_SKILL_REL)), title);
+  }
+  // 权威阶段键：主技能通道表的阶段键列，按通道回传；表行首格形如「A 主链」
+  function readAuthorityStageKeys() {
+    const section = mainSkillSection("调度模型");
     if (!section) return null;
-    if (section.ambiguous) return { ambiguous: section.hits };
-    for (const row of withLineNumbers(section.body)) {
-      if (!/doneStages/.test(row.line)) continue;
-      const m = row.line.match(/[:：]\s*(`?[a-z][a-z0-9-]*`?(?:\s*、\s*`?[a-z][a-z0-9-]*`?)+)/);
-      if (m) return { keys: m[1].split("、").map((s) => s.replace(/[`\s]/g, "")), line: section.line + row.no, rel: section.rel };
+    const channels = {};
+    for (const cells of tableRows(section)) {
+      const m = cells[0] && cells[0].match(/^([ABC])\b/);
+      if (!m) continue;
+      const keys = (cells[cells.length - 1] || "").split("、").map((s) => s.trim()).filter(Boolean);
+      if (keys.length) channels[m[1]] = keys;
     }
-    return null;
+    return Object.keys(channels).length ? channels : null;
   }
-  // 三处副本的唯一读取入口：C4 与 --fix 共用，不得另立解析
-  function readStageKeySources() {
-    const workflowPath = path.join(root, ...workflowRel);
-    const workflowText = readFileText(workflowPath);
-    const stageRegistryBlock = workflowText.match(/const\s+stageRegistry\s*=\s*\[[\s\S]*?\]/);
-    const stageSpec = extractSpecStageKeys();
-    const guard = readFileText(path.join(root, ...guardRel)).match(/G5_INT_STAGE\s*=\s*"([^"]+)"/);
-    return {
-      workflowPath, workflowText, stageRegistryBlock,
-      registryKeys: stageRegistryBlock ? [...stageRegistryBlock[0].matchAll(/"([^"]+)"/g)].map((m) => m[1]) : [],
-      registryLine: stageRegistryBlock ? workflowText.slice(0, stageRegistryBlock.index).split("\n").length : 0,
-      specKeys: stageSpec && !stageSpec.ambiguous ? stageSpec.keys : null, specLine: stageSpec && !stageSpec.ambiguous ? stageSpec.line : 0,
-      specRel: stageSpec && !stageSpec.ambiguous ? stageSpec.rel : spec.firstRel(), specAmbiguous: stageSpec && stageSpec.ambiguous ? stageSpec.ambiguous : null,
-      guardKey: guard ? guard[1] : null,
-    };
+  // 节点全集：主技能节点表按通道聚集节点键，通道列为「A」「A 与 B」等，含通道字母即计入
+  function readChannelNodes() {
+    const section = mainSkillSection("节点全集");
+    if (!section) return null;
+    const channels = { A: [], B: [], C: [] };
+    for (const cells of tableRows(section)) {
+      const key = cells[0];
+      const channel = cells[1] || "";
+      if (!NODE_KEY_RE.test(key)) continue;
+      for (const ch of CHANNELS) if (channel.includes(ch)) channels[ch].push(key);
+    }
+    return channels;
   }
-  // 三方比对的唯一实现：spec 为源，workflow 与 guard 为受控副本，任一缺失或多出即报漂移
-  function compareStageKeys(src) {
-    if (!src.specKeys) return [drift("C4", src.specRel, 0, "规范状态文件节须以固定句列出 doneStages 键集合", "spec 键清单", "未解析到")];
-    if (!src.registryKeys.length) return [drift("C4", relPath(src.workflowPath), 0, "stageRegistry 须为字符串数组字面量", "可解析的阶段键列表", "未解析到数组")];
-    const found = [];
-    for (const key of src.specKeys) {
-      if (!src.registryKeys.includes(key)) found.push(drift("C4", relPath(src.workflowPath), src.registryLine, "三方键集合须一致", `registry 含键「${key}」`));
-    }
-    for (const key of src.registryKeys) {
-      if (!src.specKeys.includes(key)) found.push(drift("C4", src.specRel, src.specLine, "三方键集合须一致", `spec 键清单含键「${key}」`));
-    }
-    if (!src.guardKey) found.push(drift("C4", guardRel.join("/"), 0, "guard 单键须可解析且属于 spec 键清单", "G5_INT_STAGE 常量", "未解析到"));
-    else if (!src.specKeys.includes(src.guardKey)) found.push(drift("C4", guardRel.join("/"), 0, "guard 单键须属于 spec 键清单", `guard 键属于 ${src.specKeys.join("/")}`, src.guardKey));
-    return found;
+  // guard 单键：G5_INT_STAGE 的值须属于权威阶段键集合
+  function readGuardKey() {
+    const m = readFileText(path.join(root, ...guardRel)).match(/G5_INT_STAGE\s*=\s*"([^"]+)"/);
+    return m ? m[1] : null;
+  }
+  // 状态文件 schema：规范状态文件节须含 doneStages 固定句，且该句绑定到主技能的阶段键表
+  function readStateSchemaBinding() {
+    const rel = STATE_SCHEMA_REL.join("/");
+    const section = sectionInText(readFileText(path.join(root, ...STATE_SCHEMA_REL)), "状态文件");
+    if (!section) return { ok: false, rel, reason: "状态文件节未找到" };
+    const lines = section.body.split("\n").filter((l) => /doneStages/.test(l));
+    if (!lines.length) return { ok: false, rel, reason: "doneStages 固定句未找到" };
+    const ok = lines.some((l) => /SKILL\.md/.test(l) && /阶段键/.test(l));
+    return { ok, rel, reason: "doneStages 固定句未绑定主技能阶段键表" };
+  }
+  // 编排脚本阶段注册表：仅作非漂移备注，属「编排脚本重建」范围，不参与本项判定
+  function workflowRegistryDiff(authorityKeys) {
+    const block = readFileText(path.join(root, ...workflowRel)).match(/const\s+stageRegistry\s*=\s*\[[\s\S]*?\]/);
+    if (!block) return null;
+    const registry = [...block[0].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+    return registry.filter((key) => !authorityKeys.has(key));
   }
   function checkStageKeys() {
-    if (!spec.docs.length) return spec.missing("C4", "规范状态文件节须给出 doneStages 键集合");
-    const src = readStageKeySources();
-    if (src.specAmbiguous) return [spec.sectionDrift("C4", "状态文件", src.specAmbiguous)];
-    return compareStageKeys(src);
-  }
-  // 生成 workflow 阶段注册表块：与期望集合逐项且顺序一致；同一输入必得同一文本，保证 --fix 幂等
-  function renderStageRegistry(keys) {
-    const lines = [];
-    let line = "";
-    for (const key of keys) {
-      const token = `"${key}"`;
-      const joined = line ? `${line}, ${token}` : token;
-      if (line && joined.length > 74) { lines.push(`  ${line},`); line = token; }
-      else line = joined;
+    const found = [];
+    const channels = readAuthorityStageKeys();
+    if (!channels) {
+      found.push(drift("C4", MAIN_SKILL_REL.join("/"), 0, "主技能调度模型节须以通道表列出 A/B/C 三通道的阶段键", "三通道阶段键可解析", "未解析到"));
+      return found;
     }
-    if (line) lines.push(`  ${line},`);
-    return `const stageRegistry = [\n${lines.join("\n")}\n]`;
+    const nodes = readChannelNodes();
+    if (!nodes) {
+      found.push(drift("C4", MAIN_SKILL_REL.join("/"), 0, "主技能节点全集节须按通道列出节点键供比对", "节点全集可解析", "未解析到"));
+    } else {
+      for (const ch of CHANNELS) {
+        const keys = channels[ch] || [];
+        if (sorted(keys) !== sorted(nodes[ch])) found.push(drift("C4", MAIN_SKILL_REL.join("/"), 0, `${ch} 通道的阶段键集合须与节点全集该通道的节点键集合同集`, `阶段键：${sorted(keys)}`, `节点键：${sorted(nodes[ch])}`));
+      }
+    }
+    const authorityKeys = new Set(Object.values(channels).flat());
+    const guardKey = readGuardKey();
+    if (!guardKey) found.push(drift("C4", guardRel.join("/"), 0, "guard 单键须可解析且属于权威阶段键集合", "G5_INT_STAGE 常量", "未解析到"));
+    else if (!authorityKeys.has(guardKey)) found.push(drift("C4", guardRel.join("/"), 0, "guard 单键须属于权威阶段键集合", `guard 键属于 ${[...authorityKeys].join("/")}`, guardKey));
+    const schema = readStateSchemaBinding();
+    if (!schema.ok) found.push(drift("C4", schema.rel, 0, "规范状态文件节须以固定句把 doneStages 键集合绑定到主技能阶段键表", "含 doneStages 且绑定主技能阶段键表", schema.reason));
+    const legacy = workflowRegistryDiff(authorityKeys);
+    if (legacy && legacy.length) process.stdout.write(`[C4 备注] 编排脚本 stageRegistry 含非权威阶段键 ${legacy.join("、")}，属「编排脚本重建」范围，不计入本项漂移\n`);
+    return found;
   }
 
-  return { checkStageKeys, readStageKeySources, renderStageRegistry };
+  return { checkStageKeys };
 }
 
 module.exports = { createStageChecks };

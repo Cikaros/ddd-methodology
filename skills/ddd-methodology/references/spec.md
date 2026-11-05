@@ -33,7 +33,7 @@
 
 | 子节 | 所在文件 |
 |---|---|
-| 17.1 契约指纹 | spec-govern.md |
+| 17.1 冻结锚点与接口节 diff | spec-govern.md |
 | 18.8 开放与约束 | spec-rebuild.md |
 | 18.9 防堆叠约束 | spec-rebuild.md |
 | 20.1 分层表述与摘要 | spec-language.md |

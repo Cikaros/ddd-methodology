@@ -22,6 +22,30 @@ function trimHeadingNumber(title) {
   return String(title || "").replace(/^\d+(?:\.\d+)*[.、]?\s*/, "").trim();
 }
 
+// 去编号前缀：规范文件以阿拉伯数字编号，主技能等以中文数字编号；两种前缀剥去后共用同一节定位键，
+// 故权威源移出规范文件集合后仍可按标题定位，不必各写一套解析
+function stripHeadingNumber(title) {
+  return String(title || "").replace(/^[〇零一二三四五六七八九十百千\d]+(?:[.、]\d+)*(?:[.、])?\s*/, "").trim();
+}
+
+// 任意文本内的节定位：首个命中去编号标题的二级或三级节，回传节正文及其在文内的行号；未命中回 null。
+// 供权威源不在规范文件集合时（主技能与治理技能）复用同一节边界解析
+function sectionInText(text, title) {
+  const rows = withLineNumbers(text);
+  for (let i = 0; i < rows.length; i++) {
+    const m = rows[i].line.match(/^(#{2,3})\s+(.+?)\s*$/);
+    if (!m || stripHeadingNumber(m[2]) !== title) continue;
+    const level = m[1].length;
+    let end = rows.length;
+    for (let j = i + 1; j < rows.length; j++) {
+      const next = rows[j].line.match(/^(#{2,3})\s+/);
+      if (next && next[1].length <= level) { end = j; break; }
+    }
+    return { body: rows.slice(i + 1, end).map((r) => r.line).join("\n"), line: rows[i].no };
+  }
+  return null;
+}
+
 // 取指定标题的全部节（同文件可出现多处），标题匹配二级与三级：返回各自正文与标题行号
 function sectionsWithTitle(text, title) {
   const rows = withLineNumbers(text);
@@ -70,4 +94,4 @@ function createSpecReader(root) {
   return { docs, headingSources, headingSet, findSection, firstRel, missing, sectionDrift };
 }
 
-module.exports = { createSpecReader, relPath, trimHeadingNumber, SPEC_INDEX_REL };
+module.exports = { createSpecReader, relPath, trimHeadingNumber, stripHeadingNumber, sectionInText, SPEC_INDEX_REL };

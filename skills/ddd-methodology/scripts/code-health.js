@@ -6,7 +6,7 @@
  * 归属：文件规模与注释质量可由写入者按规范「结构与契约的演进治理」节的治理义务处理；无引用文件属仓库级属性，归审计代理。
  * 不包含：语义级判断。注释是否解释为什么、分支是否真不可达需 AST，本脚本不做，交由审计代理抽检。
  * 依赖：文本读取取 ./lib/text.js 的 readFileText，目录遍历与不可读收集取 ./lib/walk.js 的 walk，设计树根解析取 ./design-root.js，
- *   「对外接口与约定」节的定位取 ./fingerprint.js 导出的 CONTRACT_SECTION_RE，与该节定位保持单一权威。
+ *   「对外接口与约定」节的定位取 ./lib/freeze.js 导出的 CONTRACT_SECTION_RE，与该节定位保持单一权威。
  *
  * 用法：node code-health.js <项目根>
  * 输出形态：文本正文，末行机读结论 `RESULT: report`
@@ -22,7 +22,7 @@ const { capLines } = require("./lib/truncate.js");
 const { HEALTH_REL, artifactWritePath, artifactWriteRel, CHANGELOG_NAME } = require("./lib/paths.js");
 const { walk, SOURCE_TREE_SKIP_DIR_NAMES, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
 const { absoluteDesignDir } = require("./design-root.js");
-const { CONTRACT_SECTION_RE } = require("./fingerprint.js");
+const { CONTRACT_SECTION_RE } = require("./lib/freeze.js");
 
 const root = process.argv[2] || process.cwd();
 const CODE_EXT = new Set([".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx", ".py", ".java", ".kt", ".go", ".rs", ".rb", ".php", ".cs", ".swift", ".c", ".h", ".cpp", ".sh", ".bat", ".ps1"]);
