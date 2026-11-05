@@ -37,6 +37,7 @@ ddd-methodology/
 │   │   ├── spec-language.md      # 表述与术语
 │   │   ├── templates.md          # 产物模板库
 │   │   ├── templates-debts.md    # 存量债务登记簿模板
+│   │   ├── templates-gates.md    # 门禁检查单与缺陷路由单模板
 │   │   └── templates-rebuild.md  # 存量重建与定向重构产物模板
 ├── skill/ddd-rebuild/            # 存量重建 skill，仅由用户显式调用
 │   └── SKILL.md                  # 存量重建流程入口

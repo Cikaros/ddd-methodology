@@ -17,3 +17,5 @@
 | 缺陷四级路由 | 项目术语 | A、B、C、D 四级缺陷的定级与去向 | 不指缺陷严重度排序 | `skill/ddd-methodology/references/spec-gate.md` | 按缺陷性质决定谁来修 |
 | 不适用语义 | 项目术语 | 判定对象不存在时报告不适用而非缺口的口径 | 不指校验被跳过 | `scripts/lib/repo-scope.js` | 没有可检查的对象时明确说没有，不假装通过 |
 | 术语表 | 项目术语 | 项目根 `GLOSSARY.md`，本项目术语的唯一权威处 | 不指本仓库的规范正文 | `GLOSSARY.md` | 定义本项目用词的唯一位置 |
+| 交付门槛 | 项目术语 | 交付前须逐项满足的量化判据，含用例覆盖完备率、三类路径覆盖、回归拦截完备率与缺陷密度不恶化 | 不指仅作趋势记录的度量 | `scripts/metrics-report.js` | 交付前必须达标的几条硬指标 |
+| 可观测性契约 | 项目术语 | DESIGN 声明的关键路径可观测性锚点，含日志标识、trace 上下文传播、metric 名称与单位、失败可观测性 | 不指宿主 pi 的 worktree、control 与 frontmatter 类声明 | `agents/ddd-interface-reviewer.md` | 接口上线后能否被定位与观测的承诺 |

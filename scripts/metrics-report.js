@@ -11,7 +11,7 @@
  * 输出上限：12000 字节，按 UTF-8 字节计量；超限截断明细，末行结论保留完整
  * 未启用取向：docs/health.json 或 docs/debts.json 缺失时相应度量记空并输出说明，判通过，兼容未启用项目
  * 缺省取向：health.json 早期条目缺字段时按缺省值零处理，并在产物中标注，不判失败
- * 规范依据：规范「绩效度量」节的 18.1 交付质量类、18.2 结构与债务类与 18.3 声明面类度量
+ * 规范依据：规范「绩效度量」节的 19.1 交付质量类、19.2 结构与债务类与 19.3 声明面类度量
  */
 
 const fs = require("fs");
@@ -94,7 +94,7 @@ say("=== 绩效度量聚合 ===");
 say(`项目根：${root}`);
 say(`来源产物：${HEALTH_REL}（${health.available ? "可用" : "缺失"}）、${DEBT_BOOK_REL}（${debts.available ? (debts.invalid ? "非法" : "可用") : "缺失"}）`);
 say("");
-say("[结构与债务类 18.2]");
+say("[结构与债务类 19.2]");
 say(`  超阈值文件数趋势：${trendText(trend)}`);
 say(`  债务未清数：${debt.openCount === null ? "不可采集" : debt.openCount}；超期率：${rateText(debt)}`);
 say(`  同一根因复发次数：${recurrenceText(recurrence)}`);
@@ -102,14 +102,14 @@ if (recurrence.total !== null && Object.keys(recurrence.byRootCause).length) {
   for (const [key, value] of Object.entries(recurrence.byRootCause)) say(`    · ${key}：${value}`, true);
 }
 say("");
-say("[交付质量类 18.1]");
+say("[交付质量类 19.1]");
 say(`  八道门一次通过率：${gateRateText(gates)}`);
 say(`  过门轮次：${gateRoundsText(gates)}`);
 say(`  返工轮次分布：${roundsText(reworkRounds)}`);
 say(`  缺陷四级分布：${defectLevelsText(defectLevels)}`);
 say(`  缺陷密度：${defectDensityText(defectDensity)}`);
 say("");
-say("[声明面类 18.3]");
+say("[声明面类 19.3]");
 say(`  无消费方声明占比：${unconsumedText(unconsumedDeclarations)}`);
 say(`  机械证据覆盖率：${mechCoverageText(mechanicalEvidenceCoverage)}`);
 if (notes.length) {

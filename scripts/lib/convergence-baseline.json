@@ -1,9 +1,12 @@
 {
   "repoItems": {
-    "files": 97,
+    "files": 98,
     "dirs": 15
   },
   "docHeadings": {
+    "GLOSSARY.md": 1,
+    "README.md": 7,
+    "STRUCTURE.md": 3,
     "agents/ddd-acceptance.md": 7,
     "agents/ddd-arbiter.md": 7,
     "agents/ddd-architect.md": 7,
@@ -16,26 +19,24 @@
     "agents/ddd-requirements.md": 7,
     "agents/ddd-test-planner.md": 7,
     "agents/ddd-tester.md": 7,
-    "GLOSSARY.md": 1,
     "global/APPEND_SYSTEM.md": 6,
-    "README.md": 7,
+    "skill/ddd-methodology/SKILL.md": 8,
     "skill/ddd-methodology/references/spec-change.md": 3,
     "skill/ddd-methodology/references/spec-declare.md": 3,
     "skill/ddd-methodology/references/spec-design.md": 7,
     "skill/ddd-methodology/references/spec-gate.md": 2,
     "skill/ddd-methodology/references/spec-govern.md": 9,
     "skill/ddd-methodology/references/spec-language.md": 5,
-    "skill/ddd-methodology/references/spec-metrics.md": 5,
+    "skill/ddd-methodology/references/spec-metrics.md": 6,
     "skill/ddd-methodology/references/spec-rebuild.md": 10,
     "skill/ddd-methodology/references/spec-role.md": 2,
     "skill/ddd-methodology/references/spec.md": 3,
     "skill/ddd-methodology/references/templates-debts.md": 4,
+    "skill/ddd-methodology/references/templates-gates.md": 3,
     "skill/ddd-methodology/references/templates-rebuild.md": 5,
-    "skill/ddd-methodology/references/templates.md": 11,
-    "skill/ddd-methodology/SKILL.md": 8,
+    "skill/ddd-methodology/references/templates.md": 9,
     "skill/ddd-rebuild/SKILL.md": 7,
-    "skill/ddd-refactor/SKILL.md": 8,
-    "STRUCTURE.md": 3
+    "skill/ddd-refactor/SKILL.md": 8
   },
   "duplicateFindings": []
 }

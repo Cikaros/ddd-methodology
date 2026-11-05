@@ -30,7 +30,7 @@ VERDICT: pass|conditional|fail
 
 # 职责
 
-逐项核对下表九项检查，按结论列聚合：任一 fail 项命中即 VERDICT: fail；无 fail 而存在 conditional 项即 VERDICT: conditional；其余为 VERDICT: pass。
+逐项核对下表十项检查，按结论列聚合：任一 fail 项命中即 VERDICT: fail；无 fail 而存在 conditional 项即 VERDICT: conditional；其余为 VERDICT: pass。
 
 | 检查项 | 判据 | 不通过时的结论 | 备注 |
 |---|---|---|---|
@@ -43,7 +43,8 @@ VERDICT: pass|conditional|fail
 | 独立性声明 | 存在时序要求的接口是否显式声明，未声明即视为顺序无关 | conditional | 补齐时序声明 |
 | 消费方声明 | 逐项核对契约的消费方模块非空且真实存在 | fail | 无消费方即删除契约 |
 | 契约指纹 | 逐份核对指纹齐备且与契约表内容一致，缺失或不符即报 | conditional | 核对契约指纹条 |
-| 默认 | 九项均无命中时取 pass。 | pass | |
+| 可观测性契约 | 关键路径的可观测性锚点四项已逐条声明，或标注不适用并给理由；留空即未声明 | conditional | 返分解设计者补齐锚点 |
+| 默认 | 十项均无命中时取 pass。 | pass | |
 
 # 硬约束
 
