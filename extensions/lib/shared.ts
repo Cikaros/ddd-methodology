@@ -14,7 +14,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-// 本文件位于 <包根>/extensions/lib/ 下，故自 import.meta.url 回退两级即包根；消费方按同一值拼 scripts/ 下的脚本路径
+// 本文件位于 <包根>/extensions/lib/ 下，故自 import.meta.url 回退两级即包根；消费方按同一值拼 skills/ddd-methodology/scripts/ 下的脚本路径
 export const PACKAGE_ROOT = fileURLToPath(new URL("../..", import.meta.url));
 // 脚本执行的统一超时：既有可用性冒烟的网络请求，也有机械校验的长任务，留足预算，超时一律按执行失败处理
 export const EXEC_TIMEOUT_MS = 120_000;

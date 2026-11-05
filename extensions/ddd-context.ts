@@ -23,7 +23,7 @@ import { checkVersionInRange } from "./lib/version-range.ts";
 
 const SECTION_NAME = "ddd_global_rules";
 const SUBAGENT_TOOL = "subagent";
-const GLOBAL_RULES_FILE = fileURLToPath(new URL("../global/APPEND_SYSTEM.md", import.meta.url));
+const GLOBAL_RULES_FILE = fileURLToPath(new URL("./rules/global-rules.md", import.meta.url));
 const PI_SUBAGENTS_INSTALL = "pi install npm:pi-subagents";
 // 声明范围的载体：包根 package.json 的 pi 对象下，键名以 ddd 前缀隔离 pi 自有字段
 const PACKAGE_MANIFEST = fileURLToPath(new URL("../package.json", import.meta.url));

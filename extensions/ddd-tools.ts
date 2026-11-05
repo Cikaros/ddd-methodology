@@ -4,7 +4,7 @@
  * 目标：把甲类机械校验脚本注册为类型化工具，使父会话以工具调用替代文本解析与绝对路径拼装；
  *   工具回传结构化结果，模型只收到精简摘要与关键结论行，降低上下文负担。
  * 范围：六个工具与六个脚本一一对应——ddd_governance_check、ddd_trace_check、ddd_span_check、ddd_code_health、ddd_debt_check、ddd_metrics_report；
- *   另以 registerCommand 提供解析器供给的用户入口 ddd-parser-install，仅用户触发，转交 scripts/install-parser.js，安装逻辑与版本清单不在扩展侧复写。
+ *   另以 registerCommand 提供解析器供给的用户入口 ddd-parser-install，仅用户触发，转交 skills/ddd-methodology/scripts/install-parser.js，安装逻辑与版本清单不在扩展侧复写。
  * 不包含：全局规则注入与前置依赖探测（见同目录 ddd-context.ts）、结构治理守卫（见同目录 ddd-governance.ts）、模型配比命令（见同目录 ddd-models.ts）。
  *
  * 脚本路径一律由共享模块（lib/shared.ts）解析的包根拼出，不依赖调用方传入，不硬编码绝对路径。
@@ -22,7 +22,7 @@ import { EXEC_TIMEOUT_MS, PACKAGE_ROOT, describeError, exitCodeOf, type ExecResu
 const SUMMARY_MAX_CHARS = 1500; // 进模型上下文的摘要上限，与「降低上下文负担」的目标一致
 const KEY_LINE_LIMIT = 5;
 
-// 工具与脚本一一对应表：工具名统一 ddd_ 前缀，script 为 scripts/ 下脚本基名
+// 工具与脚本一一对应表：工具名统一 ddd_ 前缀，script 为 skills/ddd-methodology/scripts/ 下脚本基名
 const TOOLS = [
 	{
 		name: "ddd_governance_check",
@@ -73,7 +73,7 @@ const PARAMETERS = Type.Object({
 });
 
 // 解析器供给脚本：位置由包根解析，扩展侧不硬编码路径，也不读取版本清单
-const PARSER_INSTALL_SCRIPT = join(PACKAGE_ROOT, "scripts", "install-parser.js");
+const PARSER_INSTALL_SCRIPT = join(PACKAGE_ROOT, "skills", "ddd-methodology", "scripts", "install-parser.js");
 
 // 结构化结果供脚本消费；字段与 structuredContent 同源
 const OUTPUT_SCHEMA = Type.Object({
@@ -99,7 +99,7 @@ export default function (pi: ExtensionAPI) {
 		});
 	}
 	// 解析器供给：仅用户触发的 slash 命令，不注册为工具、不挂接事件、不在会话启动时安装；
-	// 版本清单与安装逻辑的唯一实现在 scripts/install-parser.js 与 scripts/lib/span-parser.js，此处只转交
+	// 版本清单与安装逻辑的唯一实现在 skills/ddd-methodology/scripts/install-parser.js 与 skills/ddd-methodology/scripts/lib/span-parser.js，此处只转交
 	pi.registerCommand("ddd-parser-install", {
 		description: "把签名级符合性校验所需的解析器与 grammar 安装到 ~/.pi/agent/ddd-parser/（仅用户触发，失败时报错）",
 		handler: async (_args, ctx) => {
@@ -109,7 +109,7 @@ export default function (pi: ExtensionAPI) {
 }
 
 async function runCheck(pi: ExtensionAPI, spec: { name: string; script: string }, root: string) {
-	const scriptPath = join(PACKAGE_ROOT, "scripts", `${spec.script}.js`);
+	const scriptPath = join(PACKAGE_ROOT, "skills", "ddd-methodology", "scripts", `${spec.script}.js`);
 	if (!existsSync(scriptPath)) {
 		return failure(spec, root, null, null, `脚本缺失：${scriptPath}。请确认 ${spec.script}.js 随包发布，且其位置可由包根解析。`);
 	}
@@ -191,7 +191,7 @@ function buildSummary(
 	}
 	if (stderr.trim()) lines.push(`stderr：${truncate(stderr.trim(), 300)}`);
 	let text = lines.join("\n");
-	if (text.length > SUMMARY_MAX_CHARS) text = `${text.slice(0, SUMMARY_MAX_CHARS)}\n…摘要已截断，完整输出请直接运行 scripts/${spec.script}.js。`;
+	if (text.length > SUMMARY_MAX_CHARS) text = `${text.slice(0, SUMMARY_MAX_CHARS)}\n…摘要已截断，完整输出请直接运行 skills/ddd-methodology/scripts/${spec.script}.js。`;
 	return text;
 }
 

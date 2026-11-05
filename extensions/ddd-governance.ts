@@ -34,7 +34,7 @@ import { describeError, readText } from "./lib/shared.ts";
 let designRootResolver = null;
 try {
 	const requireFromExtension = createRequire(import.meta.url);
-	designRootResolver = requireFromExtension("../scripts/design-root.js").absoluteDesignDir;
+	designRootResolver = requireFromExtension("../skills/ddd-methodology/scripts/design-root.js").absoluteDesignDir;
 } catch {
 	designRootResolver = null;
 }
