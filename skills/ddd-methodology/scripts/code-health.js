@@ -30,8 +30,9 @@ const LINE_LIMIT = 500;
 const BASE_LINE_LIMIT = 300;
 const DOC_LINE_LIMIT = 200;
 const CONTRACT_LIMIT = 10;
-// 活文档扫描根：规范、代理定义与全局系统提示；docs 目录为项目侧证据与归档，不入活文档度量
-const DOC_ROOTS = ["skills", "agents", "global"];
+// 活文档扫描根：技能、扩展与代理定义三目录；docs 目录为项目侧证据与归档，不入活文档度量。
+// global 目录已并入扩展，故活文档范围取 skills、extensions、agents 三项。
+const DOC_ROOTS = ["skills", "extensions", "agents"];
 // 根目录 Markdown 活文档：除变更记录外全部纳入；变更记录按当时版本的章节编号记述，其规模不作活文档度量
 const ROOT_DOC_SKIP_NAMES = new Set([CHANGELOG_NAME]);
 

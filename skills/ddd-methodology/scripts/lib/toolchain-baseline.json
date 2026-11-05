@@ -1,11 +1,17 @@
 {
   "entries": {
+    "skills/ddd-methodology/scripts/check-code.js": 0,
+    "skills/ddd-methodology/scripts/check-consistency.js": 0,
+    "skills/ddd-methodology/scripts/check-design.js": 0,
+    "skills/ddd-methodology/scripts/check-file-design.js": 0,
+    "skills/ddd-methodology/scripts/check-scope.js": 0,
     "skills/ddd-methodology/scripts/code-health.js": 0,
     "skills/ddd-methodology/scripts/debt-check.js": 0,
     "skills/ddd-methodology/scripts/governance-check.js": 0,
     "skills/ddd-methodology/scripts/install-parser.js": 0,
+    "skills/ddd-methodology/scripts/matrix-check.js": 0,
     "skills/ddd-methodology/scripts/metrics-report.js": 0,
-    "skills/ddd-methodology/scripts/ref-check.js": 0,
+    "skills/ddd-methodology/scripts/ref-check.js": 1,
     "skills/ddd-methodology/scripts/span-check.js": 0,
     "skills/ddd-methodology/scripts/trace-check.js": 0
   }

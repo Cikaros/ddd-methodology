@@ -1,0 +1,43 @@
+{
+  "version": "0.8.0",
+  "source": "DESIGN-crosscheck.md 第二节",
+  "classes": [
+    { "id": "set-identity", "name": "集合同一", "criterion": "同一命名集合在各处同集，逐名比对而非只比数量" },
+    { "id": "counts-match", "name": "计数相符", "criterion": "文档中的数字声明与紧随其后的枚举逐项相符" },
+    { "id": "order-consistency", "name": "顺序一致", "criterion": "键序、门序、前置三处互相一致" },
+    { "id": "reference-resolvable", "name": "引用可解析", "criterion": "引用的目标存在，且路径与名可定位" },
+    { "id": "landing-complete", "name": "落点完备", "criterion": "每条声明有消费方与验证手段" }
+  ],
+  "nodes": {
+    "check-scope": [
+      { "id": "scope-five-sets", "class": "set-identity", "title": "结构树、包清单、语言栈、技能清单、目录规划五处同集" },
+      { "id": "scope-field-stage", "class": "set-identity", "title": "状态文件字段名与阶段键同集" },
+      { "id": "scope-refs", "class": "reference-resolvable", "title": "声明的目录与设计树根路径可解析" },
+      { "id": "scope-order", "class": "order-consistency", "title": "已完成阶段键序为阶段键全序的子序列" },
+      { "id": "scope-counts", "class": "counts-match", "title": "结构声明的目录数与枚举逐项相符" }
+    ],
+    "check-design": [
+      { "id": "design-tree-isomorphic", "class": "set-identity", "title": "设计树与代码目录逐层同构" },
+      { "id": "design-contract-header", "class": "reference-resolvable", "title": "契约表列头完整" },
+      { "id": "design-obligation-unique", "class": "set-identity", "title": "义务编号唯一" },
+      { "id": "design-contract-ac", "class": "reference-resolvable", "title": "契约表与 AC 覆盖" },
+      { "id": "design-counts", "class": "counts-match", "title": "模块数声明与枚举逐项相符" }
+    ],
+    "check-file-design": [
+      { "id": "file-design-coverage", "class": "landing-complete", "title": "有对外导出的文件有对应文件级设计" },
+      { "id": "file-design-contract", "class": "reference-resolvable", "title": "文件级对外接口清单与目录级契约一致" },
+      { "id": "file-design-deps-closed", "class": "set-identity", "title": "被依赖清单闭合" }
+    ],
+    "check-code": [
+      { "id": "code-exports", "class": "reference-resolvable", "title": "导出符号与两级设计签名一致" },
+      { "id": "code-test-ac", "class": "reference-resolvable", "title": "用例与模块级 AC 覆盖" },
+      { "id": "code-base-capability", "class": "landing-complete", "title": "基础能力独立用例存在" }
+    ],
+    "check-consistency": [
+      { "id": "consistency-sets", "class": "set-identity", "title": "全量命名集合三处一致" },
+      { "id": "consistency-counts", "class": "counts-match", "title": "计数声明与枚举三处一致" },
+      { "id": "consistency-landing", "class": "landing-complete", "title": "声明落点完备" },
+      { "id": "consistency-refs", "class": "reference-resolvable", "title": "无悬空引用" }
+    ]
+  }
+}

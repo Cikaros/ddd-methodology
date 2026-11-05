@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 /**
  * 目标：把「脚本族可用」这件事本身外化为可复现的机械证据，闭合「机械校验有盲区、工具链自身无测试」的盲区。
- * 范围：三项断言——其一，skills/ddd-methodology/scripts/ 下全部 .js 逐个过 node --check，任一不通过即失败，直接防止整族集体静默失效；
+ * 范围：三项断言——其一，skills/ddd-methodology/scripts/ 下全部 .js 逐个过语法检查，任一不通过即失败，直接防止整族集体静默失效；
  *   其二，对每个有命令行入口的脚本以本仓库根为参数运行并记退出码，超时记 timeout 并判失败，不得静默跳过；
  *   其三，退出码与基线文件比对，不一致即打印差异并失败。
+ * 语法判定口径：普通 .js 直接 `node --check`；编排脚本（如 ddd-workflow.js）运行在宿主 workflow 沙箱中，其正文被宿主包进 async 函数，
+ *   顶层 await 与顶层 return 合法，故 `node --check` 会误报。对此类文件改以「沙箱口径」复检：把正文包进 async IIFE 后经 stdin 过 `node --check`，
+ *   沙箱口径仍失败才计语法失败。该口径不排除任何文件，消除「用排除掩盖真实缺口」的风险，只改判定方式。
  * 不包含：各脚本的业务语义与输出内容判定、ref-check 的跨文档校验（本脚本不并入 ref-check，
  *   因其要运行其它脚本，并入会自引用并拖慢主校验）。不引入第三方依赖。
  * 用法：node toolchain-selftest.js <仓库根> [--init]；--init 按本次实测结果重写基线。
@@ -18,11 +21,8 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 const TIMEOUT_MS = 120000; // 单个入口的运行上限，超时判失败，避免挂死拖垮自测
-// 不入自动调用的入口：自身运行会递归；apply-models 与 migrate-to-package 写入用户作用域且依赖仓库在场，
-// 二者非本仓库内可安全自动调用的入口，故连同自身一并排除
-// 排除集单一来源：仓库内部专用脚本取自 install-manifest-check 的常量，本文件只补自身
-const { REPO_ONLY_SCRIPTS } = require("./install-manifest-check.js");
-const EXCLUDED_ENTRIES = new Set(["toolchain-selftest.js", ...REPO_ONLY_SCRIPTS]);
+// 不入自动调用的入口：自身运行会递归，故排除自身；其余入口一律参与运行与退出码断言
+const EXCLUDED_ENTRIES = new Set(["toolchain-selftest.js"]);
 const BASELINE_REL = ["skills", "ddd-methodology", "scripts", "lib", "toolchain-baseline.json"];
 
 const argv = process.argv.slice(2);
@@ -53,15 +53,29 @@ function outcomeOf(result) {
   if (result.status === null) return "timeout";
   return result.status;
 }
+// 沙箱口径语法复检：把正文包进 async IIFE 后经 stdin 过 node --check，顶层 await 与 return 在此口径下合法
+function checkSandboxSyntax(source) {
+  const wrapped = `(async () => {\n${source}\n})();\n`;
+  const result = spawnSync(process.execPath, ["--check"], { input: wrapped, encoding: "utf8" });
+  return result.status === 0;
+}
+// 单文件语法判定：普通口径通过即过；失败时改沙箱口径，仍失败才计语法失败，并回传成因细节
+function syntaxOutcome(file) {
+  const plain = spawnSync(process.execPath, ["--check", file], { encoding: "utf8" });
+  if (plain.status === 0) return { ok: true };
+  const source = fs.readFileSync(file, "utf8");
+  if (checkSandboxSyntax(source)) return { ok: true, sandbox: true };
+  const errLines = String(plain.stderr || "").split("\n").map((line) => line.trim()).filter(Boolean);
+  return { ok: false, detail: errLines.find((line) => /Error/.test(line)) || errLines[0] || "node --check 失败" };
+}
 
 const scripts = listScripts(SCRIPTS_DIR);
 const syntaxFailures = [];
+let sandboxChecked = 0;
 for (const file of scripts) {
-  const result = spawnSync(process.execPath, ["--check", file], { encoding: "utf8" });
-  if (result.status === 0) continue;
-  // 取含 Error 的首行作细节，node 的在尾行版本标语不具诊断价值
-  const errLines = String(result.stderr || "").split("\n").map((line) => line.trim()).filter(Boolean);
-  syntaxFailures.push(`${relOf(file)}：${errLines.find((line) => /Error/.test(line)) || errLines[0] || "node --check 失败"}`);
+  const outcome = syntaxOutcome(file);
+  if (outcome.ok) { if (outcome.sandbox) sandboxChecked++; continue; }
+  syntaxFailures.push(`${relOf(file)}：${outcome.detail}`);
 }
 const entries = scripts.filter((file) => hasEntry(file) && !EXCLUDED_ENTRIES.has(path.basename(file)));
 
@@ -105,9 +119,9 @@ const failed = syntaxFailures.length > 0 || runFailures.length > 0 || mismatches
 const lines = [];
 lines.push("=== 工具链自测 ===");
 lines.push(`仓库根：${root}`);
-lines.push(`语法：${scripts.length} 个 .js 过 node --check，失败 ${syntaxFailures.length}`);
+lines.push(`语法：${scripts.length} 个 .js 过语法检查（普通口径通过 ${scripts.length - sandboxChecked - syntaxFailures.length}，沙箱口径通过 ${sandboxChecked}），失败 ${syntaxFailures.length}`);
 for (const item of syntaxFailures) lines.push(`  ✗ ${item}`);
-lines.push(`入口：${entries.length} 个（自检脚本 ${scripts.length} 个，含命令行入口且有 shebang 者；排除自身与两个写入用户作用域的脚本）`);
+lines.push(`入口：${entries.length} 个（自检脚本 ${scripts.length} 个，含命令行入口且有 shebang 者；仅排除自身）`);
 lines.push(`基线：${baselineNote}`);
 for (const [key, value] of Object.entries(observed)) lines.push(`  · ${key} 退出码 ${value}`);
 if (runFailures.length) { lines.push("[运行失败]"); for (const item of runFailures) lines.push(`  ✗ ${item}`); }

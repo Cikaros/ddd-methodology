@@ -2,16 +2,14 @@
  * 目标：把仓库清单类校验（代理清单、skill 清单）收敛为可单独复核的库文件，控制单脚本的行数规模。
  * 范围：代理清单校验与 skill 清单校验两项——文件系统枚举、声明文件解析、集合双向比对与漂移项产出。
  * 不包含：文件遍历之外的语义判断（代理定义正文、skill 正文等）、其他校验项、命令行入口。
- * 声明文件集合：代理清单为 skills/ddd-methodology/SKILL.md、skills/ddd-methodology/references/spec-role.md、STRUCTURE.md
- *   与 skills/ddd-methodology/scripts/ddd-workflow.js，另加 profiles/models.json 的配比档位；skill 清单为 STRUCTURE.md。
- *   安装与卸载脚本已收敛为仅承担模型配比，不再持有 skill 与代理清单，故不再作为受控声明载体。
- * 代理名载体：规范与结构与安装内容明细文档用 ddd- 前缀 token 扫描，注释行不参与；结构树内的代理条目形如 ddd-某名.md，
- *   扫描时剥去 .md 后缀取代理名，使树内条目计入声明集合；workflow 的 key、runKey、stateNote 参数
- *   与状态键是运行标识而非代理名，故只取 agent 字段的字符串字面量；配比档位取各档 roles 的键集合，按档与
- *   agents/ 集合比对，缺角色与幽灵角色均报漂移。
- * skill 名载体：STRUCTURE.md 取结构树围栏内的 skills/<名>/ 目录项。
- * 代理名排除集：与代理名同形的 skill 目录名由 enumerateSkillDirs 动态取得，与 C11 共用同一枚举，
- *   不得硬编码 skill 名；skill 目录的枚举定义以含 SKILL.md 为准，两处共用以免各自遍历漂移。
+ * 代理集合：十个固定代理取自 agents/ddd-*.md，两份项目级模板取自 skills/ddd-methodology/assets/agent-templates/ddd-*.md，
+ *   两者并集为合法代理名集合；已删除项（ddd-arbiter、ddd-rebuild、ddd-refactor 与更名前的 ddd-test-planner）列入移除集，
+ *   出现在任何声明位置即报漂移，使删改不静默留幽灵条目。依据：DESIGN-agents.md 第二、三节与 DESIGN.md 删除项。
+ *   声明载体为 skills/ddd-methodology/references/spec-role.md、STRUCTURE.md 与 skills/ddd-methodology/scripts/ddd-workflow.js 的 agent 字段。
+ *   原 profiles/models.json 配比面已随模型配比改声明删除（见 DESIGN-decisions.md D07、D38），不再作为受控声明载体。
+ * skill 集合：skills/<名>/SKILL.md 的实际目录集合，与 STRUCTURE.md 结构树内 skills/<名>/ 目录项双向比对；
+ *   skill 名前缀五分（ddd-、governance-、spec-、lang-、tool-），见 DESIGN-structure.md 第四节命名规则。
+ * 代理名排除集：与代理名同形的 skill 目录名由 enumerateSkillDirs 动态取得，与 C11 共用同一枚举，不得硬编码 skill 名。
  * 调用形态：checkAgentRoster(root)、checkSkillRoster(root)；root 为仓库根；两者回传漂移项数组，
  *   字段与 ref-check 现有漂移项一致，含 item、file、line、criterion、expect、found。
  * 调用方：skills/ddd-methodology/scripts/ref-check.js 的 C5 与 C11 校验项。
@@ -24,13 +22,16 @@ const { readFileText, withLineNumbers, drift } = require("./lib/text.js");
 
 // 声明代理集合的入口：规范入口、结构与安装内容明细文档与沙箱 workflow；规范角色表与 workflow 无生成通道，只能内联，故列入受控声明面
 const WORKFLOW_REL = "skills/ddd-methodology/scripts/ddd-workflow.js";
-// 仓库结构与安装内容明细文档：承载仓库结构树，是代理名与 skill 名的声明载体之一
-const STRUCTURE_DOC_REL = ["STRUCTURE.md"];
-const AGENT_DECLARATION_FILES = [["skills", "ddd-methodology", "SKILL.md"], ["skills", "ddd-methodology", "references", "spec-role.md"], STRUCTURE_DOC_REL, WORKFLOW_REL.split("/")];
-const MODELS_REL = ["profiles", "models.json"];
-// skill 清单的声明文件：仓库结构与安装内容明细文档；实际目录集合由 skills/*/SKILL.md 枚举
-const SKILL_DECLARATION_FILES = [STRUCTURE_DOC_REL];
-const SKILL_NAME = /^ddd-[a-z][a-z0-9-]*$/; // skill 目录名形态，与安装脚本清单取值一致
+// 固定代理与项目级模板目录：两处并集为合法代理名集合，二者仅落点不同（前者随包，后者初始化后归项目）
+const FIXED_AGENT_DIR = ["agents"];
+const TEMPLATE_AGENT_DIR = ["skills", "ddd-methodology", "assets", "agent-templates"];
+const AGENT_DECLARATION_FILES = [["skills", "ddd-methodology", "references", "spec-role.md"], ["STRUCTURE.md"], WORKFLOW_REL.split("/")];
+// 已删除代理：ddd-arbiter 与 ddd-rebuild、ddd-refactor 已删，ddd-test-planner 已更名为 ddd-test-designer；声明中出现即漂移
+const REMOVED_AGENTS = new Set(["ddd-arbiter", "ddd-rebuild", "ddd-refactor", "ddd-test-planner"]);
+// skill 清单的声明文件：仓库结构与安装内容明细文档；实际目录集合由 skills/<名>/SKILL.md 枚举
+const SKILL_DECLARATION_FILES = [["STRUCTURE.md"]];
+// skill 名合法性：只要求为目录名形态，不限定前缀，使已删 skill（如 ddd-rebuild）在声明面残留时能被报出而不得静默
+const SKILL_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 // skill 目录集合的唯一枚举入口：C5 的代理名排除集与 C11 的实际集合共用，避免两处各自遍历 skill 目录
 function enumerateSkillDirs(root) {
@@ -38,6 +39,15 @@ function enumerateSkillDirs(root) {
     return fs.readdirSync(path.join(root, "skills"), { withFileTypes: true })
       .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(root, "skills", entry.name, "SKILL.md")))
       .map((entry) => entry.name);
+  } catch (e) { return []; }
+}
+
+// 目录内 ddd-*.md 的代理名集合：去 .md 后缀，按目录分派；目录缺失回空数组
+function agentNamesIn(root, dir) {
+  try {
+    return fs.readdirSync(path.join(root, ...dir))
+      .filter((name) => /^ddd-.*\.md$/.test(name))
+      .map((name) => name.replace(/\.md$/, ""));
   } catch (e) { return []; }
 }
 
@@ -66,55 +76,19 @@ function collectDeclaredAgents(root, rel, nonAgentTokens) {
   return declared;
 }
 
-// 档位对象内 roles 块的键与行号：块内无嵌套，取 "roles": { 之后到首个闭括号行之间的键行
-function collectProfileRoles(lines, startIndex) {
-  const roles = new Map();
-  let i = startIndex;
-  for (; i < lines.length; i++) if (/^\s*"roles"\s*:\s*\{/.test(lines[i])) break;
-  for (i += 1; i < lines.length; i++) {
-    if (/^\s*\}/.test(lines[i])) break;
-    const m = lines[i].match(/^\s*"([^"]+)"\s*:/);
-    if (m) roles.set(m[1], i + 1);
-  }
-  return roles;
-}
-
-// 配比面：profiles/models.json 每档的 roles 键集合须等于 agents/ 集合，缺角色与幽灵角色都是漂移
-function checkModelProfiles(root, roster) {
-  const rel = MODELS_REL.join("/");
-  const text = readFileText(path.join(root, ...MODELS_REL));
-  if (!text) return [drift("C5", rel, 0, "配比文件须存在且可读", "profiles/models.json 可读")];
-  let doc = null;
-  try { doc = JSON.parse(text); } catch (e) { return [drift("C5", rel, 0, "配比文件须可解析", "合法 JSON", String(e.message))]; }
-  const profiles = (doc && doc.profiles) || {};
-  const lines = text.split("\n");
-  const found = [];
-  for (const [name, profile] of Object.entries(profiles)) {
-    const head = lines.findIndex((line) => new RegExp(`^\\s*"${name}"\\s*:\\s*\\{`).test(line));
-    const roles = collectProfileRoles(lines, head < 0 ? lines.length : head + 1);
-    const declared = new Set(Object.keys((profile && profile.roles) || {}));
-    const criterion = `配比档 ${name} 的角色集合须等于 agents/ 目录集合`;
-    for (const agent of roster) {
-      if (!declared.has(agent)) found.push(drift("C5", rel, head + 1, criterion, `该档含角色 ${agent}`, agent));
-    }
-    for (const agent of declared) {
-      if (!roster.includes(agent)) found.push(drift("C5", rel, roles.get(agent) || 0, criterion, "该角色须对应 agents/ 下的定义", agent));
-    }
-  }
-  return found;
-}
-
-// C5 代理清单一致性：agents/ddd-*.md 的文件集合与入口文档、安装脚本声明的代理集合一致
+// C5 代理清单一致性：agents/ 与 agent-templates/ 的并集为合法代理名，与各声明载体的声明集合双向一致；
+// 已删除项出现在声明中即漂移
 function checkAgentRoster(root) {
-  let roster = [];
-  try { roster = fs.readdirSync(path.join(root, "agents")).filter((name) => /^ddd-.*\.md$/.test(name)).map((name) => name.replace(/\.md$/, "")); } catch (e) { roster = []; }
-  if (!roster.length) return [drift("C5", "agents/", 0, "代理定义目录须含 ddd-*.md", "至少一份代理定义")];
+  const fixed = agentNamesIn(root, FIXED_AGENT_DIR);
+  const templates = agentNamesIn(root, TEMPLATE_AGENT_DIR);
+  if (!fixed.length) return [drift("C5", "agents/", 0, "代理定义目录须含 ddd-*.md", "至少一份固定代理定义")];
+  const valid = new Set([...fixed, ...templates]);
   const declared = new Map();
   const nonAgentTokens = new Set(enumerateSkillDirs(root)); // ddd- 前缀但非代理名：与代理名同形的 skill 目录名
   const found = [];
   for (const rel of AGENT_DECLARATION_FILES) {
     const fileRel = rel.join("/");
-    // 声明文件缺失或不可读时不得静默当作 0 声明，否则删文件不会产生任何漂移；与 checkModelProfiles 对配比文件的处理一致
+    // 声明文件缺失或不可读时不得静默当作 0 声明，否则删文件不会产生任何漂移
     if (!readFileText(path.join(root, ...rel))) {
       found.push(drift("C5", fileRel, 0, "声明文件须存在且可读", `${fileRel} 可读`));
       continue;
@@ -124,15 +98,16 @@ function checkAgentRoster(root) {
     }
   }
   for (const [token, at] of declared) {
-    if (!roster.includes(token)) found.push(drift("C5", at.file, at.line, "声明的代理名须对应 agents/ 下的代理定义", `agents/${token}.md 存在`, token));
+    if (REMOVED_AGENTS.has(token)) { found.push(drift("C5", at.file, at.line, "已删除的代理名不得再出现于声明面", `移除 ${token}`, token)); continue; }
+    if (!valid.has(token)) found.push(drift("C5", at.file, at.line, "声明的代理名须对应 agents/ 或 agent-templates/ 下的定义", `agents/${token}.md 或 agent-templates/${token}.md 存在`, token));
   }
-  for (const name of roster) {
-    if (!declared.has(name)) found.push(drift("C5", AGENT_DECLARATION_FILES.map((r) => r.join("/")).join("、"), 0, "每个代理定义须被入口文档或安装脚本声明", `${name} 被声明`, name));
+  for (const name of valid) {
+    if (!declared.has(name)) found.push(drift("C5", AGENT_DECLARATION_FILES.map((r) => r.join("/")).join("、"), 0, "每个代理定义须被入口文档或 workflow 声明", `${name} 被声明`, name));
   }
-  return found.concat(checkModelProfiles(root, roster));
+  return found;
 }
 
-// 单个声明文件的 skill 名集合：结构与安装内容明细文档取结构树围栏内的目录项
+// 单个声明文件的 skill 名集合：结构与安装内容明细文档取结构树围栏内的 skills/<名>/ 目录项
 function collectDeclaredSkills(root, rel) {
   const text = readFileText(path.join(root, ...rel));
   const names = new Map();
@@ -141,7 +116,8 @@ function collectDeclaredSkills(root, rel) {
   for (const row of withLineNumbers(text)) {
     if (/^\s*```/.test(row.line)) { fenced = !fenced; continue; }
     if (!fenced) continue;
-    for (const m of row.line.matchAll(/skill\/([A-Za-z0-9._-]+)\//g)) add(m[1], row.no);
+    // 结构树的目录项形如 skills/<名>/，singular 形态 skill/ 一并兼容，避免旧写法静默失配
+    for (const m of row.line.matchAll(/skills?\/([A-Za-z0-9._-]+)\//g)) add(m[1], row.no);
   }
   return { file: rel.join("/"), names };
 }
@@ -160,7 +136,7 @@ function checkSkillRoster(root) {
   }
   for (const source of sources) {
     for (const [name, no] of source.names) {
-      if (!actual.includes(name)) found.push(drift("C11", source.file, no, "声明的 skill 名须对应 skill/ 下的目录", `skills/${name}/SKILL.md 存在`, name));
+      if (!actual.includes(name)) found.push(drift("C11", source.file, no, "声明的 skill 名须对应 skills/ 下的目录", `skills/${name}/SKILL.md 存在`, name));
     }
   }
   return found;
