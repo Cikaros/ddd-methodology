@@ -20,7 +20,9 @@ const { spawnSync } = require("child_process");
 const TIMEOUT_MS = 120000; // 单个入口的运行上限，超时判失败，避免挂死拖垮自测
 // 不入自动调用的入口：自身运行会递归；apply-models 与 migrate-to-package 写入用户作用域且依赖仓库在场，
 // 二者非本仓库内可安全自动调用的入口，故连同自身一并排除
-const EXCLUDED_ENTRIES = new Set(["toolchain-selftest.js", "apply-models.js", "migrate-to-package.js"]);
+// 排除集单一来源：仓库内部专用脚本取自 install-manifest-check 的常量，本文件只补自身
+const { REPO_ONLY_SCRIPTS } = require("./install-manifest-check.js");
+const EXCLUDED_ENTRIES = new Set(["toolchain-selftest.js", ...REPO_ONLY_SCRIPTS]);
 const BASELINE_REL = ["scripts", "lib", "toolchain-baseline.json"];
 
 const argv = process.argv.slice(2);

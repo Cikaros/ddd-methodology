@@ -82,7 +82,7 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 甲类脚本，即服务被开发项目的机械校验，默认由根会话经对应工具调用而不再拼路径：`ddd_governance_check`、`ddd_trace_check`、`ddd_span_check`、`ddd_code_health`、`ddd_debt_check`、`ddd_metrics_report`，每个工具的 `root` 参数传被开发项目根的绝对路径；例外为集成收口的 `ddd_code_health` 与 `ddd_governance_check` 由 `ddd-fixer` 产出，它本就独立于实现者，产出方划分见规范「结构与注释的机械证据」节。乙类（服务本仓库自身维护）与丙类（部署与维护辅助）脚本由维护者在本仓库内执行，不进入被开发项目的流程。
 
 - 声明式：写入类与审计类代理的 frontmatter 已声明 acceptanceRole 与 acceptance，派发时按其默认执行；需要额外校验时在 options 传 gate 或 acceptance。
-- 运行时：`extensions/ddd-governance.ts` 在 DDD 项目内拦截越阈值写入与全量测试误跑，仅覆盖根会话与后台子代理，前台子代理不加载 ambient 扩展。
+- 运行时：`extensions/ddd-governance.ts` 在 DDD 项目内拦截越阈值写入与全量测试误跑；覆盖根会话、后台子代理，以及 frontmatter 声明 `extensions` 的写代码代理，当前为 ddd-implementer、ddd-fixer 与 ddd-tester；未声明的前台子代理不加载 ambient 扩展。
 - 门槛工具：`ddd_governance_check` 校验契约指纹一致性与超阈值趋势，输出 verdict 作为 G5-INT 证据，见规范「结构与注释的机械证据」节。
 
 脚本的输出形态、机读结论与退出码语义见规范「结构与注释的机械证据」节的脚本消费契约表。

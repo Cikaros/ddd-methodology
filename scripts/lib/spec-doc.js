@@ -67,7 +67,7 @@ function createSpecReader(root) {
   const missing = (item, criterion) => [drift(item, firstRel(), 0, criterion, "规范文件存在且可读", SPEC_DIR_REL.join("/"))];
   // 节标题命中多于一处即歧义：漂移项指首处，found 列全部命中位置供人工复核
   const sectionDrift = (item, title, hits) => drift(item, hits[0].rel, hits[0].line, `规范节标题「${title}」须跨文件唯一，定位不得歧义`, "唯一命中", hits.map((h) => `${h.rel}:${h.line}`).join("、"));
-  return { docs, headingSources, headingSet, findSection, firstRel, missing, sectionDrift, SPEC_INDEX_REL };
+  return { docs, headingSources, headingSet, findSection, firstRel, missing, sectionDrift };
 }
 
 module.exports = { createSpecReader, relPath, trimHeadingNumber, SPEC_INDEX_REL };

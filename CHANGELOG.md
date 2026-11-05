@@ -2,6 +2,18 @@
 
 本文件记录 pi package 形态的版本变更，版本号与仓库根 `package.json` 的 `version` 对应，采用三段式语义化版本；本包经 `pi install` 安装，例如 `pi install git:github.com/Cikaros/ddd-methodology`。方法论规范版本 v1.0 至 v2.21 的演进史已归档至 `docs/internal/history/spec-changelog.md`，属内部档案，不作为公开内容。
 
+## 0.6.1 - 2026-11-05
+
+- **删除**：`templates-gates.md` 中三处无消费方的声明，即清空回执行形态、根索引的模块索引表与看板快照的「上限五十条」限定；清空要求保留于规范文字，模块节点路径改由设计树推算。
+- **删除**：零引用导出三处，即 `spec-doc.js` 工厂返回的 `SPEC_INDEX_REL` 字段、`obligations.js` 的 `extractObligations` 导出键与 `span-compare.js` 的 `deriveLanguage` 导出键。
+- **删除**：`docs/README.md` 中长期未建的 `reference/` 目录占位段。
+- **修正**：两处逐字节重复实现收敛到单一来源，`num` 与 `isBlank` 的实现在 `lib/text.js`，度量层与两个入口脚本改为引用它。
+- **修正**：两处重复表述改为指针，即报告归档命名与机械证据运行方登记；`spec-design.md` 同节内重复的项数表述合并。
+- **修正**：`SKILL.md` 的守卫覆盖描述更新为现行覆盖面，含 frontmatter 声明扩展的三份写代码代理。
+- **修正**：`docs/internal/check-coverage.json` 的过时引用，C13 已于 0.2.0 撤除，该能力现由 C17 承载。
+- **内部**：排除集收敛为单一来源，`toolchain-selftest` 改用 `install-manifest-check` 的常量；输出截断器与脚本台账登记为债务，应清 v0.8.0。
+- **更正**：0.6.0 条目称任务树模板「两处」，实为三块，含快照块。
+
 ## 0.6.0 - 2026-11-05
 
 - **新增**：义务核销链。设计侧可执行义务按来源派生编号并落成任务树的模块节点文件，编号由来源而非顺序决定，使插入新条目不影响既有编号；已核销为终态，归档后不得修改、拓展与回退，变更一律新建节点；周期结束整树丢弃，防逐周期堆积推高上下文负担。

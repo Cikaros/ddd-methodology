@@ -11,10 +11,8 @@ const { readFileText } = require("./text.js");
 // 产物路径取共享层单一常量，本模块只转发入参，不再复写路径字面量
 const { HEALTH_REL, DEBT_BOOK_REL, artifactReadPath } = require("./paths.js");
 
-// 缺省取向：非有限数值一律视为零，使早期条目缺字段时不判失败
-const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+// 缺省取向：非有限数值一律视为零，使早期条目缺字段时不判失败；num 与 isBlank 的唯一实现在 lib/text.js
 const isMissingNumber = (v) => !(typeof v === "number" && Number.isFinite(v));
-const isBlank = (v) => v === undefined || v === null || v === "";
 
 // 读健康度量历史：文件缺失即未启用，解析失败记原因后同样按不可采集处理
 function readHealth(root) {
@@ -84,4 +82,4 @@ function firstTableAfter(lines, headingRe) {
   return rows.length >= 2 ? rows : null;
 }
 
-module.exports = { HEALTH_REL, DEBT_BOOK_REL, num, isMissingNumber, isBlank, readHealth, readDebts, readDirFiles, readJsonLine, isTableSeparator, firstTableAfter };
+module.exports = { isMissingNumber, readHealth, readDebts, readDirFiles, readJsonLine, isTableSeparator, firstTableAfter };

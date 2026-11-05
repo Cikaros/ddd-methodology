@@ -23,7 +23,7 @@
 const fs = require("fs");
 const path = require("path");
 // 读取失败回空串而非中断：DESIGN 读不到时仍走指纹校验并给出结构化结论，消费端不以栈信息判读
-const { readFileText } = require("./lib/text.js");
+const { readFileText, num } = require("./lib/text.js");
 const { HEALTH_REL, artifactReadPath } = require("./lib/paths.js");
 const { checkContractFingerprint, isWellFormedFingerprint } = require("./fingerprint");
 const { absoluteDesignDir } = require("./design-root");
@@ -115,7 +115,6 @@ function checkChangeTypeDelta(text) {
   return { checked: true };
 }
 
-const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
 
 function check() {
   const reasons = [];

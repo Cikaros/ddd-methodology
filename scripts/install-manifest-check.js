@@ -33,4 +33,4 @@ function parseShippedScripts(root) {
   return new Set(collectShippedScripts(root));
 }
 
-module.exports = { parseShippedScripts };
+module.exports = { REPO_ONLY_SCRIPTS, parseShippedScripts };

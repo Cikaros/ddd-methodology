@@ -21,4 +21,8 @@ function drift(item, file, line, criterion, expect, found) {
   return { item, file, line, criterion, expect, found: found === undefined ? "" : String(found).slice(0, 60) };
 }
 
-module.exports = { readFileText, withLineNumbers, drift };
+// 值归一共享原语：非有限数值归零与空值判定，原在度量层与两个入口脚本各写一份，现收敛为一处
+const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+const isBlank = (v) => v === undefined || v === null || v === "";
+
+module.exports = { readFileText, withLineNumbers, drift, num, isBlank };

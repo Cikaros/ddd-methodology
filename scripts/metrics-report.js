@@ -16,7 +16,9 @@
 
 const fs = require("fs");
 const path = require("path");
-const { HEALTH_REL, DEBT_BOOK_REL, readHealth, readDebts, readDirFiles, isBlank } = require("./lib/metrics-sources.js");
+const { HEALTH_REL, DEBT_BOOK_REL } = require("./lib/paths.js");
+const { isBlank } = require("./lib/text.js");
+const { readHealth, readDebts, readDirFiles } = require("./lib/metrics-sources.js");
 const { METRICS_REL, artifactWritePath, artifactWriteRel } = require("./lib/paths.js");
 const { computeTrend, computeDebt, computeRecurrence } = require("./lib/metrics-structure.js");
 const { REPORTS_DIR_REL, computeGates, computeReworkRounds, computeDefectLevels, computeDefectDensity, computeUnconsumedDeclarations, computeMechanicalEvidenceCoverage } = require("./lib/metrics-delivery.js");

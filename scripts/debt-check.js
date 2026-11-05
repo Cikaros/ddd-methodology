@@ -21,7 +21,7 @@
 
 const fs = require("fs");
 // 读取失败回空串而非中断：登记簿读不到时仍走无效 JSON 分支给出结构化结论，消费端不以栈信息判读
-const { readFileText } = require("./lib/text.js");
+const { readFileText, isBlank } = require("./lib/text.js");
 // 版本标识的解析、比较、加跨度与格式化取共享层，与 metrics-report 共用，避免第三处实现
 const { parseVersion, compareVersion, addSpan, formatVersion } = require("./lib/version.js");
 // 债务历史快照与根因复发检测取共享层，本脚本只负责按登记簿构建摘要并落盘、输出段落
@@ -45,7 +45,6 @@ const STATUSES = ["open", "closed"];
 // 上列字段与根因分类集合同时作为 ref-check 的 C14 比对源，三处集合一致性由机械校验承接。
 const ROOT_CAUSES = ["声明与事实脱节", "单一权威被违背", "机械校验有盲区", "规则演进后消费方未同步", "反复修补同一处", "运行时契约未落地"];
 
-const isBlank = (v) => v === undefined || v === null || v === "";
 
 // 校验：回传缺口明细；文件不存在即未启用，明细为空
 function check() {

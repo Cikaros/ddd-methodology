@@ -218,4 +218,4 @@ function checkObligations(env) {
   return { problems, warnings };
 }
 
-module.exports = { extractObligations, checkObligations };
+module.exports = { checkObligations };

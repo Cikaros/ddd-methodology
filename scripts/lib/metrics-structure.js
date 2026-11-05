@@ -5,7 +5,9 @@
  * 不包含：来源读取原语（见 metrics-sources.js）、交付质量类与声明面类度量（见 metrics-delivery.js）、文本报告装配与产物落盘、命令行入口。不引入第三方依赖。
  */
 
-const { HEALTH_REL, DEBT_BOOK_REL, num, isMissingNumber, isBlank } = require("./metrics-sources.js");
+const { HEALTH_REL, DEBT_BOOK_REL } = require("./paths.js");
+const { num, isBlank } = require("./text.js");
+const { isMissingNumber } = require("./metrics-sources.js");
 const { parseVersion, compareVersion, addSpan } = require("./version.js");
 
 // 度量一：超阈值文件数趋势。取历史末三条，超阈值文件数按源码超限与文档超限之和计；缺字段条目按缺省零处理并标注
