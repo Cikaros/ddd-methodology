@@ -1,0 +1,20 @@
+// 目标与范围：TypeScript 严格编译选项片段，承载严格模式与可机械判定的类型安全开关。
+// 作为片段并入项目 compilerOptions；语义判断类条目见 ../SKILL.md。
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "useUnknownInCatchVariables": true
+  }
+}

@@ -1,0 +1,24 @@
+# 目标与范围：Python 机械可判定条目的配置基线，承载导入排序、行长、通配导入、
+# 未使用符号、裸 except 与可变默认参数。语义判断类条目见 ../SKILL.md。
+
+line-length = 88
+target-version = "py311"
+
+[lint]
+select = [
+  "E",   # pycodestyle 错误：空行、空白、裸 except(E722) 等
+  "W",   # pycodestyle 警告
+  "F",   # pyflakes：未使用导入(F401)、未使用变量(F841)、通配导入(F403)
+  "I",   # isort：导入排序与分组
+  "B",   # flake8-bugbear：可变默认参数(B006)、except 内重抛丢上下文(B904)
+  "N",   # pep8-naming：命名风格
+  "UP",  # pyupgrade：过时写法升级
+]
+# 显式排除「拟剔除」的通用常识条目及已落入正文的部分可判定条目对应规则码：
+# E203 为与 black 兼容的切片空白例外；E101/W191 为缩进单位与 Tab/空格混用；
+# E711 为 == None 比较；N801/N802/N806/N815/N816 为常规命名风格；
+# N818 为异常名 Error 后缀（该条目已在 ../SKILL.md 正文，避免重复定义）。
+ignore = ["E203", "E101", "W191", "E711", "N801", "N802", "N806", "N815", "N816", "N818"]
+
+[lint.isort]
+known-first-party = []

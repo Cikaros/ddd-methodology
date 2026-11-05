@@ -3,9 +3,12 @@
  *
  * 目标：让会话与子代理拿到必要上下文，并确认运行前提成立。其一，把包内全局规则注入系统提示的一个 section；
  *   其二，启动时探测 pi-subagents 的 subagent 工具是否可用，缺失则大声报错但不阻断启动；
- *   其三，启动时比对宿主 pi 版本与本包声明的支持范围，不匹配则提示一次，取不到版本即静默跳过。
- * 范围：仅 before_agent_start 的 section 注入与 session_start 的依赖探测、版本比对三项。
- * 不包含：子代理工具白名单、机械校验工具注册（见同目录 ddd-tools.ts）、结构治理守卫（见同目录 ddd-governance.ts）。
+ *   其三，启动时比对宿主 pi 版本与本包声明的支持范围，不匹配则提示一次，取不到版本即静默跳过；
+ *   其四，before_agent_start 内读状态文件取当前节点、读注入矩阵取该节点所在行，注入任务引导 section。
+ * 范围：before_agent_start 的全局规则与任务引导两项 section 注入、session_start 的依赖探测与版本比对各一项。
+ * 不包含：子代理工具白名单、机械校验工具注册（见同目录 ddd-tools.ts）、结构治理守卫（见同目录 ddd-governance.ts）、技能选取与技能集裁剪（见同目录 ddd-resources.ts）。
+ *
+ * 任务引导 section 与技能注入同源，均由 lib/injection.ts 按节点键取行；本扩展只取引导文本，不承担技能选取。
  *
  * 注入方式：以 `sections.ddd_global_rules` 就地叠加。返回 replacement systemPrompt 会摧毁 section 机制并使 prompt 缓存失效，故严禁。
  * 规则正文在会话开始时读盘一次并缓存，其后每轮只读缓存，不在每轮重复读盘；文件缺失或读取失败一律静默跳过。
@@ -20,8 +23,10 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { notifyUser } from "./lib/notify.ts";
 import { type ExecResult, exitCodeOf } from "./lib/shared.ts";
 import { checkVersionInRange } from "./lib/version-range.ts";
+import { buildTaskGuidance, computeNodeInjection, extractTaskText } from "./lib/injection.ts";
 
 const SECTION_NAME = "ddd_global_rules";
+const GUIDANCE_SECTION_NAME = "ddd_task_guidance";
 const SUBAGENT_TOOL = "subagent";
 const GLOBAL_RULES_FILE = fileURLToPath(new URL("./rules/global-rules.md", import.meta.url));
 const PI_SUBAGENTS_INSTALL = "pi install npm:pi-subagents";
@@ -41,13 +46,29 @@ export default function (pi: ExtensionAPI) {
 		void checkPiVersion(pi, ctx); // 版本比对与会话启动无依赖，不 await，避免探测拖慢启动
 	});
 
-	pi.on("before_agent_start", (event) => {
-		const body = loadRules();
-		if (!body) return;
+	pi.on("before_agent_start", (event, ctx) => {
 		const sections = event.systemPromptOptions?.sections;
-		if (!sections) return;
-		sections[SECTION_NAME] = body;
+		if (sections) {
+			const body = loadRules();
+			if (body) sections[SECTION_NAME] = body;
+		}
+		injectTaskGuidance(event, ctx);
 	});
+}
+
+// 任务引导 section：读状态文件取节点、读矩阵取行，与技能注入同源；节点、矩阵或缺节任一缺失即不注入，不报错
+export function injectTaskGuidance(event: { systemPromptOptions?: { sections?: Record<string, unknown> } }, ctx: unknown): void {
+	try {
+		const sections = event?.systemPromptOptions?.sections;
+		if (!sections) return;
+		const cwd = (ctx as { cwd?: unknown } | undefined)?.cwd;
+		const injection = computeNodeInjection(typeof cwd === "string" ? cwd : "", extractTaskText(event));
+		if (!injection) return;
+		const guidance = buildTaskGuidance(injection.node, injection.skills);
+		if (guidance) sections[GUIDANCE_SECTION_NAME] = guidance;
+	} catch {
+		// 引导注入异常一律降级为不注入，不阻断启动
+	}
 }
 
 // 读盘一次并缓存：文件缺失或读取失败一律返回 null，绝不抛错阻断会话

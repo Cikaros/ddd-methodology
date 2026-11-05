@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+  "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+  "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<!-- 目标与范围：Java 机械可判定条目的配置基线，承载块缩进、大括号风格、导入顺序、
+     通配导入、未使用导入、行长、空 catch、冗余修饰符、@Override、
+     equals/hashCode 成对与 finalize 禁用。语义判断类条目见 ../SKILL.md。 -->
+<module name="Checker">
+  <property name="charset" value="UTF-8"/>
+  <property name="severity" value="warning"/>
+
+  <module name="LineLength">
+    <property name="max" value="100"/>
+    <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://"/>
+  </module>
+
+  <module name="TreeWalker">
+    <module name="Indentation">
+      <property name="basicOffset" value="2"/>
+      <property name="lineWrappingIndentation" value="4"/>
+      <property name="caseIndent" value="2"/>
+      <property name="arrayInitIndent" value="2"/>
+    </module>
+    <module name="LeftCurly"/>
+    <module name="ImportOrder">
+      <property name="ordered" value="true"/>
+      <property name="separated" value="true"/>
+      <property name="option" value="under"/>
+      <property name="sortStaticImportsAlphabetically" value="true"/>
+    </module>
+    <module name="UnusedImports"/>
+    <module name="RedundantImport"/>
+    <module name="AvoidStarImport"/>
+    <module name="EmptyCatchBlock">
+      <property name="exceptionVariableName" value="expected"/>
+    </module>
+    <module name="MissingOverride"/>
+    <module name="NoFinalizer"/>
+    <module name="EqualsHashCode"/>
+    <module name="PackageName"/>
+    <module name="LocalVariableName"/>
+    <module name="RedundantModifier"/>
+    <module name="OneStatementPerLine"/>
+    <module name="NeedBraces"/>
+    <module name="WhitespaceAround"/>
+  </module>
+</module>

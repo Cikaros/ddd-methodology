@@ -3,9 +3,10 @@
  *
  * 目标：把甲类机械校验脚本注册为类型化工具，使父会话以工具调用替代文本解析与绝对路径拼装；
  *   工具回传结构化结果，模型只收到精简摘要与关键结论行，降低上下文负担。
- * 范围：六个工具与六个脚本一一对应——ddd_governance_check、ddd_trace_check、ddd_span_check、ddd_code_health、ddd_debt_check、ddd_metrics_report；
+ * 范围：六个机械证据工具与六个脚本一一对应——ddd_governance_check、ddd_trace_check、ddd_span_check、ddd_code_health、ddd_debt_check、ddd_metrics_report；
+ *   另接入五个交叉检查节点的校验脚本入口 ddd_check_scope、ddd_check_design、ddd_check_file_design、ddd_check_code、ddd_check_consistency，其脚本由域五（脚本与校验）产出，本处只建调用入口，脚本缺失时 runCheck 报缺失而非静默；
  *   另以 registerCommand 提供解析器供给的用户入口 ddd-parser-install，仅用户触发，转交 skills/ddd-methodology/scripts/install-parser.js，安装逻辑与版本清单不在扩展侧复写。
- * 不包含：全局规则注入与前置依赖探测（见同目录 ddd-context.ts）、结构治理守卫（见同目录 ddd-governance.ts）、模型配比命令（见同目录 ddd-models.ts）。
+ * 不包含：全局规则注入与前置依赖探测（见同目录 ddd-context.ts）、结构治理守卫（见同目录 ddd-governance.ts）、技能裁剪与路径供给（见同目录 ddd-resources.ts）。
  *
  * 脚本路径一律由共享模块（lib/shared.ts）解析的包根拼出，不依赖调用方传入，不硬编码绝对路径。
  * 调用约定：node <脚本绝对路径> <项目根绝对路径>；机读状态取脚本末行 `RESULT: xxx` 的 xxx 或 JSON 输出的 verdict。
@@ -72,6 +73,47 @@ const PARAMETERS = Type.Object({
 	root: Type.String({ description: "被开发项目根的绝对路径" }),
 });
 
+// 交叉检查节点的校验脚本入口：四个纯机械节点与一个脚本加审计节点，脚本落 skills/ddd-methodology/scripts/，
+// 由域五（脚本与校验）产出，见 DESIGN-crosscheck.md 第三、四节；本处只建调用入口，脚本尚未产出时不报错中断，由 runCheck 报脚本缺失。
+const CROSS_CHECK_DEPENDENCY = "依赖域五（脚本与校验）产出脚本，见 DESIGN-crosscheck.md 第四节";
+const CROSS_CHECK_TOOLS = [
+	{
+		name: "ddd_check_scope",
+		script: "check-scope",
+		label: "DDD 检查 check-scope",
+		description: `运行 check-scope 校对结构树、包清单、语言栈、技能清单与目录规划五处同集与字段名同集，输出 RESULT: pass 或 gap，作为 G3 子项。${CROSS_CHECK_DEPENDENCY}。root 传被开发项目根的绝对路径。`,
+		snippet: "校对五处同集与字段名同集（check-scope）",
+	},
+	{
+		name: "ddd_check_design",
+		script: "check-design",
+		label: "DDD 检查 check-design",
+		description: `运行 check-design 校对契约表与 AC 覆盖、设计树与代码目录逐层同构、义务编号唯一与列头完整，输出 RESULT: pass 或 gap，作为 G4 子项。${CROSS_CHECK_DEPENDENCY}。root 传被开发项目根的绝对路径。`,
+		snippet: "校对同构与契约表头（check-design）",
+	},
+	{
+		name: "ddd_check_file_design",
+		script: "check-file-design",
+		label: "DDD 检查 check-file-design",
+		description: `运行 check-file-design 校对文件级清单与目录级契约一致、被依赖清单闭合与覆盖判据达标，输出 RESULT: pass 或 gap，作为 G4 子项。${CROSS_CHECK_DEPENDENCY}。root 传被开发项目根的绝对路径。`,
+		snippet: "校对文件级清单与被依赖闭合（check-file-design）",
+	},
+	{
+		name: "ddd_check_code",
+		script: "check-code",
+		label: "DDD 检查 check-code",
+		description: `运行 check-code 校对导出符号与两级设计签名一致、用例与模块级 AC 覆盖与基础能力独立用例存在，输出 RESULT: pass 或 gap，作为 G5 子项。${CROSS_CHECK_DEPENDENCY}。root 传被开发项目根的绝对路径。`,
+		snippet: "校对导出符号与用例覆盖（check-code）",
+	},
+	{
+		name: "ddd_check_consistency",
+		script: "check-consistency",
+		label: "DDD 检查 check-consistency",
+		description: `运行 check-consistency 校对全量命名集合与计数声明三处一致、声明落点完备与无悬空引用，输出 RESULT: pass 或 gap，作为 G6 子项；语义部分由审计者承担。${CROSS_CHECK_DEPENDENCY}。root 传被开发项目根的绝对路径。`,
+		snippet: "校对命名集合与落点完备（check-consistency）",
+	},
+];
+
 // 解析器供给脚本：位置由包根解析，扩展侧不硬编码路径，也不读取版本清单
 const PARSER_INSTALL_SCRIPT = join(PACKAGE_ROOT, "skills", "ddd-methodology", "scripts", "install-parser.js");
 
@@ -85,7 +127,7 @@ const OUTPUT_SCHEMA = Type.Object({
 });
 
 export default function (pi: ExtensionAPI) {
-	for (const spec of TOOLS) {
+	for (const spec of [...TOOLS, ...CROSS_CHECK_TOOLS]) {
 		pi.registerTool({
 			name: spec.name,
 			label: spec.label,

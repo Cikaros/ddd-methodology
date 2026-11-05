@@ -1,7 +1,7 @@
 /**
  * DDD 结构治理运行时守卫
  *
- * 目标：为 DDD 项目补充过程拦截，机械判定结构粒度与测试分离两类门槛，覆盖声明式门禁覆盖不到的过程。
+ * 目标：为 DDD 项目补充过程拦截，机械判定结构粒度、测试分离、目录越权、结构同构与语言基线五类门槛，覆盖声明式门禁覆盖不到的过程。
  * 范围：仅当 ctx.cwd 下存在 docs/gates 或声明的设计树根时激活，设计树根缺省回退 docs/design；对普通项目静默，所有处理函数立即返回 undefined。
  *
  * 判定编号摘要，与规范「结构与契约的演进治理」节的守卫判定表逐项一致：
@@ -9,6 +9,9 @@
  * - H-2 测试分离守卫。触发点：tool_call 的 bash。判定条件：命令属窄口径的全量测试调用形态，且 docs/.ddd-state.json 的 lastStage 为 g5-int。动作：拦截，指明全量测试的唯一主体是 ddd-tester。
  * - H-3 义务覆盖守卫。触发点：tool_call 的 write/edit。判定条件：目标为源码文件、任务树已启用，而该文件所属接缝的节点文件缺失或该文件未被任何义务节点覆盖。动作：拦截，理由含节点文件路径与登记方式。覆盖边界：源目录内 DESIGN 组织不在覆盖内，设计树根取 ARCHITECTURE 的声明值，缺省回退 docs/design。
  * - H-4 门禁清零守卫。触发点：tool_call 的 write/edit。判定条件：目标为 docs/gates/ 下的门禁记录，且任务树存在未闭合义务节点。动作：拦截，理由含未闭合节点所在文件与逐项核销要求。
+ * - H-5 目录越权守卫。触发点：tool_call 的 write/edit。判定条件：目标为源码，且不在设计树映射的代码根之内。动作：拦截，理由含绝对路径、就近 DESIGN 路径与纳入设计树的补齐方式。
+ * - H-6 结构不同构守卫。触发点：tool_call 的 write/edit。判定条件：目标所在目录在设计树中无对应节点。动作：拦截，指明须先补目录级设计再写码。
+ * - H-7 语言基线守卫。触发点：tool_call 的 write/edit。判定条件：目标为源码，而该语言的编译基线未在项目内建立。动作：拦截，指明基线由架构设计者依语言技能资产生成。
  *
  * 键关系：G5_INT_STAGE 的值为状态文件阶段键集合中的单键，即 docs/.ddd-state.json 的 doneStages 枚举成员之一；ref-check 的 C4 与 --fix 据此比对并单向校验其属于该集合，脚本不改本文件，值变更须人工处理。
  *
@@ -29,6 +32,17 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { notifyUser } from "./lib/notify.ts";
 import { describeError, readText } from "./lib/shared.ts";
+import {
+	countLines,
+	coversFile,
+	isFullTestCommand,
+	isSourceFile,
+	normalizeFullTestCommand,
+	shouldBlockDirectoryScope,
+	shouldBlockLanguageBaseline,
+	shouldBlockStructureIsomorphism,
+} from "./lib/guards.ts";
+import { ARCHITECTURE_REL, languageOfPath, parseDeclaredLanguages } from "./lib/injection.ts";
 
 // 设计树根解析复用脚本侧唯一实现，避免守卫与脚本两套口径；解析失败回退默认根 docs/design
 let designRootResolver = null;
@@ -57,26 +71,6 @@ const RUNTIME_EXCEPTION_MARK = "运行时例外";
 const STATE_FILE = "docs/.ddd-state.json";
 const G5_INT_STAGE = "g5-int";
 
-const SOURCE_EXTENSIONS = new Set([
-	"ts", "tsx", "js", "jsx", "mjs", "cjs", "vue", "svelte",
-	"py", "go", "rs", "java", "kt", "kts", "cs", "rb", "php", "swift", "scala", "dart", "lua",
-	"c", "h", "cc", "cpp", "cxx", "hpp", "csx", "m", "mm", "sql", "sh", "ps1",
-]);
-
-// 全量测试调用形态：只收整仓命令的窄口径写法，带文件参数、含管道或串联的形态一律不判定。
-const FULL_TEST_COMMANDS = [
-	/^(?:npm|pnpm|yarn)\s+(?:run\s+)?test$/i,
-	/^node\s+--test$/i,
-	/^(?:jest|vitest)\s+run$/i,
-	/^pytest$/i,
-	/^python\d?(?:\.\d+)?\s+-m\s+pytest$/i,
-	/^go\s+test\s+\.\/\.\.\.$/i,
-	/^cargo\s+test$/i,
-	/^mvn\s+(?:-\S+\s+)*test$/i,
-	/^dotnet\s+test$/i,
-	/^bun\s+test$/i,
-	/^deno\s+test$/i,
-];
 
 export default function (pi: ExtensionAPI) {
 	pi.on("before_agent_start", (event, ctx) => {
@@ -87,24 +81,29 @@ export default function (pi: ExtensionAPI) {
 		sections[OBLIGATION_SECTION_NAME] = obligations;
 	});
 
-	pi.on("tool_call", async (event, ctx) => {
-		try {
-			if (!isDddProject(ctx && ctx.cwd)) return undefined;
-			const toolName = event && event.toolName;
-			if (toolName === "write" || toolName === "edit") {
-				const granularity = checkGranularity(event, ctx);
-				if (granularity) return granularity;
-				const coverage = checkObligationCoverage(event, ctx);
-				if (coverage) return coverage;
-				return checkGateRecordClearance(event, ctx);
-			}
-			if (toolName === "bash") return checkFullTestCommand(event, ctx); // H-2
-			return undefined;
-		} catch (error) {
-			notifyUser(ctx, `[ddd-governance] tool_call 判定异常，已放行：${describeError(error)}`, "warning");
-			return undefined;
+	pi.on("tool_call", handleToolCall);
+}
+
+// tool_call 守卫入口：非 DDD 项目完全静默返回；DDD 项目先判激活，再按工具类型分派；任一异常一律捕获后放行
+export async function handleToolCall(event: any, ctx: any) {
+	try {
+		if (!isDddProject(ctx && ctx.cwd)) return undefined;
+		const toolName = event && event.toolName;
+		if (toolName === "write" || toolName === "edit") {
+			const granularity = checkGranularity(event, ctx);
+			if (granularity) return granularity;
+			const coverage = checkObligationCoverage(event, ctx);
+			if (coverage) return coverage;
+			const structural = checkSourceStructuralGuards(event, ctx);
+			if (structural) return structural;
+			return checkGateRecordClearance(event, ctx);
 		}
-	});
+		if (toolName === "bash") return checkFullTestCommand(event, ctx); // H-2
+		return undefined;
+	} catch (error) {
+		notifyUser(ctx, `[ddd-governance] tool_call 判定异常，已放行：${describeError(error)}`, "warning");
+		return undefined;
+	}
 }
 
 // ---- H-1 粒度守卫 ----
@@ -184,19 +183,6 @@ function nodesPathFor(designPath, cwd) {
 	const rel = relative(designRootAbs(root), dirname(designPath));
 	if (rel.startsWith("..")) return null;
 	return join(root, "docs", "board", rel, "NODES.md");
-}
-
-// 覆盖判定：节点表覆盖范围列须等于目标相对路径，或以该值为目录前缀，避免子串误命中
-function coversFile(nodeText, relFile) {
-	for (const line of nodeText.split("\n")) {
-		if (!line.trim().startsWith("|")) continue;
-		const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
-		if (cells.length < 6 || !cells[0] || cells[0] === "节点编号" || /^-+$/.test(cells[0])) continue;
-		const coverage = cells[5].replace(/`/g, "").replace(/\/$/, "");
-		if (!coverage) continue;
-		if (relFile === coverage || relFile.startsWith(coverage + "/")) return true;
-	}
-	return false;
 }
 
 function checkObligationCoverage(event, ctx) {
@@ -280,14 +266,85 @@ function checkGateRecordClearance(event, ctx) {
 	};
 }
 
+// ---- H-5 目录越权 / H-6 结构不同构 / H-7 语言基线 ----
+
+// 设计树事实：设计节点目录（相对设计树根）与由其首段派生的代码根；无设计树即双空集，三项判定均放行。
+// 每次调用重读，不做缓存：设计树可在会话中演进，缓存会致结构同构判定失真；扩展只在钩子内做无状态判定。
+function designFacts(root) {
+	const designDirs = [];
+	const walk = (dir, rel) => {
+		let entries;
+		try {
+			entries = readdirSync(dir, { withFileTypes: true });
+		} catch {
+			return; // 设计树根不存在或不可读：该分支无节点，不贡献目录
+		}
+		if (entries.some((entry) => entry.isFile() && entry.name === "DESIGN.md")) designDirs.push(rel);
+		for (const entry of entries) {
+			if (!entry.isDirectory() || entry.name.startsWith(".")) continue;
+			walk(join(dir, entry.name), rel === "" ? entry.name : `${rel}/${entry.name}`);
+		}
+	};
+	walk(designRootAbs(resolve(root)), "");
+	const codeRoots = [...new Set(designDirs.map((dir) => dir.split("/")[0]).filter((seg) => seg !== ""))];
+	return { designDirs, codeRoots };
+}
+
+// 源码类三项守卫的共用入口：同一目标文件按 H-5、H-6、H-7 次序取首个命中；目标非源码一律跳过
+function checkSourceStructuralGuards(event, ctx) {
+	const input = (event && event.input) || {};
+	const rawPath = input.path ?? input.file_path ?? input.filePath;
+	if (typeof rawPath !== "string" || rawPath === "") return undefined;
+	const root = resolve(ctx.cwd);
+	const absPath = resolve(root, rawPath);
+	if (!isSourceFile(absPath)) return undefined;
+	const relFile = relative(root, absPath).split(sep).join("/");
+	if (relFile.startsWith("..")) return undefined; // 越出项目根不判，避免与项目外路径比较
+	const relDir = relFile.includes("/") ? relFile.slice(0, relFile.lastIndexOf("/")) : "";
+
+	const { designDirs, codeRoots } = designFacts(root);
+	if (shouldBlockDirectoryScope(relFile, codeRoots)) {
+		return guardBlock("H-5 目录越权守卫", `目标不在设计树映射的代码根之内：${absPath}`, ctx.cwd, absPath, [
+			`设计树已映射的代码根：${codeRoots.length ? codeRoots.join("、") : "（无）"}`,
+			"写码前先把该目录纳入设计树映射，或改在设计树内的目录写码；设计树根取 ARCHITECTURE.md 的声明值，缺省回退 docs/design。",
+		]);
+	}
+	if (shouldBlockStructureIsomorphism(relDir, designDirs)) {
+		return guardBlock("H-6 结构不同构守卫", `目标所在目录在设计树中无对应节点：${absPath}`, ctx.cwd, absPath, [
+			`设计树已有节点目录：${designDirs.length ? designDirs.join("、") : "（无）"}`,
+			"新增目录须先补目录级 DESIGN.md 节点，再写该目录源码；代码目录与设计目录逐层同构。",
+		]);
+	}
+	const language = languageOfPath(absPath);
+	const established = parseDeclaredLanguages(readText(join(root, ARCHITECTURE_REL)));
+	if (shouldBlockLanguageBaseline(language, established)) {
+		return guardBlock("H-7 语言基线守卫", `目标语言 ${language} 的编译基线未在项目内建立：${absPath}`, ctx.cwd, absPath, [
+			`项目已建立基线的语言：${established.length ? established.join("、") : "（无）"}`,
+			"先由架构设计者依语言技能资产生成该语言的编译与编码基线并声明进 ARCHITECTURE.md，再写该语言源码。",
+		]);
+	}
+	return undefined;
+}
+
+// 拦截理由统一含绝对路径、就近设计路径与补齐方式三要素，不可只给结论
+function guardBlock(guard, headline, cwd, absPath, fixHints) {
+	const designPath = nearestDesignPath(cwd, absPath);
+	return {
+		block: true,
+		reason: [
+			`[${guard}] ${headline}`,
+			designPath ? `就近 DESIGN：${designPath}` : "未找到就近 DESIGN，请补齐设计文档后再写码。",
+			...fixHints,
+		].join("\n"),
+	};
+}
 // ---- H-2 测试分离守卫 ----
 
 function checkFullTestCommand(event, ctx) {
 	const input = (event && event.input) || {};
 	if (typeof input.command !== "string") return undefined;
-	const normalized = normalizeCommand(input.command);
-	if (normalized === null) return undefined;
-	if (!FULL_TEST_COMMANDS.some((pattern) => pattern.test(normalized))) return undefined;
+	const normalized = normalizeFullTestCommand(input.command);
+	if (normalized === null || !isFullTestCommand(normalized)) return undefined;
 	if (readLastStage(ctx.cwd) !== G5_INT_STAGE) return undefined;
 	return {
 		block: true,
@@ -298,17 +355,6 @@ function checkFullTestCommand(event, ctx) {
 			"规范依据：规范「实现与测试分离」节。",
 		].join("\n"),
 	};
-}
-
-function normalizeCommand(command) {
-	let cmd = command.trim().replace(/\s+/g, " ");
-	if (cmd === "") return null;
-	const cdPrefix = /^cd [^&|;]+ && (.+)$/.exec(cmd);
-	if (cdPrefix) cmd = cdPrefix[1].trim();
-	cmd = cmd.replace(/^(?:[A-Za-z_][A-Za-z0-9_]*=[^\s&|;]+ )+/, "").trim();
-	// 串联、管道、重定向、子命令替换等形态无法判断是否整仓，一律放行。
-	if (cmd === "" || /[&|;`$<>]/.test(cmd)) return null;
-	return cmd;
 }
 
 function readLastStage(cwd) {
@@ -329,19 +375,6 @@ function isDddProject(cwd) {
 	const root = resolve(cwd);
 	if (existsSync(join(root, "docs", "gates"))) return true;
 	return existsSync(designRootAbs(root));
-}
-
-function isSourceFile(filePath) {
-	const name = filePath.split(/[\\/]/).pop() || "";
-	const dot = name.lastIndexOf(".");
-	if (dot <= 0) return false;
-	return SOURCE_EXTENSIONS.has(name.slice(dot + 1).toLowerCase());
-}
-
-function countLines(text) {
-	if (typeof text !== "string" || text === "") return 0;
-	const trimmed = text.replace(/\n+$/, "");
-	return trimmed === "" ? 0 : trimmed.split("\n").length;
 }
 
 // ---- 看板注入 ----

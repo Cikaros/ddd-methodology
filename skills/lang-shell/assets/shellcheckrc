@@ -1,0 +1,14 @@
+# 目标与范围：Shell 机械可判定条目的 shellcheck 配置基线，承载目标 shell、严重度、
+# 变量与命令替换引号、cd 成败判断等 SC 规则。语义判断类条目见 ../SKILL.md。
+
+# 目标解释器：与脚本 shebang 一致（POSIX sh 或 bash）
+shell=sh
+
+# 报告风格类问题，不因风格降为提示
+severity=style
+
+# 启用可选检查：变量始终加引号的引号安全规则
+enable=quote-safe-variables
+
+# 允许 source 外部文件时的路径搜索
+external-sources=true
