@@ -36,7 +36,7 @@ description: 文档粒度与结构约定的治理技能，承载同构拆分判�
 | 约束 | 承载体 | 说明 |
 |---|---|---|
 | 文档行数与契约数超限、接近上限 | `code-health.js` 文档规模度量 | 仅报告不阻断 |
-| 拆解判定 | 设计分解者 | 在分解设计期按本节第 1 条判定 |
+| 拆解判定 | 设计分解者 | 在分解设计期按本节的文档粒度阈值判定 |
 | 锚定章节名与契约表列头 | 机械校验脚本 | 作缺口或告警输出 |
 | 抽检 | 审计代理 | G6 核验文档规模恶化项 |
 
@@ -44,11 +44,11 @@ description: 文档粒度与结构约定的治理技能，承载同构拆分判�
 
 | 本技能条款 | 来源 | 处置 |
 |---|---|---|
-| 第 1 条文档粒度阈值与父级索引 | spec-design.md 第五节「文档粒度」 | 原节该段已删，改为指向本技能 |
-| 第 2 条接近上限口径 | spec-design.md 第五节 | 口径定义落在 governance-code，本条只引用 |
-| 第 3 条契约数计数口径 | spec-declare.md 第十四节 | 只引用，不重复定义 |
-| 第 4 条活文档同口径、术语表拆分 | spec-design.md 第五节；spec-language.md 第二十节 | 阈值移入本技能，术语表拆分形态照原条款 |
-| 第 5 条文档树与模块级 AC 覆盖 | DESIGN-governance.md 第二节 G4 判据 | 门禁判据，本技能只引用 |
-| 第 6 条摘要三行、锚定章节名、机读行 | templates.md 与 templates-gates.md | 骨架内的提示语非判据，判据以本技能为准 |
-| 第 7 条文档写入者的结构治理回执 | spec-govern.md 第十七节第三节 | 回执字段归 governance-code，本条只引用 |
-| 机械拦截面 | spec-declare.md 第十四节；spec-govern.md 第十七节第五节 | 只给指针 |
+| 文档粒度阈值与父级索引 | governance-document 技能 | 原 spec-design.md 第五节该段已删，改为指向本技能 |
+| 接近上限口径 | governance-code 技能 | 口径定义落在 governance-code，本条只引用 |
+| 契约数计数口径 | spec-declare.md 第十四节 | 只引用，不重复定义 |
+| 活文档同口径、术语表拆分 | governance-document 技能；spec-language.md 第二十节 | 阈值移入本技能，术语表拆分形态照原条款 |
+| 文档树与模块级 AC 覆盖 | DESIGN-governance.md 第二节 G4 判据 | 门禁判据，本技能只引用 |
+| 摘要三行、锚定章节名、机读行 | templates.md 与 templates-gates.md | 骨架内的提示语非判据，判据以本技能为准 |
+| 文档写入者的结构治理回执 | governance-code 技能 | 回执字段归 governance-code，本条只引用 |
+| 机械拦截面 | spec-declare.md 第十四节；governance-code 技能 | 只给指针 |

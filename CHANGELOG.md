@@ -2,6 +2,24 @@
 
 本文件记录 pi package 形态的版本变更，版本号与仓库根 `package.json` 的 `version` 对应，采用三段式语义化版本；本包经 `pi install` 安装，例如 `pi install git:github.com/Cikaros/ddd-methodology`。方法论规范版本 v1.0 至 v2.21 的演进史已归档至 `docs/internal/history/spec-changelog.md`，属内部档案，不作为公开内容。
 
+## 0.8.0 - 2026-11-05
+
+本轮为丢弃性重建，整体替换既有实现与文档，不保留兼容层、旧路径别名与旧命令名，回溯点为标签 v0.7.2。
+
+- **破坏性**：技能目录 `skill/` 改名 `skills/`；删除 `profiles/`、`global/`、`workflows/` 与 `docs/guide/`，内容重排入 `skills/ddd-methodology/scripts/` 与 `extensions/rules/`。
+- **破坏性**：删除模型配比机制，含 `profiles/models.json`、`scripts/apply-models.js`、`extensions/ddd-models.ts` 与 `/ddd-models` 命令；删除一次性迁移脚本 `scripts/migrate-to-package.js`。
+- **破坏性**：代理由十二个重排为十个固定代理，删 `ddd-arbiter`，`ddd-test-planner` 更名为 `ddd-test-designer`，新增 `ddd-detail-designer`；审计者与文档同步者转出为项目级代理模板两份。
+- **破坏性**：原存量重建与定向重构两个技能转出为提示模板 `prompts/ddd-rebuild.md` 与 `prompts/ddd-refactor.md`，流程规则归主技能；新增初始化入口 `prompts/ddd-init.md`。
+- **新增**：技能体系十七份，即治理类四份、规范类六份、语言类六份与工具类一份，加主技能一份；每份正文只载不可机械判定的条目，可机械判定者落配置资产。
+- **新增**：五个交叉检查脚本 `check-scope.js`、`check-design.js`、`check-file-design.js`、`check-code.js` 与 `check-consistency.js`，在对应节点交出后立即机械校对。
+- **新增**：两份资产 `skills/ddd-methodology/assets/injection-matrix.json` 与 `check-items.json`，分别承载三维注入矩阵与交叉检查项清单。
+- **新增**：项目级规范文档模板两份与项目级代理模板两份，经 `prompts/ddd-init.md` 幂等落盘，初始化后归项目所有。
+- **新增**：`docs/COMPATIBILITY.md` 声明宿主与插件版本范围，与 `package.json` 的 `pi.dddSupportedPiVersion` 机读字段同值。
+- **改造**：扩展四模块重排为 `ddd-context.ts`、`ddd-governance.ts`、`ddd-tools.ts` 与 `ddd-resources.ts`；运行时守卫扩为 H-1 至 H-7；新增按节点裁剪技能集的注入实现。
+- **改造**：`ref-check` 校验项按新结构重建，新增结构树、命令入口、模板章节引用、提示模板集、基线键与矩阵一致性等校验。
+- **改造**：`README.md`、`STRUCTURE.md` 与 `GLOSSARY.md` 按新结构重写，`docs/README.md` 去掉已删的 `guide/` 层。
+- **内部**：设计文档树落 `docs/internal/refactor-0.8.0/`，与审计归档区语义分离，随 `.gitignore` 排除。
+
 ## 0.7.2 - 2026-11-05
 
 - **增强**：C22 校验扩为两级判据。文件级校验文档引用的 templates 系列文件名在 references 下存在；章节级把「的 X 节」扩为「的 X 节／段／表」三式，X 经标题侧归一 .md 与引用侧归一书名号及 .md 后比对标题。段收尾悬空、章节悬空与文件不存在三类形态实测可检出，清单与动词收尾不计入以避免误报。

@@ -47,13 +47,13 @@ description: 声明面可验证与修剪的治理技能，承载声明面铁律�
 
 | 本技能条款 | 来源 | 处置 |
 |---|---|---|
-| 第 1 条声明面铁律与声明面范围 | spec-declare.md 第十三节 | 原节已删，改为指向本技能 |
-| 第 2 条全量核对与反向抽查下限 | spec-declare.md 第十三节 | 同上 |
-| 第 3 条探索性审计 | spec-declare.md 第十三节 | 同上 |
-| 第 4 条变更记录核验 | spec-declare.md 第十三节 | 同上 |
-| 第 5 条修剪与剥离归属 | spec-declare.md 第十三节 | 死代码与注释段归 governance-comment，声明段归本技能 |
-| 第 6 条归档命名与修剪回验 | spec-declare.md 第十三节 | 同上 |
-| 第 7 条运行时契约类声明 | spec-declare.md 第十三节 | 同上 |
-| 第 8 条债务登记七件机制 | spec-declare.md 第十三节第一节「存量债务的登记与清偿」 | 机制全文移入 `references/declaration-rules.md` |
-| 第 9 条教训回写 | spec-declare.md 第十三节第一节 | 同上 |
+| 声明面铁律与声明面范围 | governance-declaration 技能 | 原 spec-declare.md 第十三节内容已移入本技能 |
+| 全量核对与反向抽查下限 | governance-declaration 技能 | 同上 |
+| 探索性审计 | governance-declaration 技能 | 同上 |
+| 变更记录核验 | governance-declaration 技能 | 同上 |
+| 修剪与剥离归属 | governance-declaration 技能 | 死代码与注释段归 governance-comment，声明段归本技能 |
+| 归档命名与修剪回验 | governance-declaration 技能 | 同上 |
+| 运行时契约类声明 | governance-declaration 技能 | 同上 |
+| 债务登记七件机制 | governance-declaration 技能 | 全文移入 `references/declaration-rules.md` 的「债务机制的落点划分」节 |
+| 教训回写 | governance-declaration 技能 | 同上 |
 | 机械拦截面 | spec-declare.md 第十四节；DESIGN-governance.md 第四、六节 | 只给指针 |

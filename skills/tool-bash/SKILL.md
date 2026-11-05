@@ -35,9 +35,9 @@ description: 宿主 bash 工具的易错用法与本方法论脚本调用约定�
 
 | 本技能条款 | 来源 |
 |---|---|
-| 第 1 条命令超时与不自研计时器 | DESIGN-scheduling.md 第七节 |
-| 第 2 条 cd 前缀与命令归一 | DESIGN-extensions.md 第二节（H-2 守卫） |
-| 第 3 条跨平台差异 | DESIGN-skills.md 第六节 |
-| 第 4 条外链探测纪律 | DESIGN-scheduling.md 第七节 |
-| 第 5 条脚本调用约定 | DESIGN-scheduling.md 第六节；DESIGN-skills.md 第六节 |
+| 命令超时与不自研计时器 | DESIGN-scheduling.md 第七节 |
+| cd 前缀与命令归一 | DESIGN-extensions.md 第二节（H-2 守卫） |
+| 跨平台差异 | DESIGN-skills.md 第六节 |
+| 外链探测纪律 | DESIGN-scheduling.md 第七节 |
+| 脚本调用约定 | DESIGN-scheduling.md 第六节；DESIGN-skills.md 第六节 |
 | 技能形态与落点 | DESIGN-skills.md 第七、八节；DESIGN-scheduling.md 第五节 |

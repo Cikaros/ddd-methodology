@@ -21,7 +21,7 @@ description: JavaScript 语言技能，只承载 eslint 判不了或不宜由它
 4. **数值精度边界**：超出 `Number.MAX_SAFE_INTEGER` 的整数、金融计算与超过 53 位精度的场景改用 `BigInt` 或十进制库；浮点结果不直接判等，按 `Number.EPSILON` 比较。（官方出处：MDN BigInt，https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt ）
 5. **不可变策略**：跨模块共享的对象在交付前用 `Object.freeze` 或复制隔离；注意 `Object.freeze` 是浅冻结，嵌套对象仍可变，深层不可变须递归或改用不可变库。（官方出处：MDN `Object.freeze`，https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/freeze ）
 6. **异步拒绝显式处理**：每个 `async` 调用链须显式处置拒绝——`await` 配 `try`、或 `.catch`、或交 `Promise.allSettled`；不得放任浮空 Promise。通用 JS 环境下无等价于类型检查器的强制手段。（官方出处：MDN Promise，https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise ）
-7. **以模式替代枚举对象**：JS 无原生枚举，多用字符串常量与字面量联合语义的常量表替代；确需受限集合时用 `Object.freeze` 的常量映射，不手写可变的「枚举对象」，不依赖对象键存在性做分支。无检查器，且训练语料常含枚举对象。（官方出处：Google JavaScript Style §5.6，https://google.github.io/styleguide/jsguide.html#features-object-literals ）
+7. **以模式替代枚举对象**：JS 无原生枚举，多用字符串常量与字面量联合语义的常量表替代；确需受限集合时用 `Object.freeze` 的常量映射，不手写可变的「枚举对象」，不依赖对象键存在性做分支。无检查器，且训练语料常含枚举对象。（官方出处：Google JavaScript Style 第 5.6 节，https://google.github.io/styleguide/jsguide.html#features-object-literals ）
 
 ## 不做什么
 

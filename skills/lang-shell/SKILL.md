@@ -17,7 +17,7 @@ description: Shell 语言技能，只承载 shellcheck 判不了或反直觉的�
 
 1. **`set -euo pipefail` 的使用与局限**：脚本开头通常启用严格模式，但 `set -e` 在条件上下文、`&&`/`||` 左操作数、命令替换与管道非末段中不触发退出，故关键失败仍须显式判断，不得仅靠 `set -e` 兜底。（官方出处：Bash 手册 `set` 内建，https://www.gnu.org/software/bash/manual/bash.html#The-Set-Builtin ；shellcheck SC2310 https://www.shellcheck.net/wiki/SC2310 ）
 2. **可移植性目标择一**：脚本在项目内择一目标——POSIX `sh` 可移植，或 `bash` 扩展可用；择一后不得混用非目标特性，用 `shellcheck` 的 `shell=` 声明目标。（官方出处：POSIX Shell 命令语言，https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html ）
-3. **shebang 择一**：需可移植用 `#!/bin/sh`；需特定解释器用 `#!/usr/bin/env bash` 一类经 `env` 解析 PATH 的形式。shebang 与第 2 条的可移植性目标一致，普通脚本不使用 SUID/SGID 位。（官方出处：Bash 手册「调用 Bash」，https://www.gnu.org/software/bash/manual/bash.html#Invoking-Bash ；Google Shell 风格指南 https://google.github.io/styleguide/shellguide.html#suid-sgid ）
+3. **shebang 择一**：需可移植用 `#!/bin/sh`；需特定解释器用 `#!/usr/bin/env bash` 一类经 `env` 解析 PATH 的形式。shebang 与可移植性目标一致，普通脚本不使用 SUID/SGID 位。（官方出处：Bash 手册「调用 Bash」，https://www.gnu.org/software/bash/manual/bash.html#Invoking-Bash ；Google Shell 风格指南 https://google.github.io/styleguide/shellguide.html#suid-sgid ）
 4. **管道子 shell 的作用域**：管道每段在子 shell 执行，其中对变量的赋值不外泄到父 shell；需在父 shell 保留结果时改用进程替换、`while read` 重定向或临时文件。（官方出处：Bash 手册「管道」，https://www.gnu.org/software/bash/manual/bash.html#Pipelines ）
 5. **`IFS` 与 `read` 解析**：按行读取用 `while IFS= read -r line`，`IFS=` 保留首尾空白、`-r` 禁反斜杠转义；按字段拆分前显式设 `IFS` 并在用后复原。（官方出处：POSIX `read` 工具，https://pubs.opengroup.org/onlinepubs/9699919799/utilities/read.html ）
 6. **`trap` 清理**：临时文件、锁与后台进程须在 `trap` 中于 `EXIT`（及需要时的 `INT`/`TERM`）清理解除，避免异常退出遗留副作用。（官方出处：POSIX Shell 命令语言 `trap`，https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#trap ）

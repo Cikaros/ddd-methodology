@@ -16,8 +16,7 @@
 | 10. 需求变更 | spec-change.md |
 | 11. 二次开发 | spec-change.md |
 | 12. 渐进式改造 | spec-change.md |
-| 13. 声明面可验证与修剪 | governance-declaration 技能 |
-| 13.1 存量债务的登记与清偿 | governance-declaration 技能 |
+| 13. 声明面可验证与修剪 | spec-declare.md |
 | 14. 结构与注释的机械证据 | spec-declare.md |
 | 15. 本仓库适用边界 | spec-govern.md |
 | 16. 状态文件 | spec-govern.md |
@@ -26,7 +25,7 @@
 | 19. 绩效度量 | spec-metrics.md |
 | 20. 表述与术语 | spec-language.md |
 
-序号 5「粒度与独立性」已撤销，其判据按对象三分：代码粒度、运行时例外与独立性归 governance-code 技能，文档粒度归 governance-document 技能，接近上限口径归 governance-code 技能。序号 17 的 17.3 与 17.5 两条同理移出，见 governance-code 与 governance-document 技能。序号留空不重排，使跨文档引用的旧编号可回溯。
+序号 5「粒度与独立性」已撤销，其判据按对象三分：代码粒度、运行时例外与独立性归 governance-code 技能，文档粒度归 governance-document 技能，接近上限口径归 governance-code 技能。序号 13.1「存量债务的登记与清偿」与序号 17 的 17.3、17.5 两条同理移出，见 governance-declaration、governance-code 与 governance-document 技能，故不再列入子节对照。序号留空不重排，使跨文档引用的旧编号可回溯。
 
 ## 子节对照
 
@@ -35,7 +34,6 @@
 | 子节 | 所在文件 |
 |---|---|
 | 17.1 契约指纹 | spec-govern.md |
-| 13.1 存量债务的登记与清偿 | governance-declaration 技能 |
 | 18.8 开放与约束 | spec-rebuild.md |
 | 18.9 防堆叠约束 | spec-rebuild.md |
 | 20.1 分层表述与摘要 | spec-language.md |

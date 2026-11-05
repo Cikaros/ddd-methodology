@@ -6,12 +6,12 @@
 
 | 机制 | 唯一载体 | 本文件补充的部分 |
 |---|---|---|
-| 统一登记簿与字段 | `../../ddd-methodology/references/templates-debts.md` 的骨架与字段说明 | 登记簿是唯一登记处，替代散落在变更记录句子、设计文档范围节与审计报告三处的登记 |
-| 具名承接 | `../../ddd-methodology/references/templates-debts.md` 的 owner 字段 | 无对象的表述不算承接方，其验收判 rejected |
-| 清偿时限 | `../../ddd-methodology/references/templates-debts.md` 的默认跨度字段 | 版本跨度按登记版本与应清版本计，与缺陷的修复轮次是两个量，不得混读 |
-| 超期校验与升级 | 技能正文第 8 条 | 同一根因分类连续两版登记为未清，即判该根因未被真正处理，须在下一轮升级用户并登记为结构性问题 |
-| 总量上限 | `../../ddd-methodology/references/templates-debts.md` 的上限字段 | 超限触发专项清偿轮，该轮不得新增功能；校验一律以字面值为准 |
-| 历史快照与复发检测 | `../../ddd-methodology/references/templates-debts.md` 的快照段 | 复发段落只列出根因分类、牵涉条目与涉及版本，不改变末行结论与退出码语义；复发后的升级由根会话与审计代理承接 |
+| 统一登记簿与字段 | `../../ddd-methodology/references/templates-debts.md` 的「骨架」节与「字段说明」节 | 登记簿是唯一登记处，替代散落在变更记录句子、设计文档范围节与审计报告三处的登记 |
+| 具名承接 | `../../ddd-methodology/references/templates-debts.md` 的「骨架」节所列 owner 承接字段 | 无对象的表述不算承接方，其验收判 rejected |
+| 清偿时限 | `../../ddd-methodology/references/templates-debts.md` 的「骨架」节所列 defaultDueSpan 时限字段 | 版本跨度按登记版本与应清版本计，与缺陷的修复轮次是两个量，不得混读 |
+| 超期校验与升级 | governance-declaration 技能「存量债务的登记与清偿」条 | 同一根因分类连续两版登记为未清，即判该根因未被真正处理，须在下一轮升级用户并登记为结构性问题 |
+| 总量上限 | `../../ddd-methodology/references/templates-debts.md` 的「骨架」节所列 maxOpen 上限字段 | 超限触发专项清偿轮，该轮不得新增功能；校验一律以字面值为准 |
+| 历史快照与复发检测 | `../../ddd-methodology/references/templates-debts.md` 的「债务历史快照」节 | 复发段落只列出根因分类、牵涉条目与涉及版本，不改变末行结论与退出码语义；复发后的升级由根会话与审计代理承接 |
 | 教训回写 | 校验覆盖登记文件 | 判据与反向完整性见下文第二节 |
 
 ## 二 教训回写的判据

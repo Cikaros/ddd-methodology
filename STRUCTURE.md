@@ -1,148 +1,166 @@
 # 仓库结构与安装内容
 
-本文件承载本仓库的完整目录结构与安装内容明细，是 `README.md` 的延伸。
+本文件承载本仓库的完整结构与安装内容明细，是 `README.md` 的延伸。结构树与随装脚本集合由 `skills/ddd-methodology/scripts/ref-check.js` 的 C17 双向核对，故须与实物逐条一致；资源声明字段的依据见设计分册 DESIGN-structure.md。
 
 ## 仓库结构
 
-仓库结构如下。
+结构依 pi 官方包规范：官方资源用约定目录名并在 `package.json` 声明，非资源内容内收至技能目录，代理目录由 pi-subagents 生态声明。树中目录若已列出子项即逐项展开，未列子项者为未展开目录。
 
 ```
 ddd-methodology/
-├── README.md                     # 仓库定位与入口
-├── STRUCTURE.md                  # 仓库结构与安装内容明细，本文件
-├── CHANGELOG.md                  # 包变更记录（v0.1.0 起）
-├── GLOSSARY.md                   # 项目术语表，术语唯一权威处，字段判据见规范「表述与术语」节
-├── LICENSE                       # 许可协议（MIT）
-├── package.json                  # pi package 清单：扩展、skill 与子代理入口
-├── package-lock.json             # npm 依赖锁定文件
-├── docs/                         # 面向读者的公开文档与维护者内部归档
-│   ├── README.md                # 文档索引
-│   ├── COMPATIBILITY.md         # 本包与宿主 pi 版本对应关系权威表
-│   ├── guide/                   # 方法论白皮书正文
-│   │   ├── ddd-methodology-whitepaper.docx
-│   │   └── ddd-methodology-whitepaper.pdf
-│   └── internal/                # 维护者内部档案，由 .gitignore 排除，不随公开仓库发布
-├── skill/ddd-methodology/        # pi Skill，规范权威源为 references/ 下的规范文件集
-│   ├── SKILL.md                  # 调度流程入口
-│   ├── references/
-│   │   ├── spec.md               # 规范索引入口
-│   │   ├── spec-role.md          # 角色与交接
-│   │   ├── spec-gate.md          # 质量门禁、缺陷四级路由
-│   │   ├── spec-design.md        # 内敛次序、粒度与独立性、接口先行与冻结、并行实现与集成、实现与测试分离、测试阻塞防护
-│   │   ├── spec-change.md        # 需求变更、二次开发、渐进式改造
-│   │   ├── spec-declare.md       # 声明面可验证与修剪、结构与注释的机械证据
-│   │   ├── spec-govern.md        # 本仓库适用边界、状态文件、结构与契约的演进治理
-│   │   ├── spec-rebuild.md       # 存量重建
-│   │   ├── spec-metrics.md       # 绩效度量
-│   │   ├── spec-language.md      # 表述与术语
-│   │   ├── templates.md          # 产物模板库
+├── CHANGELOG.md  # 变更记录，按发布版本续写
+├── GLOSSARY.md  # 术语表，本仓库术语唯一权威处
+├── LICENSE  # 许可协议，MIT
+├── package-lock.json  # npm 依赖锁定文件
+├── package.json  # pi 清单：extensions、skills、prompts 与 pi-subagents.agents
+├── README.md  # 仓库定位与入口
+├── STRUCTURE.md  # 结构与安装内容明细，本文件
+├── agents/  # pi-subagents 生态：十个固定代理定义
+│   ├── ddd-acceptance.md  # 验收标准制定者
+│   ├── ddd-architect.md  # 架构设计者
+│   ├── ddd-decomposer.md  # 设计分解者
+│   ├── ddd-detail-designer.md  # 详细设计者
+│   ├── ddd-fixer.md  # 缺陷修复者
+│   ├── ddd-implementer.md  # 实现者
+│   ├── ddd-interface-reviewer.md  # 接口契约评审者
+│   ├── ddd-requirements.md  # 需求采集者
+│   ├── ddd-test-designer.md  # 单元测试制定者
+│   └── ddd-tester.md  # 测试执行者
+├── docs/  # 仓库文档，非 pi 资源
+│   ├── COMPATIBILITY.md  # 宿主与插件版本范围声明
+│   ├── README.md  # 文档分层说明
+│   └── internal/  # 维护者内部档案，随 .gitignore 排除，不随公开仓库发布
+├── extensions/  # 官方资源，声明于 pi.extensions
+│   ├── lib/  # 扩展共享纯函数与其单元测试，非扩展入口
+│   ├── rules/  # 全局规则本体，扩展读取后注入，非扩展入口
+│   │   └── global-rules.md  # 全局规则正文
+│   ├── ddd-context.ts  # 全局规则注入、前置依赖探测、版本比对与任务引导
+│   ├── ddd-governance.ts  # 运行时守卫 H-1 至 H-7 与看板注入
+│   ├── ddd-resources.ts  # 按注入矩阵裁剪可得技能集与技能路径供给
+│   └── ddd-tools.ts  # 机械证据工具与交叉检查工具的注册
+├── skills/  # 官方资源，声明于 pi.skills，递归发现含 SKILL.md 的目录
+├── skills/ddd-methodology/  # 主技能：调度流程、门禁规则、技能元规范
+│   ├── assets/  # 模板、注入矩阵与配置基线
+│   │   ├── agent-templates/  # 两份项目级代理模板
+│   │   │   ├── ddd-auditor.md  # 声明面审计者模板
+│   │   │   └── ddd-doc-sync.md  # 文档同步者模板
+│   │   ├── project-templates/  # 两份项目级规范文档模板
+│   │   │   ├── AGENTS.md  # 项目级指令文件模板
+│   │   │   └── GLOSSARY.md  # 项目术语表模板
+│   │   ├── check-items.json  # 交叉检查的检查项清单
+│   │   └── injection-matrix.json  # 三维注入矩阵
+│   ├── references/  # 流程与治理规范正文
+│   │   ├── spec-change.md  # 需求变更、二次开发与渐进式改造
+│   │   ├── spec-declare.md  # 声明面可验证与修剪、结构与注释的机械证据
+│   │   ├── spec-design.md  # 内敛次序、接口冻结、并行实现与测试分离
+│   │   ├── spec-gate.md  # 门禁记录、放行判据与四级路由细则
+│   │   ├── spec-govern.md  # 适用边界、状态文件与演进治理
+│   │   ├── spec-language.md  # 表述与术语
+│   │   ├── spec-metrics.md  # 绩效度量与交付门槛
+│   │   ├── spec-rebuild.md  # 存量重建
+│   │   ├── spec-role.md  # 角色、派发判定与交接链
+│   │   ├── spec.md  # 总索引与设计原则
+│   │   ├── templates-debts.md  # 存量债务登记簿模板
+│   │   ├── templates-gates.md  # 门禁检查单与缺陷路由单模板
 │   │   ├── templates-project.md  # 项目级指令文件与术语表模板
-│   │   ├── templates-debts.md    # 存量债务登记簿模板
-│   │   ├── templates-gates.md    # 门禁检查单与缺陷路由单模板
-│   │   └── templates-rebuild.md  # 存量重建与定向重构产物模板
-├── skill/ddd-rebuild/            # 存量重建 skill，仅由用户显式调用
-│   └── SKILL.md                  # 存量重建流程入口
-├── skill/ddd-refactor/           # 定向重构 skill，仅由用户显式调用
-│   └── SKILL.md                  # 定向重构流程入口
-├── global/
-│   └── APPEND_SYSTEM.md         # 全局规则权威版本，由 extensions/ddd-context.ts 以 sections.ddd_global_rules 注入，不再改写用户全局文件
-├── profiles/
-│   └── models.json              # 按代理的模型配比，含实测证据与理由，不写入 agent 定义
-├── workflows/
-│   └── ddd-workflow.js           # 可选加速档：固定阶段自动编排脚本（args.root 传项目根）
-├── agents/                       # 子代理定义（pi-subagents 格式）
-│   ├── ddd-requirements.md       # 需求采集者
-│   ├── ddd-acceptance.md         # 验收标准制定者
-│   ├── ddd-architect.md          # 架构师
-│   ├── ddd-decomposer.md         # 分解设计者
-│   ├── ddd-interface-reviewer.md # 接口契约评审者（G4.5 接口冻结门）
-│   ├── ddd-implementer.md        # 实现者
-│   ├── ddd-test-planner.md       # 测试规划者
-│   ├── ddd-tester.md             # 测试执行者
-│   ├── ddd-fixer.md              # 缺陷修复者（C/D级修复循环，与实现者隔离）
-│   ├── ddd-arbiter.md            # 仲裁者（缺陷定级争议，路由知识内嵌）
-│   ├── ddd-doc-sync.md           # 文档同步守护者（方法论自身文档巡检）
-│   └── ddd-auditor.md            # 声明面审计者（可验证性与无用代码修剪）
-├── extensions/
-│   ├── ddd-context.ts            # 会话上下文：注入全局规则 section，探测 subagent 前置依赖
-│   ├── ddd-tools.ts              # 机械校验工具化：把甲类校验脚本注册为 ddd_* 工具
-│   ├── ddd-governance.ts         # 运行时守卫，仅 DDD 项目激活，拦截越阈值写入、全量测试误跑、义务未覆盖的源码写入与未闭合义务下的门禁记录写入
-│   ├── ddd-models.ts             # 模型配比命令：以 slash 命令提供用户触发入口，复用 scripts/apply-models.js
-│   └── lib/
-│       ├── shared.ts             # 扩展共享小工具：包根解析、执行超时、退出码归一、错误描述与安全读文本
-│       ├── notify.ts             # 用户提示的单一实现：有真实 UI 走宿主通知，否则写 stderr
-│       ├── notify.test.ts        # 用户提示分支选择的单元测试，node --test 运行
-│       ├── version-range.ts      # pi 版本与声明范围的纯比对：版本解析、版本比较、范围满足判定
-│       └── version-range.test.ts # 版本范围比对的单元测试，node --test 运行
-└── scripts/
-    ├── trace-check.js            # 追溯一致性校验脚本，G4 与 G5 门禁证据
-    ├── apply-models.js           # 按代理模型配比的应用与可用性冒烟，仓库内部专用
-    ├── migrate-to-package.js     # 旧安装迁移到 pi package：清理用户作用域的残留，仓库内部专用
-    ├── code-health.js            # 结构健康度量脚本，仅报告不作门禁，写入项目内 docs/health.json
-    ├── governance-check.js       # 契约指纹与结构趋势门槛校验，输出 verdict 作为 G5-INT 门槛证据
-    ├── fingerprint.js            # 契约指纹唯一实现，供 trace-check 与 governance-check 共用
-    ├── design-root.js            # 设计树根路径解析唯一实现，供同上两者共用
-    ├── decision-tables.js        # 判定表默认分支校验库，供 ref-check 调用
-    ├── ref-check.js              # 跨文档引用、常量与枚举一致性校验，本仓库文档同步链证据
-    ├── span-check.js             # 签名级符合性校验：提取代码侧导出符号与 DESIGN 契约签名三态比对
-    ├── install-parser.js         # 解析器按需安装入口：把锁定版本的解析器与 grammar 装到用户固定位置
-    ├── roster-check.js           # 代理与 skill 清单一致性校验，供 ref-check 的 C5、C11 调用
-    ├── spec-index-check.js       # 规范索引表与规范标题一致性校验，供 ref-check 的 C12 调用
-    ├── install-manifest-check.js # 随包脚本集合枚举，供 ref-check 的 C17 比对安装内容明细
-    ├── debt-check.js             # 存量债务登记簿超期与上限校验脚本，末行 pass 或 overdue
-    ├── metrics-report.js         # 绩效度量聚合脚本，读 health.json、debts.json、gates/ 与 reports/，写 docs/metrics.json，末行 RESULT: report
-    ├── toolchain-selftest.js     # 工具链自测：脚本族语法可加载、入口可运行、退出码符合基线
-    └── lib/                      # 脚本共享层，供上述脚本复用
-        ├── text.js               # 安全读文件、按行编号与漂移项构造三项纯函数
-        ├── paths.js              # 产物路径与变更记录排除名的单一常量，供各消费脚本引用
-        ├── walk.js               # 目录深度优先遍历，统一各脚本的排除集
-        ├── spec-doc.js           # 规范读取面：规范文件枚举、节标题索引与节定位
-        ├── ref-refs.js           # 引用形态域校验：C1 语义化节引用、C2 裸章节号、C7 脚本名
-        ├── ref-constants.js      # 常量枚举域校验：C3 阈值、C6 门号、C9 守卫编号
-        ├── ref-stages.js         # 阶段键域校验：C4 与 --fix 的注册表生成
-        ├── ref-phrases.js        # 冻结短语域校验：C8 与锚点清单
-        ├── ref-debt-fields.js    # 登记簿字段集合一致性校验：C14
-        ├── ref-coverage.js       # 校验项映射一致性校验：C15
-        ├── ref-line-endings.js   # 工作区行尾一致性校验：C16
-        ├── ref-structure.js      # 结构树与安装内容明细、命令入口清单与模板章节引用校验：C17、C21、C22
-        ├── ref-convergence.js    # 收敛度校验：C19
-        ├── repo-scope.js         # 方法论仓库自身判定：不适用语义的共享实现，供 trace-check 与 span-check 复用
-        ├── debt-history.js       # 债务历史快照与根因复发检测
-        ├── version.js            # 版本标识工具：v主.次 的解析、比较、加跨度与格式化
-        ├── metrics-sources.js    # 度量来源读取面：健康与登记簿读取、目录取文件、机读行与表格解析、缺省数值归一
-        ├── metrics-structure.js  # 结构与债务类度量：超阈值文件数趋势、债务未清数与超期率、同一根因复发次数
-        ├── metrics-delivery.js   # 交付质量与声明面类度量：门禁一次通过率与过门轮次、返工轮次分布、缺陷四级分布与密度、无消费方声明占比、机械证据覆盖率
-        ├── obligations.js        # 义务核销：设计侧条目抽取、节点表解析与差集和状态断言，供 trace-check 复用
-        ├── ref-obligations.js    # 义务取值域一致性校验：C20，比对规范、模板与抽取器常量三处
-        ├── truncate.js           # 输出上限回撤与装配：七个入口脚本共用的字节上限收敛
-        ├── span-ast.js           # 各语言判据共享的 AST 遍历与取值工具
-        ├── span-parser.js        # 解析器按需供给：固定位置解析、grammar 加载与缺失信号
-        ├── span-langs.js         # 显式导出标记语言与装配：TypeScript、JavaScript、Java、Rust 的判据与分派
-        ├── span-langs-convention.js # 约定式导出语言：Python 的 __all__ 与 _ 前缀、Go 的首字母大写
-        ├── span-extract.js       # 提取驱动：文件与签名片段走同一提取器的规范化
-        ├── span-compare.js       # 契约表读取、语言推导与三态比对
-        ├── convergence-baseline.json # 收敛度基线：仓库文件数与目录数、各活文档标题数、已复核的跨文件重复
-        └── toolchain-baseline.json   # 工具链自测基线：各入口脚本在本仓库的预期退出码
+│   │   ├── templates-rebuild.md  # 存量重建与定向重构产物模板
+│   │   └── templates.md  # 产物模板库
+│   ├── scripts/  # 机械证据脚本与编排脚本
+│   │   ├── lib/  # 脚本共享层与各域校验模块
+│   │   ├── check-code.js  # 实现交出后的导出符号与用例覆盖校验
+│   │   ├── check-consistency.js  # 测试执行交出后的命名、计数与引用校验
+│   │   ├── check-design.js  # 分解设计交出后的契约表与设计树校验
+│   │   ├── check-file-design.js  # 文件级设计交出后的清单与契约一致性校验
+│   │   ├── check-scope.js  # 架构交出后的集合同一与顺序一致校验
+│   │   ├── code-health.js  # 结构健康度量，仅报告
+│   │   ├── ddd-workflow.js  # A 主链编排脚本
+│   │   ├── debt-check.js  # 债务登记簿的结构、上限与时效校验
+│   │   ├── decision-tables.js  # 判定表默认分支校验库
+│   │   ├── design-root.js  # 设计树根路径解析唯一实现
+│   │   ├── fingerprint.js  # 契约指纹唯一实现
+│   │   ├── governance-check.js  # G5-INT 的契约指纹与结构趋势门槛
+│   │   ├── install-manifest-check.js  # 随包脚本集合枚举
+│   │   ├── install-parser.js  # 解析器按需安装入口，命令 /ddd-parser-install
+│   │   ├── matrix-check.js  # 注入矩阵与技能清单的一致性校验
+│   │   ├── metrics-report.js  # 五类度量的聚合报告
+│   │   ├── ref-check.js  # 本仓库文档同步链的一致性校验
+│   │   ├── roster-check.js  # 代理清单与 skill 清单的一致性校验库
+│   │   ├── span-check.js  # G5-INT 的签名级符合性证据
+│   │   ├── spec-index-check.js  # 规范索引表与实际标题的一致性校验库
+│   │   ├── toolchain-selftest.js  # 脚本族的可加载性与退出码自证
+│   │   └── trace-check.js  # G4 与 G5 的追溯一致性证据
+│   └── SKILL.md  # 唯一常驻入口
+├── skills/governance-code/  # 治理类：结构、粒度、独立性与触碰即治理
+│   ├── references/
+│   │   └── code-governance.md
+│   └── SKILL.md
+├── skills/governance-comment/  # 治理类：注释纪律与死代码清理
+│   ├── references/
+│   │   └── comment-rules.md
+│   └── SKILL.md
+├── skills/governance-declaration/  # 治理类：声明面可验证与修剪
+│   ├── references/
+│   │   └── declaration-rules.md
+│   └── SKILL.md
+├── skills/governance-document/  # 治理类：文档粒度与结构约定
+│   ├── references/
+│   │   └── document-rules.md
+│   └── SKILL.md
+├── skills/lang-java/  # 语言类：Java
+│   ├── assets/
+│   │   └── checkstyle.xml
+│   └── SKILL.md
+├── skills/lang-javascript/  # 语言类：JavaScript
+│   ├── assets/
+│   │   └── eslint.config.mjs
+│   └── SKILL.md
+├── skills/lang-powershell/  # 语言类：PowerShell
+│   ├── assets/
+│   │   └── PSScriptAnalyzerSettings.psd1
+│   └── SKILL.md
+├── skills/lang-python/  # 语言类：Python 语义约束与配置资产
+│   ├── assets/
+│   │   ├── mypy.ini
+│   │   └── ruff.toml
+│   └── SKILL.md
+├── skills/lang-shell/  # 语言类：Shell
+│   ├── assets/
+│   │   └── shellcheckrc
+│   └── SKILL.md
+├── skills/lang-typescript/  # 语言类：TypeScript
+│   ├── assets/
+│   │   ├── eslint.config.mjs
+│   │   └── tsconfig.strict.json
+│   └── SKILL.md
+├── skills/spec-acceptance/  # 规范类：AC 可判定性与三类路径覆盖
+│   └── SKILL.md
+├── skills/spec-architecture/  # 规范类：结构规划、横切规范与能力清单
+│   └── SKILL.md
+├── skills/spec-contract/  # 规范类：契约表、文件级清单与冻结规则
+│   └── SKILL.md
+├── skills/spec-defect-routing/  # 规范类：四级定级与轮回上限
+│   └── SKILL.md
+├── skills/spec-requirements/  # 规范类：需求表述与澄清记录
+│   └── SKILL.md
+├── skills/spec-test-case/  # 规范类：用例设计与覆盖
+│   └── SKILL.md
+├── skills/tool-bash/  # 工具类：宿主 bash 易错用法与脚本调用约定
+│   └── SKILL.md
+├── prompts/  # 官方资源，声明于 pi.prompts，一文件一命令
+├── prompts/ddd-init.md  # 初始化入口，命令 /ddd-init
+├── prompts/ddd-rebuild.md  # 存量重建入口，命令 /ddd-rebuild
+└── prompts/ddd-refactor.md  # 定向重构入口，命令 /ddd-refactor
 ```
 
 ## 安装内容
 
-本包为 pi package，资源由整仓提供，以 `pi install git:github.com/Cikaros/ddd-methodology` 安装（默认跟随默认分支），`package.json` 声明 `pi.extensions`、`pi.skills` 与 `pi-subagents.agents` 供宿主发现；随包内容如下，按随装件与其在包内的位置逐条给出。
+本包为 pi package，资源由整仓提供，以 `pi install git:github.com/Cikaros/ddd-methodology` 安装，默认跟随默认分支。`package.json` 是资源声明的唯一来源，声明 `pi.extensions`、`pi.skills`、`pi.prompts` 与 `pi-subagents.agents` 四组路径，宿主据此发现资源。随装内容如下。
 
-- Skill `ddd-methodology`，目录内只含 `SKILL.md` 与 `references/`；随包脚本在 `scripts/`，加速档在 `workflows/`
-  - workflow 脚本位于 `workflows/ddd-workflow.js`，供根会话以 `subagent({ workflow: ... , args: { root: "<项目根>" } })` 调用
-  - trace-check 脚本位于 `scripts/trace-check.js`，作为 G4 与 G5 门禁证据
-  - code-health 脚本位于 `scripts/code-health.js`，度量结构健康并写入项目内 docs/health.json，仅报告不作门禁
-  - governance-check 脚本位于 `scripts/governance-check.js`，校验契约指纹与结构趋势，输出 verdict 作为 G5-INT 门槛证据
-  - ref-check 脚本位于 `scripts/ref-check.js`，校验跨文档引用、常量与枚举集合一致性，供文档同步链使用
-  - span-check 脚本位于 `scripts/span-check.js`，比对 DESIGN 契约签名与代码侧导出符号，输出一致、不一致、无法判定三态，仅不一致计入缺口
-  - install-parser 脚本位于 `scripts/install-parser.js`，把签名级校验所需的解析器与 grammar 装到用户固定位置，仅由 `/ddd-parser-install` 命令触发
-  - toolchain-selftest 脚本位于 `scripts/toolchain-selftest.js`，独立入口，断言脚本族语法可加载、入口可运行、退出码符合基线，不并入 ref-check
-  - 共享层与各域校验模块位于 `scripts/lib/`（`text.js`、`walk.js`、`paths.js`、`spec-doc.js`、`ref-refs.js`、`ref-constants.js`、`ref-stages.js`、`ref-phrases.js`、`ref-debt-fields.js`、`ref-coverage.js`、`ref-line-endings.js`、`ref-structure.js`、`ref-convergence.js`、`repo-scope.js`、`debt-history.js`、`version.js`、`metrics-sources.js`、`metrics-structure.js`、`metrics-delivery.js`、`obligations.js`、`ref-obligations.js`、`truncate.js`、`span-parser.js`、`span-ast.js`、`span-langs.js`、`span-langs-convention.js`、`span-extract.js`、`span-compare.js`），供本仓库各门禁、校验与度量脚本复用
-  - install-manifest-check 脚本位于 `scripts/install-manifest-check.js`，枚举仓库随包脚本集合，供 ref-check 的 C17 与安装内容明细双向比对
-  - 其余门禁脚本 `fingerprint.js`、`design-root.js`、`decision-tables.js`、`roster-check.js`、`spec-index-check.js`、`debt-check.js` 与 `metrics-report.js` 同属该脚本清单，位于 `scripts/`
-- 存量重建 skill `ddd-rebuild` 与定向重构 skill `ddd-refactor`，分别位于 `skill/ddd-rebuild/` 与 `skill/ddd-refactor/`，两者与主 skill 同属一份清单，仅由用户显式调用
-- 运行时扩展位于 `extensions/`：`ddd-context.ts` 在会话开始时注入全局规则 section 并探测 subagent 前置依赖；`ddd-tools.ts` 把甲类机械校验脚本注册为 `ddd_*` 工具，并以 `/ddd-parser-install` 命令提供解析器供给的用户触发入口；`ddd-governance.ts` 仅在含 docs/gates 或声明的设计树根（缺省 docs/design）的项目内激活，对其他项目静默，激活后承担 H-1 至 H-4 四项拦截与启动时未闭合义务节点注入；`ddd-models.ts` 以 slash 命令 `/ddd-models` 提供模型配比的用户触发入口，转交仓库内部专用脚本 apply-models.js，不注册为工具；四者共用的纯工具（包根解析、执行超时、退出码归一、错误描述与安全读文本）集中在 `extensions/lib/shared.ts`，pi 版本与声明范围的纯比对集中在 `extensions/lib/version-range.ts` 并配套单元测试 `extensions/lib/version-range.test.ts`，四处宿主提示的单一实现集中在 `extensions/lib/notify.ts` 并配套单元测试 `extensions/lib/notify.test.ts`，该子目录无 index.ts，不作为扩展入口加载
-- 全局规则由 `extensions/ddd-context.ts` 以 sections 注入，不再改写用户全局文件
-- 模型配比记录文件 `~/.pi/agent/.ddd-model-overrides.json`，记录本方法论写入的代理、配比名与写入前原值，供精确回退；模型配比经扩展的 `/ddd-models` 命令转交仓库内部专用脚本 apply-models.js 应用或撤回
-- 12 个 agent 定义，位于 `agents/ddd-*.md`
+- 扩展四模块，位于 `extensions/`：`ddd-context.ts` 注入全局规则 section、探测 pi-subagents 前置依赖、比对宿主版本并在代理启动时注入任务引导；`ddd-governance.ts` 仅在含 `docs/gates` 或声明了设计树根的项目内激活，承担 H-1 至 H-7 七项守卫与未闭合义务节点注入，对普通项目静默；`ddd-tools.ts` 把机械证据脚本与五个交叉检查脚本注册为 `ddd_*` 工具，并以命令入口转交解析器安装；`ddd-resources.ts` 按注入矩阵裁剪可得技能集并向宿主供给技能目录路径。四者共用纯函数集中在 `extensions/lib/`，其单元测试同目录；全局规则本体在 `extensions/rules/global-rules.md`，由 `ddd-context.ts` 读取后注入，不改写用户全局文件。
+- 主技能 `skills/ddd-methodology/`，目录内只含 `SKILL.md` 与 `references/`、`scripts/`、`assets/` 三子目录；随包脚本在 `scripts/`，模板与配置基线在 `assets/`。
+- 随包脚本位于 `skills/ddd-methodology/scripts/`。五个交叉检查脚本在对应节点交出后立即机械校对：`check-scope.js` 对架构、`check-design.js` 对分解设计、`check-file-design.js` 对文件级设计、`check-code.js` 对实现与测试规划、`check-consistency.js` 对测试执行。机械证据入口六个：`trace-check.js` 作 G4 与 G5 的追溯一致性证据；`span-check.js` 比对契约签名与代码导出符号，输出一致、不一致与无法判定三态；`governance-check.js` 校验契约指纹与结构趋势并输出 verdict；`code-health.js` 度量结构健康，仅报告；`debt-check.js` 校验债务登记簿；`metrics-report.js` 聚合五类度量。本仓库维护入口三个：`ref-check.js` 校验跨文档一致性，供文档同步链使用；`toolchain-selftest.js` 断言脚本族语法可加载、入口可运行、退出码符合基线；`matrix-check.js` 校验注入矩阵与技能清单一致。编排脚本 `ddd-workflow.js` 走 A 主链，与状态文件 schema 共用阶段键集。
+- 校验模块与共享层位于 `skills/ddd-methodology/scripts/lib/`：`text.js`、`walk.js`、`paths.js`、`spec-doc.js`、`cross-check.js`、`matrix.js`、`matrix.test.js`、`obligations.js`、`debt-history.js`、`version.js`、`metrics-sources.js`、`metrics-structure.js`、`metrics-delivery.js`、`truncate.js`、`repo-scope.js`、`ref-refs.js`、`ref-constants.js`、`ref-stages.js`、`ref-phrases.js`、`ref-debt-fields.js`、`ref-coverage.js`、`ref-line-endings.js`、`ref-structure.js`、`ref-inventory.js`、`ref-convergence.js`、`ref-obligations.js`、`span-parser.js`、`span-ast.js`、`span-langs.js`、`span-langs-convention.js`、`span-extract.js`、`span-compare.js`，以及两份基线 `convergence-baseline.json` 与 `toolchain-baseline.json`。其余供 `ref-check.js` 调用的库文件 `roster-check.js`、`spec-index-check.js`、`decision-tables.js`、`fingerprint.js`、`design-root.js`、`install-manifest-check.js` 与部署辅助入口 `install-parser.js` 同属该目录。
+- 技能十七份，加主技能一份，位于 `skills/`：治理类四份为 `governance-code`、`governance-comment`、`governance-declaration`、`governance-document`；规范类六份为 `spec-requirements`、`spec-acceptance`、`spec-architecture`、`spec-contract`、`spec-test-case`、`spec-defect-routing`；语言类六份为 `lang-python`、`lang-java`、`lang-javascript`、`lang-typescript`、`lang-shell`、`lang-powershell`；工具类一份为 `tool-bash`。
+- 提示模板三份，位于 `prompts/`：`prompts/ddd-init.md` 对应命令 `/ddd-init`，`prompts/ddd-rebuild.md` 对应 `/ddd-rebuild`，`prompts/ddd-refactor.md` 对应 `/ddd-refactor`。模板只写入口与指针，流程规则正文归主技能。
+- 十个固定代理位于 `agents/ddd-*.md`，由 pi-subagents 消费；两份项目级代理模板位于 `skills/ddd-methodology/assets/agent-templates/`，项目初始化后落 `<项目根>/.pi/agents/`。
+- 项目级规范文档模板两份，位于 `skills/ddd-methodology/assets/project-templates/`，即 `AGENTS.md` 与 `GLOSSARY.md`，初始化后落项目根。
