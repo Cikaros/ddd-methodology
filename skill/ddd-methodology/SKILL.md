@@ -27,7 +27,7 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 | 1 | 需求采集 | ddd-requirements | REQUIREMENTS.md，含与用户逐条确认与新建或二次开发判定 | G1 | templates 的 REQUIREMENTS 节 | 项目为二次开发 |
 | 2 | 验收标准 | ddd-acceptance | AC.md，需求转为可执行 AC | G2 | templates 的 AC 节 | 无 |
 | 3 | 架构设计 | ddd-architect | ARCHITECTURE.md，含技术环境、目录规划、横切规范、基础能力清单、改造影响评估与设计文档树根路径声明；项目级指令文件 AGENTS.md 初版；项目根 GLOSSARY.md 初版 | G3 | templates 的 ARCHITECTURE 节、templates 的 AGENTS 节、templates 的 GLOSSARY 节 | 项目为二次开发、本阶段产出改造影响评估 |
-| 4 | 分解设计 | ddd-decomposer | 目录同构文档树与签名级接口契约 | G4 | templates 的 DESIGN 节 | 产出或修订 DESIGN、涉及接口冻结或指纹变化 |
+| 4 | 分解设计 | ddd-decomposer | 目录同构文档树、签名级接口契约与实现义务清单节点 | G4 | templates 的 DESIGN 节 | 产出或修订 DESIGN、涉及接口冻结或指纹变化 |
 | 5 | 接口冻结 | ddd-interface-reviewer | 接口评审报告，独立交叉评审 | G4.5 | 规范「接口先行与冻结」节 | 涉及接口冻结或指纹变化 |
 | 6 | 实现与测试规划并行 | ddd-implementer 与 ddd-test-planner | 按就近 DESIGN 的实现与单元测试、测试计划树 | G5 | templates 的 TEST_PLAN 节、规范「并行实现与集成」节、规范「测试阻塞防护」节 | 产出或修订 DESIGN |
 | 7 | 集成收口 | ddd-fixer | 集成收口结论与结构治理回执 | G5-INT | 规范「实现与测试分离」节 | 本阶段为集成收口或审计、涉及接口冻结或指纹变化 |
@@ -47,6 +47,7 @@ description: 分治式设计驱动开发方法论。当用户要求按"ddd方法
 | 项目为二次开发 | 规范「二次开发」节 |
 | 本阶段产出改造影响评估 | 规范「渐进式改造」节 |
 | 产出或修订 DESIGN | 规范「粒度与独立性」节与 17.1 契约指纹条 |
+| 产出或修订 DESIGN 义务清单或任务树节点 | 规范「接口先行与冻结」节的义务核销条与 templates-gates 的任务树模板节 |
 | 架构设计期产出术语表，或迭代收尾核验术语表 | 规范「表述与术语」节 |
 | 涉及接口冻结或指纹变化 | 规范「结构与契约的演进治理」节 |
 | 本阶段为集成收口或审计 | 规范「结构与注释的机械证据」节 |

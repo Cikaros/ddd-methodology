@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * 目标：把本仓库跨文档引用、常量、清单与冻结短语的一致性外化为可复现的机械证据，供文档同步链在提交前校验。
- * 范围：十七项校验，编号沿用 C1 至 C19，其中 C13 与 C18 无对应校验项；编号不复用，以免既有引用与教训回写映射漂移；
+ * 范围：十八项校验，编号沿用 C1 至 C20，其中 C13 与 C18 无对应校验项；编号不复用，以免既有引用与教训回写映射漂移；
  *   默认只读不落盘，仅 --fix 写盘，写盘范围限 workflow 的阶段注册表块；C19 的收敛度基线在缺失时首次生成。
  * 校验实现按域外置于 ./lib/：规范读取面见 spec-doc.js，引用形态见 ref-refs.js，常量集合见 ref-constants.js，
  *   阶段键见 ref-stages.js，冻结短语见 ref-phrases.js，登记簿字段集合见 ref-debt-fields.js，校验项映射见 ref-coverage.js，
@@ -33,6 +33,7 @@ const { createCoverageChecks } = require("./lib/ref-coverage.js");
 const { createLineEndingChecks } = require("./lib/ref-line-endings.js");
 const { createStructureChecks } = require("./lib/ref-structure.js");
 const { createConvergenceChecks } = require("./lib/ref-convergence.js");
+const { createObligationChecks } = require("./lib/ref-obligations.js");
 const installManifestCheck = require("./install-manifest-check.js");
 const decisionTables = require("./decision-tables.js");
 const rosterCheck = require("./roster-check.js");
@@ -81,6 +82,7 @@ const coverageChecks = createCoverageChecks(env);
 const lineEndingChecks = createLineEndingChecks(env);
 const structureChecks = createStructureChecks(env);
 const convergenceChecks = createConvergenceChecks(env);
+const obligationChecks = createObligationChecks(env);
 
 // --fix 唯一写盘点：只重写 workflow 的阶段注册表块，写盘前先比对，无差异不写盘；guard 只校验不写
 function runFix(src) {
@@ -114,6 +116,7 @@ const CHECKS = [
   ["C16", "工作区行尾一致性", lineEndingChecks.checkLineEndings],
   ["C17", "结构与安装内容明细一致性", structureChecks.checkStructureDoc],
   ["C19", "收敛度校验", convergenceChecks.checkConvergence],
+  ["C20", "义务取值域一致性", obligationChecks.checkObligationValues],
 ];
 
 // --fix 先于校验写盘，使报告与末行结论反映修复后状态；默认模式不触盘

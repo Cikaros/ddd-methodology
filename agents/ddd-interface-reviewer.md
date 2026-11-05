@@ -30,7 +30,7 @@ VERDICT: pass|conditional|fail
 
 # 职责
 
-逐项核对下表十项检查，按结论列聚合：任一 fail 项命中即 VERDICT: fail；无 fail 而存在 conditional 项即 VERDICT: conditional；其余为 VERDICT: pass。
+逐项核对下表十一项检查，按结论列聚合：任一 fail 项命中即 VERDICT: fail；无 fail 而存在 conditional 项即 VERDICT: conditional；其余为 VERDICT: pass。
 
 | 检查项 | 判据 | 不通过时的结论 | 备注 |
 |---|---|---|---|
@@ -44,7 +44,8 @@ VERDICT: pass|conditional|fail
 | 消费方声明 | 逐项核对契约的消费方模块非空且真实存在 | fail | 无消费方即删除契约 |
 | 契约指纹 | 逐份核对指纹齐备且与契约表内容一致，缺失或不符即报 | conditional | 核对契约指纹条 |
 | 可观测性契约 | 关键路径的可观测性锚点四项已逐条声明，或标注不适用并给理由；留空即未声明 | conditional | 返分解设计者补齐锚点 |
-| 默认 | 十项均无命中时取 pass。 | pass | |
+| 义务清单完整性 | 每份 DESIGN 的结构化义务条目可抽取，编号由来源派生且唯一，覆盖范围取自粒度预判表 | fail | 返分解设计者补齐清单与任务树节点 |
+| 默认 | 十一项均无命中时取 pass。 | pass | |
 
 # 硬约束
 

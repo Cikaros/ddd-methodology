@@ -69,7 +69,9 @@ DESIGN 的契约表内容取哈希作指纹，版本号由指纹前八位派生�
 
 声明式门禁为代理 frontmatter 的 acceptanceRole、acceptance 与派发 options 的 gate，对所有子代理生效；写入类与审计类代理已显式声明，其余代理沿用 pi-subagents 的默认推断，属分级而非遗漏。写入类代理显式关闭 acceptanceRole 带来的自动评审推断，独立评审由 G4.5 与 G6 承担，避免每次实现重复评审。
 
-运行时守卫由 `extensions/ddd-governance.ts` 在工具调用处拦截，覆盖根会话与后台子代理：
+运行时守卫由 `extensions/ddd-governance.ts` 在工具调用处拦截。
+
+**守卫覆盖面**。默认覆盖根会话与后台子代理。前台子代理不加载环境扩展，因此产出源码或测试代码的写入类代理在其 frontmatter 显式声明 `extensions: ../extensions/ddd-governance.ts`，当前为 ddd-implementer、ddd-fixer 与 ddd-tester 三份；新增写代码代理时须同步声明并在此登记，未登记者视为不受写入强制覆盖。
 
 | 编号 | 触发点 | 判定条件 | 动作 | 当前覆盖 |
 |---|---|---|---|---|
