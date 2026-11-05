@@ -18,6 +18,7 @@
 const fs = require("fs");
 const path = require("path");
 const { readFileText } = require("./lib/text.js");
+const { capLines } = require("./lib/truncate.js");
 const { HEALTH_REL, artifactWritePath, artifactWriteRel, CHANGELOG_NAME } = require("./lib/paths.js");
 const { walk, SOURCE_TREE_SKIP_DIR_NAMES, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
 const { absoluteDesignDir } = require("./design-root.js");
@@ -261,7 +262,6 @@ fs.writeFileSync(healthPath, JSON.stringify({ history }, null, 2) + "\n");
 
 // ---- 输出 ----
 // 明细项与固定行分离：超限时自尾部回撤明细项，小节标题、各项小结、[相对上次恶化] 段与末行结论保留
-const HEALTH_LIMIT_BYTES = 12000;
 const entries = [];
 const say = (text, droppable) => entries.push({ text, droppable: Boolean(droppable) });
 
@@ -329,11 +329,7 @@ function capHealthReport(all) {
     });
     return out;
   };
-  for (let keep = droppableSlots.length; keep >= 0; keep--) {
-    const out = build(keep);
-    if (Buffer.byteLength(out.join("\n"), "utf8") <= HEALTH_LIMIT_BYTES) return out;
-  }
-  return build(0);
+  return capLines({ total: droppableSlots.length, build });
 }
 
 console.log(capHealthReport(entries).join("\n"));

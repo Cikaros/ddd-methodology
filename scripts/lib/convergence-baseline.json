@@ -1,11 +1,11 @@
 {
   "repoItems": {
-    "files": 100,
+    "files": 102,
     "dirs": 15
   },
   "docHeadings": {
     "GLOSSARY.md": 1,
-    "README.md": 7,
+    "README.md": 8,
     "STRUCTURE.md": 3,
     "agents/ddd-acceptance.md": 7,
     "agents/ddd-arbiter.md": 7,
@@ -33,8 +33,9 @@
     "skill/ddd-methodology/references/spec.md": 3,
     "skill/ddd-methodology/references/templates-debts.md": 4,
     "skill/ddd-methodology/references/templates-gates.md": 7,
+    "skill/ddd-methodology/references/templates-project.md": 3,
     "skill/ddd-methodology/references/templates-rebuild.md": 5,
-    "skill/ddd-methodology/references/templates.md": 9,
+    "skill/ddd-methodology/references/templates.md": 7,
     "skill/ddd-rebuild/SKILL.md": 7,
     "skill/ddd-refactor/SKILL.md": 8
   },

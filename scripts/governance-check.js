@@ -24,6 +24,7 @@ const fs = require("fs");
 const path = require("path");
 // 读取失败回空串而非中断：DESIGN 读不到时仍走指纹校验并给出结构化结论，消费端不以栈信息判读
 const { readFileText, num } = require("./lib/text.js");
+const { DEFAULT_LIMIT_BYTES, capText } = require("./lib/truncate.js");
 const { HEALTH_REL, artifactReadPath } = require("./lib/paths.js");
 const { checkContractFingerprint, isWellFormedFingerprint } = require("./fingerprint");
 const { absoluteDesignDir } = require("./design-root");
@@ -189,32 +190,21 @@ function check() {
 const { checked, reasons, warnings } = check();
 const verdict = reasons.length ? "blocked" : "ok";
 // JSON 内的 limitBytes 与 emit 的收缩上限同源，避免消费端与脚本各持一套口径
-const GOVERNANCE_LIMIT_BYTES = 12000;
 
 // typed gate 要求单文档且不超上限；按 UTF-8 字节计量，避免消费端按字符或按字节解释时出现歧义。
 // 截断说明不进循环：那会使 warnings 只增不减，收缩永不收敛。
 function emit(payload, limitBytes) {
-  const TRUNCATED_NOTE = `明细超 ${limitBytes} 字节上限，已截断`;
   const countNote = (total, shown) => `明细已截断：共 ${total} 项，已列 ${shown} 项`;
-  const size = (s) => Buffer.byteLength(s, "utf8");
   const pack = (kept) =>
     JSON.stringify({
       verdict: payload.verdict,
       limitBytes,
       reasons: payload.reasons.slice(0, kept),
-      warnings: kept < payload.reasons.length ? [TRUNCATED_NOTE, countNote(payload.reasons.length, kept)] : payload.warnings,
+      warnings: kept < payload.reasons.length ? [`明细超 ${limitBytes} 字节上限，已截断`, countNote(payload.reasons.length, kept)] : payload.warnings,
       checked: payload.checked,
     });
-  if (size(pack(payload.reasons.length)) <= limitBytes) return pack(payload.reasons.length);
-  let lo = 0;
-  let hi = payload.reasons.length;
-  while (lo < hi) {
-    const mid = Math.ceil((lo + hi) / 2);
-    if (size(pack(mid)) <= limitBytes) lo = mid;
-    else hi = mid - 1;
-  }
-  return pack(lo);
+  return capText({ total: payload.reasons.length, limit: limitBytes, build: pack });
 }
 
-process.stdout.write(emit({ verdict, reasons, warnings, checked }, GOVERNANCE_LIMIT_BYTES));
+process.stdout.write(emit({ verdict, reasons, warnings, checked }, DEFAULT_LIMIT_BYTES));
 process.exit(verdict === "blocked" ? 1 : 0);

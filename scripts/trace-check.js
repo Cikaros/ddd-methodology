@@ -24,6 +24,7 @@ const fs = require("fs");
 const path = require("path");
 // 读取失败回空串而非中断：AC.md 与追溯文档读不到时仍给出结构化缺口结论，消费端不以栈信息判读
 const { readFileText } = require("./lib/text.js");
+const { capLines } = require("./lib/truncate.js");
 const { checkContractFingerprint } = require("./fingerprint");
 const { absoluteDesignDir } = require("./design-root");
 const { walk, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
@@ -42,20 +43,16 @@ const collectFiles = (dir, ext) => walk(dir, DOC_TREE_SKIP_DIR_NAMES).filter((f)
 
 const AC_RE = /\bAC-\d{3,}\b/g;      // 标准格式：三位及以上数字
 const AC_LOOSE_RE = /\bAC-\d{1,}\b/g; // 宽松格式：检测变体（AC-1、ac-001 等）
-const TRACE_LIMIT_BYTES = 12000;      // 与本脚本在脚本消费契约表中的输出上限一致
 
 // ---- 输出组装 ----
 // 明细与固定行分离：超限时自尾部回撤明细，末行机读结论与截断计数行不受影响
 function capTraceReport(head, details, tail) {
-  const build = (keep) =>
-    keep >= details.length
-      ? head.concat(details, tail)
-      : head.concat(details.slice(0, keep), [`明细已截断：共 ${details.length} 项，已列 ${keep} 项`], tail);
-  for (let keep = details.length; keep >= 0; keep--) {
-    const out = build(keep);
-    if (Buffer.byteLength(out.join("\n"), "utf8") <= TRACE_LIMIT_BYTES) return out;
-  }
-  return build(0);
+  const build = (keep) => {
+    const out = head.concat(details.slice(0, keep));
+    if (keep < details.length) out.push(`明细已截断：共 ${details.length} 项，已列 ${keep} 项`);
+    return out.concat(tail);
+  };
+  return capLines({ total: details.length, build });
 }
 
 // ---- 0. 方法论仓库自身：报不适用而非缺口 ----

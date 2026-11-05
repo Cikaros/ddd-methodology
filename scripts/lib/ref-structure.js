@@ -195,7 +195,33 @@ function createStructureChecks(env) {
     return found;
   }
 
-  return { checkStructureDoc };
+  // C21 命令入口清单一致性：README 的「脚本清单」节内 scripts/xxx.js 清单与仓库中含 shebang 的入口双向比对，
+  // 使新增入口必须登记、已删入口必须清除，避免清单随脚本增长而失真
+  function checkEntryInventory() {
+    const found = [];
+    const readme = readFileText(path.join(root, "README.md"));
+    if (!readme) return found;
+    const section = readme.split(/^## /m).find((part) => part.startsWith("脚本清单"));
+    if (!section) {
+      found.push(drift("C21", "README.md", 0, "README 须含「脚本清单」节并登记全部命令入口", "含脚本清单节", "未检出"));
+      return found;
+    }
+    const listed = new Set([...section.matchAll(/`(scripts\/[A-Za-z0-9._-]+\.js)`/g)].map((m) => m[1]));
+    const actual = new Set();
+    for (const file of fs.readdirSync(path.join(root, "scripts"))) {
+      if (!file.endsWith(".js")) continue;
+      const text = readFileText(path.join(root, "scripts", file));
+      if (/^#!/.test(text)) actual.add(`scripts/${file}`);
+    }
+    for (const rel of actual) {
+      if (!listed.has(rel)) found.push(drift("C21", "README.md", 0, "仓库中的命令入口须在 README 脚本清单中登记", `清单含 ${rel}`, "未列出"));
+    }
+    for (const rel of listed) {
+      if (!actual.has(rel)) found.push(drift("C21", "README.md", 0, "README 脚本清单中的路径须对应实际的命令入口", `${rel} 为命令入口`, "无此入口"));
+    }
+    return found;
+  }
+  return { checkStructureDoc, checkEntryInventory };
 }
 
 module.exports = { createStructureChecks };

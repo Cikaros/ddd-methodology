@@ -135,15 +135,31 @@ function checkNode(node, nodesRel, problems) {
   }
 }
 
+// 上一周期是否已交付：扫 docs/gates 下机读行，含 G6 且 verdict 为 pass 的记录即交付已过
+function findDeliveredGate(root) {
+  const dir = path.join(root, "docs", "gates");
+  if (!fs.existsSync(dir)) return null;
+  for (const file of fs.readdirSync(dir)) {
+    if (!file.endsWith(".md")) continue;
+    const text = readFileText(path.join(dir, file)) || "";
+    if (!/"id"s*:s*"G6"/.test(text)) continue;
+    if (/"verdict"s*:s*"pass"/.test(text)) return file;
+  }
+  return null;
+}
+
 function checkObligations(env) {
   const { root, designDir, designFiles, relPath } = env;
   const problems = [];
   const warnings = [];
   const boardDir = path.join(root, ...BOARD_DIR_REL);
+  const delivered = findDeliveredGate(root);
   if (!fs.existsSync(boardDir)) {
     warnings.push(`任务树未启用：${BOARD_DIR_REL.join("/")} 不存在，义务核销断言不适用`);
     return { problems, warnings };
   }
+  // 已交付而看板仍在，即上一周期未清空；清空是交付前动作，门禁过后的核查属越期行为
+  if (delivered) problems.push(`上一周期已交付（docs/gates/${delivered}）但 ${BOARD_DIR_REL.join("/")} 未清空`);
   // 统一到相对项目根的 posix 形态再算模块目录：designDir 与传入文件路径的绝对与相对形态不保证一致
   const toRel = (target) => relPath(path.isAbsolute(target) ? target : path.join(root, target)).split(path.sep).join("/");
   const designRel = toRel(designDir);

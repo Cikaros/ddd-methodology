@@ -36,6 +36,7 @@ ddd-methodology/
 │   │   ├── spec-metrics.md       # 绩效度量
 │   │   ├── spec-language.md      # 表述与术语
 │   │   ├── templates.md          # 产物模板库
+│   │   ├── templates-project.md  # 项目级指令文件与术语表模板
 │   │   ├── templates-debts.md    # 存量债务登记簿模板
 │   │   ├── templates-gates.md    # 门禁检查单与缺陷路由单模板
 │   │   └── templates-rebuild.md  # 存量重建与定向重构产物模板
@@ -65,7 +66,7 @@ ddd-methodology/
 ├── extensions/
 │   ├── ddd-context.ts            # 会话上下文：注入全局规则 section，探测 subagent 前置依赖
 │   ├── ddd-tools.ts              # 机械校验工具化：把甲类校验脚本注册为 ddd_* 工具
-│   ├── ddd-governance.ts         # 运行时守卫，仅 DDD 项目激活，拦截越阈值写入与全量测试误跑
+│   ├── ddd-governance.ts         # 运行时守卫，仅 DDD 项目激活，拦截越阈值写入、全量测试误跑、义务未覆盖的源码写入与未闭合义务下的门禁记录写入
 │   ├── ddd-models.ts             # 模型配比命令：以 slash 命令提供用户触发入口，复用 scripts/apply-models.js
 │   └── lib/
 │       ├── shared.ts             # 扩展共享小工具：包根解析、执行超时、退出码归一、错误描述与安全读文本
@@ -113,6 +114,7 @@ ddd-methodology/
         ├── metrics-delivery.js   # 交付质量与声明面类度量：门禁一次通过率与过门轮次、返工轮次分布、缺陷四级分布与密度、无消费方声明占比、机械证据覆盖率
         ├── obligations.js        # 义务核销：设计侧条目抽取、节点表解析与差集和状态断言，供 trace-check 复用
         ├── ref-obligations.js    # 义务取值域一致性校验：C20，比对规范、模板与抽取器常量三处
+        ├── truncate.js           # 输出上限回撤与装配：七个入口脚本共用的字节上限收敛
         ├── span-ast.js           # 各语言判据共享的 AST 遍历与取值工具
         ├── span-parser.js        # 解析器按需供给：固定位置解析、grammar 加载与缺失信号
         ├── span-langs.js         # 显式导出标记语言与装配：TypeScript、JavaScript、Java、Rust 的判据与分派
@@ -136,11 +138,11 @@ ddd-methodology/
   - span-check 脚本位于 `scripts/span-check.js`，比对 DESIGN 契约签名与代码侧导出符号，输出一致、不一致、无法判定三态，仅不一致计入缺口
   - install-parser 脚本位于 `scripts/install-parser.js`，把签名级校验所需的解析器与 grammar 装到用户固定位置，仅由 `/ddd-parser-install` 命令触发
   - toolchain-selftest 脚本位于 `scripts/toolchain-selftest.js`，独立入口，断言脚本族语法可加载、入口可运行、退出码符合基线，不并入 ref-check
-  - 共享层与各域校验模块位于 `scripts/lib/`（`text.js`、`walk.js`、`paths.js`、`spec-doc.js`、`ref-refs.js`、`ref-constants.js`、`ref-stages.js`、`ref-phrases.js`、`ref-debt-fields.js`、`ref-coverage.js`、`ref-line-endings.js`、`ref-structure.js`、`ref-convergence.js`、`repo-scope.js`、`debt-history.js`、`version.js`、`metrics-sources.js`、`metrics-structure.js`、`metrics-delivery.js`、`obligations.js`、`ref-obligations.js`、`span-parser.js`、`span-ast.js`、`span-langs.js`、`span-langs-convention.js`、`span-extract.js`、`span-compare.js`），供本仓库各门禁、校验与度量脚本复用
+  - 共享层与各域校验模块位于 `scripts/lib/`（`text.js`、`walk.js`、`paths.js`、`spec-doc.js`、`ref-refs.js`、`ref-constants.js`、`ref-stages.js`、`ref-phrases.js`、`ref-debt-fields.js`、`ref-coverage.js`、`ref-line-endings.js`、`ref-structure.js`、`ref-convergence.js`、`repo-scope.js`、`debt-history.js`、`version.js`、`metrics-sources.js`、`metrics-structure.js`、`metrics-delivery.js`、`obligations.js`、`ref-obligations.js`、`truncate.js`、`span-parser.js`、`span-ast.js`、`span-langs.js`、`span-langs-convention.js`、`span-extract.js`、`span-compare.js`），供本仓库各门禁、校验与度量脚本复用
   - install-manifest-check 脚本位于 `scripts/install-manifest-check.js`，枚举仓库随包脚本集合，供 ref-check 的 C17 与安装内容明细双向比对
   - 其余门禁脚本 `fingerprint.js`、`design-root.js`、`decision-tables.js`、`roster-check.js`、`spec-index-check.js`、`debt-check.js` 与 `metrics-report.js` 同属该脚本清单，位于 `scripts/`
 - 存量重建 skill `ddd-rebuild` 与定向重构 skill `ddd-refactor`，分别位于 `skill/ddd-rebuild/` 与 `skill/ddd-refactor/`，两者与主 skill 同属一份清单，仅由用户显式调用
-- 运行时扩展位于 `extensions/`：`ddd-context.ts` 在会话开始时注入全局规则 section 并探测 subagent 前置依赖；`ddd-tools.ts` 把甲类机械校验脚本注册为 `ddd_*` 工具，并以 `/ddd-parser-install` 命令提供解析器供给的用户触发入口；`ddd-governance.ts` 仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默；`ddd-models.ts` 以 slash 命令 `/ddd-models` 提供模型配比的用户触发入口，转交仓库内部专用脚本 apply-models.js，不注册为工具；四者共用的纯工具（包根解析、执行超时、退出码归一、错误描述与安全读文本）集中在 `extensions/lib/shared.ts`，pi 版本与声明范围的纯比对集中在 `extensions/lib/version-range.ts` 并配套单元测试 `extensions/lib/version-range.test.ts`，四处宿主提示的单一实现集中在 `extensions/lib/notify.ts` 并配套单元测试 `extensions/lib/notify.test.ts`，该子目录无 index.ts，不作为扩展入口加载
+- 运行时扩展位于 `extensions/`：`ddd-context.ts` 在会话开始时注入全局规则 section 并探测 subagent 前置依赖；`ddd-tools.ts` 把甲类机械校验脚本注册为 `ddd_*` 工具，并以 `/ddd-parser-install` 命令提供解析器供给的用户触发入口；`ddd-governance.ts` 仅在含 docs/design 或 docs/gates 的项目内激活，对其他项目静默，激活后承担 H-1 至 H-4 四项拦截与启动时未闭合义务节点注入；`ddd-models.ts` 以 slash 命令 `/ddd-models` 提供模型配比的用户触发入口，转交仓库内部专用脚本 apply-models.js，不注册为工具；四者共用的纯工具（包根解析、执行超时、退出码归一、错误描述与安全读文本）集中在 `extensions/lib/shared.ts`，pi 版本与声明范围的纯比对集中在 `extensions/lib/version-range.ts` 并配套单元测试 `extensions/lib/version-range.test.ts`，四处宿主提示的单一实现集中在 `extensions/lib/notify.ts` 并配套单元测试 `extensions/lib/notify.test.ts`，该子目录无 index.ts，不作为扩展入口加载
 - 全局规则由 `extensions/ddd-context.ts` 以 sections 注入，不再改写用户全局文件
 - 模型配比记录文件 `~/.pi/agent/.ddd-model-overrides.json`，记录本方法论写入的代理、配比名与写入前原值，供精确回退；模型配比经扩展的 `/ddd-models` 命令转交仓库内部专用脚本 apply-models.js 应用或撤回
 - 12 个 agent 定义，位于 `agents/ddd-*.md`

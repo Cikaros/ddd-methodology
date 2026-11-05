@@ -14,6 +14,7 @@
 
 const path = require("path");
 const { readFileText } = require("./lib/text.js");
+const { capLines } = require("./lib/truncate.js");
 const { walk, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk.js");
 const { absoluteDesignDir } = require("./design-root.js");
 const { installGuidance } = require("./lib/span-parser.js");
@@ -21,7 +22,6 @@ const { readContractTable, compareRow } = require("./lib/span-compare.js");
 const { isMethodologyRepo, methodologyReason, NOT_APPLICABLE_TAIL } = require("./lib/repo-scope.js");
 
 const root = path.resolve(process.argv[2] || process.cwd());
-const LIMIT_BYTES = 12000; // 与甲类脚本在脚本消费契约表中的输出上限一致
 
 // 不适用出口：对象不存在与对象不合格是两件事，零对象不得报通过；尾部与 trace-check 逐字一致
 function emitNotApplicable(detail) {
@@ -88,11 +88,7 @@ async function main() {
       });
       return lines;
     };
-    for (let keep = droppable.length; keep >= 0; keep--) {
-      const lines = build(keep);
-      if (Buffer.byteLength(lines.join("\n"), "utf8") <= LIMIT_BYTES) return lines;
-    }
-    return build(0);
+    return capLines({ total: droppable.length, build });
   }
 
   process.stdout.write(render().join("\n") + "\n");

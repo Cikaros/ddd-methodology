@@ -7,6 +7,8 @@
  * 判定编号摘要，与规范「结构与契约的演进治理」节的守卫判定表逐项一致：
  * - H-1 粒度守卫。触发点：tool_call 的 write/edit。判定条件：估算写入后行数超 500 行。动作：拦截，理由含文件路径、就近 DESIGN 路径与拆解要求。
  * - H-2 测试分离守卫。触发点：tool_call 的 bash。判定条件：命令属窄口径的全量测试调用形态，且 docs/.ddd-state.json 的 lastStage 为 g5-int。动作：拦截，指明全量测试的唯一主体是 ddd-tester。
+ * - H-3 义务覆盖守卫。触发点：tool_call 的 write/edit。判定条件：目标为源码文件、任务树已启用，而该文件所属接缝的节点文件缺失或该文件未被任何义务节点覆盖。动作：拦截，理由含节点文件路径与登记方式。
+ * - H-4 门禁清零守卫。触发点：tool_call 的 write/edit。判定条件：目标为 docs/gates/ 下的门禁记录，且任务树存在未闭合义务节点。动作：拦截，理由含未闭合节点所在文件与逐项核销要求。
  *
  * 键关系：G5_INT_STAGE 的值为状态文件阶段键集合中的单键，即 docs/.ddd-state.json 的 doneStages 枚举成员之一；ref-check 的 C4 与 --fix 据此比对并单向校验其属于该集合，脚本不改本文件，值变更须人工处理。
  *
@@ -21,8 +23,8 @@
  * 依据：规范「粒度与独立性」节、「实现与测试分离」节与「结构与契约的演进治理」节。
  */
 
-import { existsSync } from "node:fs";
-import { dirname, join, resolve, sep } from "node:path";
+import { existsSync, readdirSync } from "node:fs";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { notifyUser } from "./lib/notify.ts";
 import { describeError, readText } from "./lib/shared.ts";
@@ -54,11 +56,25 @@ const FULL_TEST_COMMANDS = [
 ];
 
 export default function (pi: ExtensionAPI) {
+	pi.on("before_agent_start", (event, ctx) => {
+		const obligations = loadOpenObligations(ctx);
+		if (!obligations) return;
+		const sections = event.systemPromptOptions?.sections;
+		if (!sections) return;
+		sections[OBLIGATION_SECTION_NAME] = obligations;
+	});
+
 	pi.on("tool_call", async (event, ctx) => {
 		try {
 			if (!isDddProject(ctx && ctx.cwd)) return undefined;
 			const toolName = event && event.toolName;
-			if (toolName === "write" || toolName === "edit") return checkGranularity(event, ctx); // H-1
+			if (toolName === "write" || toolName === "edit") {
+				const granularity = checkGranularity(event, ctx);
+				if (granularity) return granularity;
+				const coverage = checkObligationCoverage(event, ctx);
+				if (coverage) return coverage;
+				return checkGateRecordClearance(event, ctx);
+			}
 			if (toolName === "bash") return checkFullTestCommand(event, ctx); // H-2
 			return undefined;
 		} catch (error) {
@@ -136,6 +152,97 @@ function nearestDesignPath(cwd, absPath) {
 	return null;
 }
 
+// ---- H-3 义务覆盖守卫 ----
+
+// 节点文件路径：由就近 DESIGN 推 docs/board 下的同构路径，不在设计树内返回 null
+function nodesPathFor(designPath, cwd) {
+	const root = resolve(cwd);
+	const rel = relative(join(root, "docs", "design"), dirname(designPath));
+	if (rel.startsWith("..")) return null;
+	return join(root, "docs", "board", rel, "NODES.md");
+}
+
+function checkObligationCoverage(event, ctx) {
+	const input = (event && event.input) || {};
+	const rawPath = input.path ?? input.file_path ?? input.filePath;
+	if (typeof rawPath !== "string" || rawPath === "") return undefined;
+	const absPath = resolve(ctx.cwd, rawPath);
+	if (!isSourceFile(absPath)) return undefined;
+	if (!existsSync(join(resolve(ctx.cwd), "docs", "board"))) return undefined; // 任务树未启用即放行
+	const designPath = nearestDesignPath(ctx.cwd, absPath);
+	if (!designPath) return undefined;
+	const nodesPath = nodesPathFor(designPath, ctx.cwd);
+	if (!nodesPath) return undefined;
+	const nodeText = readText(nodesPath);
+	const relFile = relative(resolve(ctx.cwd), absPath).split(sep).join("/");
+	if (nodeText === null) {
+		return {
+			block: true,
+			reason: [
+				`[H-3 义务覆盖守卫] 任务树已启用但缺少节点文件：${nodesPath}`,
+				`就近 DESIGN：${designPath}`,
+				"按规范「接口先行与冻结」节的义务核销条，先在节点文件中登记义务节点并写明覆盖范围，再写代码。",
+			].join("\n"),
+		};
+	}
+	if (nodeText.includes(relFile)) return undefined;
+	return {
+		block: true,
+		reason: [
+			`[H-3 义务覆盖守卫] 目标文件未被任何义务节点覆盖：${relFile}`,
+			`节点文件：${nodesPath}`,
+			"在节点文件中补一条义务节点，覆盖范围列写该文件路径，状态置为进行中并写承接方后重试。",
+		].join("\n"),
+	};
+}
+
+// ---- H-4 门禁清零守卫 ----
+
+// 未闭合义务节点：扫 docs/board 下全部节点文件，取类型为义务且状态为未开始或进行中者
+function collectOpenObligations(root) {
+	const boardDir = join(root, "docs", "board");
+	if (!existsSync(boardDir)) return null;
+	const open = [];
+	const walk = (dir) => {
+		for (const entry of readdirSync(dir, { withFileTypes: true })) {
+			const full = join(dir, entry.name);
+			if (entry.isDirectory()) { walk(full); continue; }
+			if (entry.name !== "NODES.md") continue;
+			const text = readText(full) || "";
+			for (const line of text.split("\n")) {
+				if (!line.trim().startsWith("|")) continue;
+				const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
+				if (cells.length < 5 || !cells[0] || cells[0] === "节点编号" || /^-+$/.test(cells[0])) continue;
+				if (cells[2] !== "义务") continue;
+				if (cells[4] === "未开始" || cells[4] === "进行中") {
+					open.push(`${relative(root, full).split(sep).join("/")} ${cells[0]}（${cells[4]}）`);
+				}
+			}
+		}
+	};
+	walk(boardDir);
+	return open;
+}
+
+function checkGateRecordClearance(event, ctx) {
+	const input = (event && event.input) || {};
+	const rawPath = input.path ?? input.file_path ?? input.filePath;
+	if (typeof rawPath !== "string" || rawPath === "") return undefined;
+	const root = resolve(ctx.cwd);
+	const rel = relative(root, resolve(root, rawPath)).split(sep).join("/");
+	if (!rel.startsWith("docs/gates/")) return undefined;
+	const open = collectOpenObligations(root);
+	if (!open || open.length === 0) return undefined;
+	return {
+		block: true,
+		reason: [
+			`[H-4 门禁清零守卫] 任务树存在 ${open.length} 项未闭合义务节点，不得写入门禁记录：${rel}`,
+			...open.slice(0, 5),
+			"按规范「接口先行与冻结」节的义务核销条逐项核销，未完项转债务并具名承接后再过门。",
+		].join("\n"),
+	};
+}
+
 // ---- H-2 测试分离守卫 ----
 
 function checkFullTestCommand(event, ctx) {
@@ -196,4 +303,22 @@ function countLines(text) {
 	if (typeof text !== "string" || text === "") return 0;
 	const trimmed = text.replace(/\n+$/, "");
 	return trimmed === "" ? 0 : trimmed.split("\n").length;
+}
+
+// ---- 看板注入 ----
+
+const OBLIGATION_SECTION_NAME = "ddd_open_obligations";
+
+
+// 启动时注入未闭合节点，使子代理不必依赖记忆；任务树未启用或已清空时不注入
+function loadOpenObligations(ctx) {
+	try {
+		const cwd = ctx && ctx.cwd;
+		if (typeof cwd !== "string" || cwd === "") return null;
+		const open = collectOpenObligations(resolve(cwd));
+		if (!open || open.length === 0) return null;
+		return ["任务树未闭合义务节点，逐条核销后方可过门：", ...open].join("\n");
+	} catch {
+		return null;
+	}
 }

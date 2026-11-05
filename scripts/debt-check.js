@@ -22,6 +22,7 @@
 const fs = require("fs");
 // 读取失败回空串而非中断：登记簿读不到时仍走无效 JSON 分支给出结构化结论，消费端不以栈信息判读
 const { readFileText, isBlank } = require("./lib/text.js");
+const { DEFAULT_LIMIT_BYTES, capLines } = require("./lib/truncate.js");
 // 版本标识的解析、比较、加跨度与格式化取共享层，与 metrics-report 共用，避免第三处实现
 const { parseVersion, compareVersion, addSpan, formatVersion } = require("./lib/version.js");
 // 债务历史快照与根因复发检测取共享层，本脚本只负责按登记簿构建摘要并落盘、输出段落
@@ -39,7 +40,7 @@ const REQUIRED_TOP = ["currentVersion", "maxOpen", "defaultDueSpan"];
 const ENTRY_ARRAY_FIELD = "debts";
 // dueBy 可省：省略时由校验脚本按 registeredAt 加 defaultDueSpan 推导，故不入必填清单而列可省清单
 const REQUIRED_ENTRY = ["id", "desc", "registeredAt", "owner", "status", "reason", "rootCause", "recurrence"];
-const OPTIONAL_ENTRY = ["dueBy"];
+const OPTIONAL_ENTRY = ["dueBy"]; // 本文件不直接读取，由 ref-check 的 C14 以文本形态抽取比对，删改须同步该判据
 const STATUSES = ["open", "closed"];
 // 根因分类：与规范「存量债务的登记与清偿」节及债务模板的字段表同源，同一分类连续两版未清即须升级用户。
 // 上列字段与根因分类集合同时作为 ref-check 的 C14 比对源，三处集合一致性由机械校验承接。
@@ -154,26 +155,16 @@ function check() {
   return { enabled: true, reasons, openCount, currentVersion: data.currentVersion, maxOpen, summaries, current };
 }
 
-const LIMIT_BYTES = 12000;
 
 // 输出：明细行在前、末行结论在后，整体不含空行；超限按整行截断明细并追加计数行，末行结论始终保留
 function emit(detailLines, resultLine) {
-  const size = (arr) => Buffer.byteLength(arr.join("\n"), "utf8");
   const pack = (kept) => {
     const out = detailLines.slice(0, kept);
-    if (kept < detailLines.length) out.push(`明细超 ${LIMIT_BYTES} 字节上限，已截断（共 ${detailLines.length} 项，已列 ${kept} 项）`);
+    if (kept < detailLines.length) out.push(`明细超 ${DEFAULT_LIMIT_BYTES} 字节上限，已截断（共 ${detailLines.length} 项，已列 ${kept} 项）`);
     out.push(resultLine);
     return out;
   };
-  if (size(pack(detailLines.length)) <= LIMIT_BYTES) return pack(detailLines.length).join("\n");
-  let lo = 0;
-  let hi = detailLines.length;
-  while (lo < hi) {
-    const mid = Math.ceil((lo + hi) / 2);
-    if (size(pack(mid)) <= LIMIT_BYTES) lo = mid;
-    else hi = mid - 1;
-  }
-  return pack(lo).join("\n");
+  return capLines({ total: detailLines.length, build: pack }).join("\n");
 }
 
 const { enabled, reasons, openCount, currentVersion, maxOpen, summaries, current } = check();

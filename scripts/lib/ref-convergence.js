@@ -181,6 +181,10 @@ function createConvergenceChecks(env) {
       if (base === undefined) { found.push(drift("C19", rel, 0, "新增活文档属结构项增长，须登记", "活文档集合与基线一致", `${headings[rel]} 个标题`)); continue; }
       if (headings[rel] > base) found.push(drift("C19", rel, 0, "文档标题数不得较基线增长", `标题数 ≤ ${base}`, `现 ${headings[rel]}`));
     }
+    // 断言三反向：基线中已不存在的活文档属基线残留，须清理条目而非静默留存
+    for (const rel of Object.keys(baseline.docHeadings)) {
+      if (headings[rel] === undefined) found.push(drift("C19", rel, 0, "基线中已不存在的活文档条目须清理", "基线键与当前活文档集合一致", "基线残留"));
+    }
     // 断言四：检出相对基线新增的重复，已登记于基线者不再计入
     const known = new Set(baseline.duplicateFindings.filter((item) => item && item.sentence).map((item) => item.sentence));
     for (const item of duplicates) {

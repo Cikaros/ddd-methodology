@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * 目标：把本仓库跨文档引用、常量、清单与冻结短语的一致性外化为可复现的机械证据，供文档同步链在提交前校验。
- * 范围：十八项校验，编号沿用 C1 至 C20，其中 C13 与 C18 无对应校验项；编号不复用，以免既有引用与教训回写映射漂移；
+ * 范围：十九项校验，编号沿用 C1 至 C21，其中 C13 与 C18 无对应校验项；编号不复用，以免既有引用与教训回写映射漂移；
  *   默认只读不落盘，仅 --fix 写盘，写盘范围限 workflow 的阶段注册表块；C19 的收敛度基线在缺失时首次生成。
  * 校验实现按域外置于 ./lib/：规范读取面见 spec-doc.js，引用形态见 ref-refs.js，常量集合见 ref-constants.js，
  *   阶段键见 ref-stages.js，冻结短语见 ref-phrases.js，登记簿字段集合见 ref-debt-fields.js，校验项映射见 ref-coverage.js，
@@ -22,6 +22,7 @@
 const fs = require("fs");
 const path = require("path");
 const { readFileText, drift } = require("./lib/text.js");
+const { capLines } = require("./lib/truncate.js");
 const { CHANGELOG_NAME } = require("./lib/paths.js");
 const { createSpecReader, relPath: toRelPath, SPEC_INDEX_REL } = require("./lib/spec-doc.js");
 const { createRefChecks } = require("./lib/ref-refs.js");
@@ -42,7 +43,6 @@ const specIndexCheck = require("./spec-index-check.js");
 const argv = process.argv.slice(2);
 const fixMode = argv.includes("--fix");
 const root = path.resolve(argv.find((a) => !a.startsWith("--")) || process.cwd());
-const REF_LIMIT_BYTES = 12000; // 与本脚本在脚本消费契约表中的输出上限一致
 const SKIP_FILE_NAMES = new Set([CHANGELOG_NAME]);
 // workflow 与守卫扩展的固定路径：C4 与 C9 的受控副本载体，只在装配处定义一次
 const WORKFLOW_REL = ["workflows", "ddd-workflow.js"];
@@ -117,6 +117,7 @@ const CHECKS = [
   ["C17", "结构与安装内容明细一致性", structureChecks.checkStructureDoc],
   ["C19", "收敛度校验", convergenceChecks.checkConvergence],
   ["C20", "义务取值域一致性", obligationChecks.checkObligationValues],
+  ["C21", "命令入口清单一致性", structureChecks.checkEntryInventory],
 ];
 
 // --fix 先于校验写盘，使报告与末行结论反映修复后状态；默认模式不触盘
@@ -152,11 +153,7 @@ function capRefReport(entries) {
     });
     return lines;
   };
-  for (let keep = droppableIndex.length; keep >= 0; keep--) {
-    const lines = build(keep);
-    if (Buffer.byteLength(lines.join("\n"), "utf8") <= REF_LIMIT_BYTES) return lines;
-  }
-  return build(0);
+  return capLines({ total: droppableIndex.length, build });
 }
 
 const entries = [{ droppable: false, text: "=== 跨文档引用一致性校验 ===" }, { droppable: false, text: `仓库根：${root}` }, { droppable: false, text: `活文档：${liveDocPaths.length} 份；校验项：${CHECKS.length} 项` }];

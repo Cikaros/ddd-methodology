@@ -18,13 +18,13 @@ const fs = require("fs");
 const path = require("path");
 const { HEALTH_REL, DEBT_BOOK_REL } = require("./lib/paths.js");
 const { isBlank } = require("./lib/text.js");
+const { capLines } = require("./lib/truncate.js");
 const { readHealth, readDebts, readDirFiles } = require("./lib/metrics-sources.js");
 const { METRICS_REL, artifactWritePath, artifactWriteRel } = require("./lib/paths.js");
 const { computeTrend, computeDebt, computeRecurrence } = require("./lib/metrics-structure.js");
 const { REPORTS_DIR_REL, computeGates, computeReworkRounds, computeDefectLevels, computeDefectDensity, computeUnconsumedDeclarations, computeMechanicalEvidenceCoverage } = require("./lib/metrics-delivery.js");
 
 const root = process.argv[2] || process.cwd();
-const METRICS_LIMIT_BYTES = 12000;
 
 const health = readHealth(root);
 const debts = readDebts(root);
@@ -137,11 +137,7 @@ function capReport(all) {
     }
     return out;
   };
-  for (let keep = droppable.length; keep >= 0; keep--) {
-    const out = build(keep);
-    if (Buffer.byteLength(out.join("\n"), "utf8") <= METRICS_LIMIT_BYTES) return out;
-  }
-  return build(0);
+  return capLines({ total: droppable.length, build });
 }
 
 process.stdout.write(capReport(entries).join("\n") + "\n");
