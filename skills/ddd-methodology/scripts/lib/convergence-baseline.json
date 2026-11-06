@@ -1,6 +1,6 @@
 {
   "repoItems": {
-    "files": 158,
+    "files": 170,
     "dirs": 45
   },
   "docHeadings": {
@@ -53,6 +53,7 @@
     "skills/lang-java/SKILL.md": 4,
     "skills/lang-javascript/SKILL.md": 4,
     "skills/lang-md/SKILL.md": 4,
+    "skills/lang-shell/assets/coverage-README.md": 3,
     "skills/lang-powershell/SKILL.md": 4,
     "skills/lang-python/SKILL.md": 4,
     "skills/lang-shell/SKILL.md": 4,

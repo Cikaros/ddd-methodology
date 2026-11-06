@@ -110,10 +110,14 @@ ddd-methodology/
 │   └── SKILL.md
 ├── skills/lang-java/  # 语言类：Java
 │   ├── assets/
-│   │   └── checkstyle.xml
+│   │   ├── checkstyle.xml
+│   │   ├── commands.json  # 测试与覆盖率命令模板，候选集形式
+│   │   └── jacoco-rules.xml  # JaCoCo 覆盖率阈值规则片段
 │   └── SKILL.md
 ├── skills/lang-javascript/  # 语言类：JavaScript
 │   ├── assets/
+│   │   ├── commands.json  # 测试与覆盖率命令模板，候选集形式
+│   │   ├── coverage.config.mjs  # 覆盖率启用、Cobertura 报告与阈值
 │   │   └── eslint.config.mjs
 │   └── SKILL.md
 ├── skills/lang-md/  # 语言类：Markdown 写作约束
@@ -122,19 +126,27 @@ ddd-methodology/
 │   └── SKILL.md
 ├── skills/lang-powershell/  # 语言类：PowerShell
 │   ├── assets/
+│   │   ├── commands.json  # 测试与覆盖率命令模板，候选集形式
+│   │   ├── PesterConfig.ps1  # Pester 覆盖率配置片段
 │   │   └── PSScriptAnalyzerSettings.psd1
 │   └── SKILL.md
 ├── skills/lang-python/  # 语言类：Python 语义约束与配置资产
 │   ├── assets/
+│   │   ├── commands.json  # 测试与覆盖率命令模板，候选集形式
+│   │   ├── coveragerc  # coverage.py 阈值与 Cobertura 输出
 │   │   ├── mypy.ini
 │   │   └── ruff.toml
 │   └── SKILL.md
 ├── skills/lang-shell/  # 语言类：Shell
 │   ├── assets/
+│   │   ├── commands.json  # 测试与覆盖率命令模板，候选集形式
+│   │   ├── coverage-README.md  # kcov 无门禁与统一解析接入说明
 │   │   └── shellcheckrc
 │   └── SKILL.md
 ├── skills/lang-typescript/  # 语言类：TypeScript
 │   ├── assets/
+│   │   ├── commands.json  # 测试与覆盖率命令模板，候选集形式
+│   │   ├── coverage.config.mjs  # 覆盖率启用、Cobertura 报告与阈值
 │   │   ├── eslint.config.mjs
 │   │   └── tsconfig.strict.json
 │   └── SKILL.md
