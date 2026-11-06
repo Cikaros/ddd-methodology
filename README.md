@@ -60,7 +60,7 @@ skill、agent、扩展与提示模板的安装与移除均由 pi package 机制�
 
 ## 脚本清单
 
-命令入口共 15 个，位于 `scripts/`，另有编排脚本与库文件同目录。状态取三值：在役为随包服务被开发项目，仓库专用为仅本仓库维护用，部署辅助为用户部署时执行。该表为命令入口的唯一清单，由 `ref-check` 的 C21 与仓库实际入口双向比对。
+命令入口共 16 个，位于 `scripts/`，另有编排脚本与库文件同目录。状态取三值：在役为随包服务被开发项目，仓库专用为仅本仓库维护用，部署辅助为用户部署时执行。该表为命令入口的唯一清单，由 `ref-check` 的 C21 与仓库实际入口双向比对。
 
 | 脚本 | 状态 | 消费方 | 门禁地位 |
 |---|---|---|---|
@@ -75,6 +75,7 @@ skill、agent、扩展与提示模板的安装与移除均由 pi package 机制�
 | `scripts/code-health.js` | 在役 | `ddd_code_health` 工具 | 仅报告，不作门禁 |
 | `scripts/debt-check.js` | 在役 | `ddd_debt_check` 工具 | 交付门前置校验 |
 | `scripts/metrics-report.js` | 在役 | `ddd_metrics_report` 工具 | 仅报告，不作门禁 |
+| `scripts/env-command.js` | 在役 | 实现者与测试执行者 | 命令组装，非门禁证据 |
 | `scripts/install-parser.js` | 部署辅助 | `/ddd-parser-install` 命令 | 不构成门证据 |
 | `scripts/ref-check.js` | 仓库专用 | 人工与文档同步链 | 本仓库自身一致性 |
 | `scripts/toolchain-selftest.js` | 仓库专用 | 人工 | 脚本族可用的自证 |

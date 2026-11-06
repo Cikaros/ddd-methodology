@@ -2,6 +2,17 @@
 
 本文件记录 pi package 形态的版本变更，版本号与仓库根 `package.json` 的 `version` 对应，采用三段式语义化版本；本包经 `pi install` 安装，例如 `pi install git:github.com/Cikaros/ddd-methodology`。方法论规范版本 v1.0 至 v2.21 的演进史已归档至 `docs/internal/history/spec-changelog.md`，属内部档案，不作为公开内容。
 
+## 0.8.9 - 2026-11-06
+
+本轮为环境记录消费面与保证面的收口，四笔债务清偿。
+
+- **新增**：命令组装的生产入口 `skills/ddd-methodology/scripts/env-command.js`，用法 `node env-command.js <项目根绝对路径> <语言名> <test|coverage>`。它读环境记录与本包该语言的命令模板，取候选集经 `lib/env-command.js` 的 `buildCommand` 两级解析出可执行命令，命中退 0、缺口退 1、用法错误退 2；所需版本由记录回退取用，不另传。**清偿 D-038**：命令组装能力自此有生产调用者，记录中的 `required` 不再仅被校验与摘要消费，节点不再手工拼接命令。
+- **变更**：单测按域拆分。`env-probe.test.js` 只留测 `lib/env-probe.js` 的用例，覆盖探测、工具归一、语言形态、框架推导与记录装配；新增 `env-command.test.js` 承接全部测 `lib/env-command.js` 的用例，含多版本记录、管理器事实、候选集组装与所需版本声明。**清偿 D-039**：测试文件回到五百行阈值的八成预警线以下。
+- **修复**：环境记录路径收敛为 `lib/paths.js` 的 `ENV_RECORD_REL` 单源常量，`lib/ref-env.js` 与 `scripts/env-probe.js` 改按名引用，不再复写字面量。**清偿 D-040**。
+- **新增**：探测落盘后确保 `<项目根>/.gitignore` 排除环境记录——先经 `git check-ignore` 判定，已排除即不动；未排除且 `.gitignore` 存在时幂等补写一行说明注释与一行排除规则，`.gitignore` 不存在而根为 git 工作树时创建之，非工作树只提示不建文件，写盘失败只登记不上抛；摘要增一行报告五态之一——已排除、已补写排除规则、已新建 `.gitignore`、未检出 `.gitignore`、排除规则写入失败。**清偿 D-041**：不入库一事由纸面承诺改为写入时保证。
+- **变更**：README 命令入口清单因新入口增至十六个；`STRUCTURE.md` 结构树与安装内容明细、收敛度基线与工具链基线同步更新；主技能环境记录段改为给出组装入口并保留不得回落写死形态一句。
+- **变更**：全仓单测由一百七十一例增至一百七十七例。增量有二：其四例为入库保证的 `.gitignore` 排除规则用例，其二例为生产入口 `env-command.js` 命中退 0 与缺口退 1 两路径的子进程用例；扩展侧 `bun test` 四十四例不变。
+
 ## 0.8.8 - 2026-11-06
 
 本轮为环境记录声明的收口与所需版本契约的补全，三组改动。

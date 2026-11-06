@@ -112,7 +112,7 @@ description: 分治式设计驱动开发方法论的主技能，承载三通道�
 
 全链状态文件为 `<项目根>/docs/.ddd-state.json`，在现行三字段上加 `channel` 与 `freezeAnchor`；损坏时中断续跑并交根会话，不得当作全新启动。字段 schema 见 `references/spec-govern.md`。
 
-环境记录 `<项目根>/docs/.ddd-env.json` 由初始化 `node skills/ddd-methodology/scripts/env-probe.js <项目根绝对路径>` 探测生成，落四类工具的路径、版本与可用性，以及由工具推导出的各语言可用命令形态；测试与覆盖率命令据此解析后组装，不得回落写死形态。该件另记测试框架事实与可选的所需版本声明；键名计数以 `skills/ddd-methodology/references/spec-govern.md` 的环境记录键集声明为准。该件随机器而异，同一仓库在不同机器上探测结果不同，纳入版本控制会互相覆盖并误导读命令组装者，故不纳入版本控制，由 `.gitignore` 排除。
+环境记录 `<项目根>/docs/.ddd-env.json` 由初始化 `node skills/ddd-methodology/scripts/env-probe.js <项目根绝对路径>` 探测生成，落四类工具的路径、版本与可用性，以及由工具推导出的各语言可用命令形态；测试与覆盖率命令由 `node skills/ddd-methodology/scripts/env-command.js <项目根绝对路径> <语言名> <test|coverage>` 读环境记录与本包该语言的命令模板组装，不得回落写死形态。该件另记测试框架事实与可选的所需版本声明；键名计数以 `skills/ddd-methodology/references/spec-govern.md` 的环境记录键集声明为准。该件随机器而异，同一仓库在不同机器上探测结果不同，纳入版本控制会互相覆盖并误导读命令组装者，故不纳入版本控制，由 `.gitignore` 排除。
 
 编排脚本两份，置于 `scripts/`：`ddd-workflow.js` 走 A 主链，`ddd-hotfix.js` 走 B 快速修复；两者共用阶段键集与状态文件 schema，只按通道取各自键序。脚本只做编排不做机械校验，校验由根会话在编排返回后经 `ddd_*` 工具执行。卡死防护全由宿主承担，即运行级 `options.timeoutMs`、单工具 `options.toolTimeoutMs` 与间隔巡检看门狗，不自研计时器。
 

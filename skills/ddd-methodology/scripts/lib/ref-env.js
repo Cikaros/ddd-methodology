@@ -3,7 +3,7 @@
  *   命令模板的候选集形式与占位、模板候选引用的框架与探测覆盖面一致、管理器行的版本键非空、可用工具的解析来源级别合法、
  *   所需版本落在所解析的版本清单内、环境记录键集声明与常量逐字一致。
  * 范围：C26 至 C30 与 C34、C36、C37 八项，编号续 ref-check 既有清单不作复用；数据源为 <项目根>/docs/.ddd-env.json、六语言技能 assets/commands.json 与 references/spec-govern.md；
- *   框架探测的覆盖面取自同目录 env-probe.js 的常量声明处（外部测试框架清单与内建框架表），来源级别值域取自同目录 env-resolve.js 的声明处，语言到运行时行与运行时提供者表的解析取自同目录 env-command.js，本模块不另立一份，免得两处漂移。
+ *   框架探测的覆盖面取自同目录 env-probe.js 的常量声明处（外部测试框架清单与内建框架表），来源级别值域取自同目录 env-resolve.js 的声明处，语言到运行时行、运行时提供者表与命令组取值域的解析取自同目录 env-command.js，本模块不另立一份，免得两处漂移。
  * 不包含：引用形态与脚本名（见 ref-refs.js）、常量集合（见 ref-constants.js）、冻结短语（见 ref-phrases.js）、教训回写映射（见 ref-coverage.js）、命令行入口。不引入第三方依赖。
  * 依据：DESIGN-environment.md 第六、九、十三、十四节；环境记录为四键结构（含第十节补入的 frameworks），逐工具为七键，命令模板为候选集形式，可用工具的 path 须标明四级来源，所需版本须落在所解析的版本清单内，spec-govern.md 的键集声明须与常量逐字一致。
  */
@@ -11,11 +11,11 @@
 const fs = require("fs");
 const path = require("path");
 const { readFileText, drift } = require("./text.js");
+const { ENV_RECORD_REL } = require("./paths.js");
 const { FRAMEWORK_COMMANDS, BUILTIN_FRAMEWORKS } = require("./env-probe.js");
 const { SOURCE_LEVELS } = require("./env-resolve.js");
-const { LANGUAGE_RUNTIMES, PROVIDER_LANGUAGES } = require("./env-command.js");
+const { COMMAND_GROUPS, LANGUAGE_RUNTIMES, PROVIDER_LANGUAGES } = require("./env-command.js");
 
-const ENV_REL = "docs/.ddd-env.json";
 const SPEC_GOVERN_REL = "skills/ddd-methodology/references/spec-govern.md";
 // 环境记录四键：缺一即报缺口，与 DESIGN-environment.md 第三节与第十节的结构一致
 const ENV_KEYS = ["probedAt", "tools", "languages", "frameworks"];
@@ -23,15 +23,13 @@ const ENV_KEYS = ["probedAt", "tools", "languages", "frameworks"];
 const TOOL_KEYS = ["path", "source", "version", "available", "manager", "versions", "active"];
 // 六语言技能目录：命令模板落各技能 assets/commands.json；lang-md 无命令模板故不在列
 const LANG_SKILLS = ["lang-python", "lang-java", "lang-javascript", "lang-typescript", "lang-shell", "lang-powershell"];
-// 命令组：test 与 coverage 均须为候选集；test 候选的选择条件为 when，coverage 候选的选择条件为 tool
-const COMMAND_GROUPS = ["test", "coverage"];
 
 function createEnvChecks(env) {
   const { root } = env;
 
   // 环境记录读取：缺失回 null，不可解析回带标记对象，由各校验项给出各自结论而不互相吞并
   function readEnvRecord() {
-    const text = readFileText(path.join(root, ...ENV_REL.split("/")));
+    const text = readFileText(path.join(root, ...ENV_RECORD_REL.split("/")));
     if (!text) return null;
     try { return JSON.parse(text); } catch (e) { return { __parseError: e.message }; }
   }
@@ -55,16 +53,16 @@ function createEnvChecks(env) {
   function checkEnvRecord() {
     const found = [];
     const record = readEnvRecord();
-    if (!record) { found.push(drift("C26", ENV_REL, 0, "环境记录缺失即报缺口", `${ENV_REL} 存在且可解析`, "未找到")); return found; }
-    if (record.__parseError) { found.push(drift("C26", ENV_REL, 0, "环境记录须为合法 JSON", "可解析", record.__parseError)); return found; }
+    if (!record) { found.push(drift("C26", ENV_RECORD_REL, 0, "环境记录缺失即报缺口", `${ENV_RECORD_REL} 存在且可解析`, "未找到")); return found; }
+    if (record.__parseError) { found.push(drift("C26", ENV_RECORD_REL, 0, "环境记录须为合法 JSON", "可解析", record.__parseError)); return found; }
     for (const key of ENV_KEYS) {
-      if (record[key] === undefined || record[key] === null) found.push(drift("C26", ENV_REL, 0, "环境记录结构须含四键", `含 ${key}`, "缺失"));
+      if (record[key] === undefined || record[key] === null) found.push(drift("C26", ENV_RECORD_REL, 0, "环境记录结构须含四键", `含 ${key}`, "缺失"));
     }
     if (record.tools && typeof record.tools === "object") {
       for (const [name, tool] of Object.entries(record.tools)) {
-        if (!tool || typeof tool !== "object") { found.push(drift("C26", ENV_REL, 0, "逐工具行须含全部七键", `${name} 为含七键的对象`, "非对象")); continue; }
+        if (!tool || typeof tool !== "object") { found.push(drift("C26", ENV_RECORD_REL, 0, "逐工具行须含全部七键", `${name} 为含七键的对象`, "非对象")); continue; }
         for (const key of TOOL_KEYS) {
-          if (tool[key] === undefined) found.push(drift("C26", ENV_REL, 0, "逐工具行须含全部七键", `${name}.${key} 存在`, "缺失"));
+          if (tool[key] === undefined) found.push(drift("C26", ENV_RECORD_REL, 0, "逐工具行须含全部七键", `${name}.${key} 存在`, "缺失"));
         }
       }
     }
@@ -78,7 +76,7 @@ function createEnvChecks(env) {
     if (!record || record.__parseError || !record.tools) return found;
     for (const [name, tool] of Object.entries(record.tools)) {
       if (!tool || tool.available !== true) continue;
-      if (!tool.path || !fs.existsSync(tool.path)) found.push(drift("C27", ENV_REL, 0, "标记可用的工具其路径须实际存在", `${name} 的 path 存在`, String(tool.path || "根元素缺 path")));
+      if (!tool.path || !fs.existsSync(tool.path)) found.push(drift("C27", ENV_RECORD_REL, 0, "标记可用的工具其路径须实际存在", `${name} 的 path 存在`, String(tool.path || "根元素缺 path")));
     }
     return found;
   }
@@ -139,8 +137,8 @@ function createEnvChecks(env) {
     if (!record || record.__parseError || !record.tools) return found;
     for (const [name, tool] of Object.entries(record.tools)) {
       if (!tool || !tool.manager) continue;
-      if (!Array.isArray(tool.versions) || tool.versions.length === 0) found.push(drift("C30", ENV_REL, 0, "标记管理器的工具其 versions 须非空", `${name}.versions 非空`, "空清单"));
-      if (tool.active === undefined || tool.active === null || tool.active === "") found.push(drift("C30", ENV_REL, 0, "标记管理器的工具其 active 须非空", `${name}.active 非空`, String(tool.active)));
+      if (!Array.isArray(tool.versions) || tool.versions.length === 0) found.push(drift("C30", ENV_RECORD_REL, 0, "标记管理器的工具其 versions 须非空", `${name}.versions 非空`, "空清单"));
+      if (tool.active === undefined || tool.active === null || tool.active === "") found.push(drift("C30", ENV_RECORD_REL, 0, "标记管理器的工具其 active 须非空", `${name}.active 非空`, String(tool.active)));
     }
     return found;
   }
@@ -156,7 +154,7 @@ function createEnvChecks(env) {
       if (!tool || tool.available !== true) continue;
       if (!SOURCE_LEVELS.includes(tool.source)) {
         const actual = tool.source === undefined || tool.source === null ? "缺失" : JSON.stringify(tool.source);
-        found.push(drift("C34", ENV_REL, 0, "可用工具的 path 须标明来源级别且取值在四级之内", `source 取 ${allowed} 之一`, `${name}.source 为 ${actual}`));
+        found.push(drift("C34", ENV_RECORD_REL, 0, "可用工具的 path 须标明来源级别且取值在四级之内", `source 取 ${allowed} 之一`, `${name}.source 为 ${actual}`));
       }
     }
     return found;
@@ -186,18 +184,18 @@ function createEnvChecks(env) {
     const required = record.required;
     if (required === undefined) return found;
     if (required === null || typeof required !== "object" || Array.isArray(required)) {
-      found.push(drift("C36", ENV_REL, 0, "所需版本声明须为对象", "对象或缺失", typeof required));
+      found.push(drift("C36", ENV_RECORD_REL, 0, "所需版本声明须为对象", "对象或缺失", typeof required));
       return found;
     }
     for (const [key, value] of Object.entries(required)) {
       if (typeof value !== "string" || value.trim() === "") {
-        found.push(drift("C36", ENV_REL, 0, "所需版本须为非空字符串", `${key} 的值为非空字符串`, JSON.stringify(value)));
+        found.push(drift("C36", ENV_RECORD_REL, 0, "所需版本须为非空字符串", `${key} 的值为非空字符串`, JSON.stringify(value)));
         continue;
       }
       const list = resolveVersionList(record, key);
-      if (list === null) { found.push(drift("C36", ENV_REL, 0, "所需版本的键须为 languages 键", `${key} 为 record.languages 键`, "非 languages 键")); continue; }
+      if (list === null) { found.push(drift("C36", ENV_RECORD_REL, 0, "所需版本的键须为 languages 键", `${key} 为 record.languages 键`, "非 languages 键")); continue; }
       if (!list.length) { process.stdout.write(`[C36 无法判定] 键 ${key} 的版本清单不可得，所需版本 ${value} 无法校验\n`); continue; }
-      if (!list.includes(value)) found.push(drift("C36", ENV_REL, 0, "所需版本须落在该键所解析的版本清单内", `${key} 的清单含 ${value}`, `清单 ${list.join("、")}`));
+      if (!list.includes(value)) found.push(drift("C36", ENV_RECORD_REL, 0, "所需版本须落在该键所解析的版本清单内", `${key} 的清单含 ${value}`, `清单 ${list.join("、")}`));
     }
     return found;
   }

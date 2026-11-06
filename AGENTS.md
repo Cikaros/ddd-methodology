@@ -8,6 +8,8 @@
 
 语言与运行时：扩展用 TypeScript，校验脚本与编排脚本用 JavaScript，技能与规范用 Markdown。运行时为 Node 二十以上，扩展经 pi 扩展接口加载，子代理机制由 pi-subagents 提供。无编译步骤，扩展与脚本由宿主直接加载；单元测试用 node --test 与 bun test。
 
+环境指针：工具清单与各语言可用命令形态以机读件 `docs/.ddd-env.json` 为准，本节只写摘要与指针，不在正文另列工具清单，以免两处漂移；该件记录结构以 `skills/ddd-methodology/references/spec-govern.md` 的环境记录键集声明为准。
+
 ## 目录结构与依赖方向
 
 目录树见 `STRUCTURE.md`，本文不重复。依赖方向单向：`extensions/` 依赖 `skills/` 下资产与 `skills/ddd-methodology/scripts/` 下脚本；该 scripts 依赖 `skills/` 下规范与资产；`skills/` 不反向依赖；`agents/` 不依赖以上三者。任何反向依赖即结构缺陷。

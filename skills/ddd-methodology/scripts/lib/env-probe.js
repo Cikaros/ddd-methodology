@@ -2,7 +2,7 @@
  * 目标：为环境探测提供无副作用的核心——把「逐命令的探测结果清单」归一为工具事实，再由工具事实按优先级推导各语言的可用命令形态与测试框架事实；
  *   记录结构为 probedAt、tools、languages、frameworks 四键（见 DESIGN-environment.md 第三节与第十节），供 scripts/env-probe.js 装配落盘，并供单测直接调用；
  *   tools 每项七键，其中 source 为四级解析所得来源级别（见同目录 env-resolve.js），管理器三键、命令组装与候选选择另由同目录 env-command.js 承接。
- * 范围：四类工具清单常量、外部测试框架命令清单与内建框架表、版本查询参数表、语言形态优先级表、版本串抽取原语与四级解析的调用，以及 probeCommand、probeAll、buildTools、deriveLanguages、deriveFrameworks、buildEnvRecord 六个函数。
+ * 范围：四类工具清单常量、外部测试框架命令清单与内建框架表、版本查询参数表、语言形态优先级表、版本串抽取原语与四级解析的调用，以及 probeCommand、probeAll、buildTools、deriveLanguages、deriveFrameworks、buildEnvRecord、appendGitignoreExclusion 七个函数。
  * 不包含：进程调用与文件读写——由 scripts/env-probe.js 注入 isFile、listDir 与 runVersion 三类副作用原语；可执行文件的位置表与四级解析见 lib/env-resolve.js；版本管理器与命令组装见 lib/env-command.js；亦不含记录落盘、目录遍历与命令行入口。不引入第三方依赖。
  * 边界：探测只查本机文件系统与命令输出，不访问网络；某项缺失不报缺陷，只记 available 为 false。
  *   不可用有两态，须可区分：其一四级均不命中，path 为空；其二路径存在但该处不可执行（取不到版本，或经 pwsh 承载者模块不在），path 非空。
@@ -158,6 +158,25 @@ function buildEnvRecord({ probedAt, tools, languages, frameworks, required }) {
   return record;
 }
 
+// 排除规则说明行：随机器而异的记录纳入版本控制会让同仓库不同机器互相覆盖
+const GITIGNORE_NOTE = "# 环境记录随机器而异，纳入版本控制会让同仓库不同机器互相覆盖";
+
+// .gitignore 追加（纯函数）：文本已含精确路径或其斜杠前缀规则行时回 null，否则回追加后的完整文本；
+// 规则行判据为非注释行去首尾空白后等于 relPath 或 /relPath，注释与空行跳过；
+// 追加内容为说明注释加规则各一行，与原内容以换行分隔，原内容末尾无换行时先补换行，空文本直接由注释起首
+function appendGitignoreExclusion(text, relPath) {
+  const source = String(text == null ? "" : text);
+  const target = String(relPath);
+  const rules = [target, `/${target}`];
+  for (const raw of source.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    if (rules.includes(line)) return null;
+  }
+  const lead = source && !/\n$/.test(source) ? "\n" : "";
+  return `${source}${lead}${GITIGNORE_NOTE}\n${target}\n`;
+}
+
 module.exports = {
   TOOL_GROUPS,
   ALL_COMMANDS,
@@ -174,4 +193,5 @@ module.exports = {
   deriveLanguages,
   deriveFrameworks,
   buildEnvRecord,
+  appendGitignoreExclusion,
 };

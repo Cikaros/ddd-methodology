@@ -6,7 +6,7 @@
 
 本项目做什么，语言与运行时、框架、构建与测试工具及版本。
 
-环境指针：工具清单与各语言可用命令形态以机读件 `docs/.ddd-env.json` 为准，本节只写摘要与指针，不在正文另列工具清单，以免两处漂移；该件由 `/ddd-init` 经 `node skills/ddd-methodology/scripts/env-probe.js <项目根绝对路径>` 探测生成，随机器而异，不纳入版本控制。该件记录结构以 `skills/ddd-methodology/references/spec-govern.md` 的环境记录键集声明为准；逐工具行另记版本管理器及其可用版本清单，并记当前激活版本。本项目所需工具版本在此节以文本声明；所需版本可另写入该件的 `required` 字段，两者同时存在时以机读件为准；未声明时不拦，只按激活版本执行，命令按两级解析组装（先版本前缀，再与环境形态拼合），切换只以逐命令形态表达。
+环境指针：工具清单与各语言可用命令形态以机读件 `docs/.ddd-env.json` 为准，本节只写摘要与指针，不在正文另列工具清单，以免两处漂移；该件由 `/ddd-init` 经 `node skills/ddd-methodology/scripts/env-probe.js <项目根绝对路径>` 探测生成，随机器而异，不纳入版本控制。该件记录结构以 `skills/ddd-methodology/references/spec-govern.md` 的环境记录键集声明为准；逐工具行另记版本管理器及其可用版本清单，并记当前激活版本。本项目所需工具版本在此节以文本声明；所需版本可另写入该件的 `required` 字段，两者同时存在时以机读件为准；未声明时不拦，只按激活版本执行，命令按两级解析组装（先版本前缀，再与环境形态拼合），切换只以逐命令形态表达。测试与覆盖率命令经 `node skills/ddd-methodology/scripts/env-command.js <项目根绝对路径> <语言名> <test|coverage>` 组装，不得手工拼接。
 
 ## 目录结构与依赖方向
 
