@@ -16,6 +16,8 @@ const DEBT_BOOK_REL = "docs/debts.json";
 const DEBT_HISTORY_REL = "docs/debt-history.json";
 // 环境记录：随机器而异，不纳入版本控制；探测写入、命令组装读取与校验读取均按此常量定位
 const ENV_RECORD_REL = "docs/.ddd-env.json";
+// 项目侧状态文件：编排脚本与交叉检查装配共用同一相对路径，避免多处各拼一份字面量
+const STATE_FILE_REL = "docs/.ddd-state.json";
 // 变更记录文件名：结构健康与跨文档引用的活文档扫描均按此名排除，避免其历史条目被当作当前文档校验
 const CHANGELOG_NAME = "CHANGELOG.md";
 
@@ -48,4 +50,4 @@ const artifactReadPath = (root, rel) => {
 };
 const artifactWritePath = (root, rel) => resolveRel(root, artifactWriteRel(root, rel));
 
-module.exports = { HEALTH_REL, METRICS_REL, DEBT_BOOK_REL, DEBT_HISTORY_REL, ENV_RECORD_REL, CHANGELOG_NAME, artifactCandidates, artifactReadPath, artifactWritePath, artifactWriteRel };
+module.exports = { HEALTH_REL, METRICS_REL, DEBT_BOOK_REL, DEBT_HISTORY_REL, ENV_RECORD_REL, STATE_FILE_REL, CHANGELOG_NAME, artifactCandidates, artifactReadPath, artifactWritePath, artifactWriteRel };

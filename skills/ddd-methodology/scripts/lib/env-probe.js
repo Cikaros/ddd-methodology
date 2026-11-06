@@ -178,11 +178,8 @@ function appendGitignoreExclusion(text, relPath) {
 }
 
 module.exports = {
-  TOOL_GROUPS,
-  ALL_COMMANDS,
   DEFAULT_VERSION_ARGS,
   VERSION_ARGS,
-  PWSH_HOSTED,
   LANGUAGE_FORMS,
   parseVersionOutput,
   probeCommand,

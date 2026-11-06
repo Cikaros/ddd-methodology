@@ -2,6 +2,17 @@
 
 本文件记录 pi package 形态的版本变更，版本号与仓库根 `package.json` 的 `version` 对应，采用三段式语义化版本；本包经 `pi install` 安装，例如 `pi install git:github.com/Cikaros/ddd-methodology`。方法论规范版本 v1.0 至 v2.21 的演进史已归档至 `docs/internal/history/spec-changelog.md`，属内部档案，不作为公开内容。
 
+## 0.8.12 - 2026-11-06
+
+本轮为「反复修补同一处」根因的结构性对策落地，两处：给「公开面大于消费面」补机械承接，给「结构性问题」补登记落点。
+
+- **新增**：零引用值导出校验 `C38`，实现外置为 `lib/ref-exports.js`，扫描脚本共享层 `skills/ddd-methodology/scripts/lib/` 的 `.js`（排除 `.test.js`）与扩展共享层 `extensions/lib/` 的 `.ts`（排除 `.test.ts`），JS 取 `module.exports` 对象的键、TS 取 `export const`、`export function` 与 `export let`；判据为值导出须被**导入其定义模块的文件**按名引用，两路取导入关系并集，即相对说明符解析命中的文件与以字符串字面量点名该模块文件名的文件，后者供扩展侧经 `createRequire` 按绝对路径装载的消费方入判。零消费即报漂移并逐项给出模块相对路径与符号名；导出形态无法识别时报「导出形态未识别」而不静默跳过；TS 的 `export type` 与 `export interface` 属类型面不入判据；唯一豁免面为注册表动态装载的 `contracts` 符号。单测 `lib/ref-exports.test.js` 覆盖七态：真实导入即通过、仅文本同名而无导入即报、JS 形态未识别即报、注释先提及 `module.exports` 仍能正确定位、`contracts` 豁免、TS 类型导出不入判据、TS 未支持形态即报。
+- **变更**：给「结构性问题」补登记落点。债务模板 `templates-debts.md` 的骨架增可选顶层 `structural` 数组示例，顶层字段表增一行，说明其记根因分类、判定版本、牵涉条目与对策，以及清除条件为该根因不再复发，登记规则来自「同一根因分类连续两版登记为未清即判结构性问题」。`debt-check.js` 新增常量 `OPTIONAL_TOP`，并校验 `structural` 存在时须为数组、每项含 `rootCause`、`since`、`entries` 与 `action` 四键，`entries` 元素须在 `debts` 中存在；`lib/ref-debt-fields.js` 的 C14 顶层集合比对改为必填顶层字段加条目数组字段加可选顶层字段，与模板顶层字段表比对；`structural` 字段名在常量处单次声明，校验体不得再写字面量。**触发判定由人工改为机械**：`debt-check.js` 经 `lib/debt-history.js` 的上一版本快照，若某根因分类在上一版本与本次均有未清项而 `structural` 未登记该根因，即报缺口；无上一版本快照时跳过不报。
+- **修复**：按 `C38` 实测清单撤下共享层零引用值导出十九项——脚本侧十四项即 `cross-check.js` 的 `loadCheckItems`、`nodeItems`、`statusFile`，`env-probe.js` 的 `TOOL_GROUPS`、`ALL_COMMANDS`、`PWSH_HOSTED`，`freeze.js` 的 `FREEZE_NAME`、`isWellFormedAnchor`、`freezeRel`，`matrix.js` 的 `enumerateSkills`、`LANGUAGE_TOKENS`、`RESIDENT_SKILL`，`ref-registry.js` 的 `CONTRACT_KEYS` 与 `spec-doc.js` 的 `stripHeadingNumber`，扩展侧五项即 `injection.ts` 的 `LANGUAGES`、`toSkillNames`、`loadMatrixText`、`readStateText`、`readArchitectureText`；十九项均改作模块内实现；收口时判据收紧后又报出 `cross-check.js` 的五项零消费方导出，即 `emit`、`isMethodologyRepo`、`methodologyReason`、`CODE_EXT` 与 `PACKAGE_ROOT`，一并撤下。两批共二十四项，`C38` 复检零漂移。**清偿 D-047**。
+- **变更**：债务登记簿 `docs/internal/debts.json` 新增顶层 `structural` 数组登记本轮结构性问题，一项记根因分类「反复修补同一处」、判定版本 `v0.8.12`、牵涉条目 D-046 与 D-047 及本轮对策；`currentVersion` 同步为 `v0.8.12`。
+- **变更**：`package.json` 版本同步为 `0.8.12`；收敛度基线 `repoItems.files` 由一百九十一更新为一百九十三；`STRUCTURE.md` 的 lib 明细补 `ref-exports.js` 与 `ref-exports.test.js` 两项；`ref-check.js` 头部域清单补导出面指针；项目侧状态文件路径收敛为 `lib/paths.js` 的 `STATE_FILE_REL` 唯一常量，`lib/cross-check.js` 改按名引用（两份编排脚本在宿主 workflow 沙箱内执行，无模块系统，仍就地声明）。项目级指令文件的 `ddd_` 工具计数由十一更正为十二。
+- **变更**：全仓单测由二百零一例增至二百零八例。脚本侧 `node --test` 由一百四十二例增至一百四十九例，增量为 `ref-exports.test.js` 七例；扩展侧 `bun test` 五十九例不变。
+
 ## 0.8.11 - 2026-11-06
 
 本轮为自维护通道 C 的五笔债务清偿，落在环境命令组装的声明面与导出面、超期判据与状态解析的单源、治理扩展的减重与自测链的写入面隔离四处。

@@ -3,7 +3,7 @@
  *   使五个脚本各自只承载检查逻辑，不重复清单解析与输出格式。
  * 范围：清单读取（skills/ddd-methodology/assets/check-items.json）、按节点键取检查项、缺口项构造、
  *   报告装配（末行机读结论 pass 或 gap，问题清单含定位与期望值）、不适用出口、输出字节上限回撤；
- *   另含目标项目产物定位与状态文件、阶段键的读取原语，供各脚本共用。
+ *   另含目标项目产物定位与状态文件、阶段键的读取原语，供五个交叉检查脚本共用。
  * 不包含：具体检查语义（各脚本）、命令行入口。不引入第三方依赖。
  * 机读结论：无缺口输出 `RESULT: pass`，存在缺口输出 `RESULT: gap`；对象不存在时报不适用，退出码零。
  * 依据：DESIGN-crosscheck.md 第三、四节与 DESIGN-governance.md 第七节（不适用出口）。
@@ -15,6 +15,7 @@ const { readFileText } = require("./text.js");
 const { capLines } = require("./truncate.js");
 const { isMethodologyRepo, methodologyReason, NOT_APPLICABLE_TAIL } = require("./repo-scope.js");
 const { absoluteDesignDir } = require("../design-root.js");
+const { STATE_FILE_REL } = require("./paths.js");
 
 // 包根：本模块位于 skills/ddd-methodology/scripts/lib/，上溯两级即技能目录，清单落在其 assets/ 下
 const PACKAGE_ROOT = path.resolve(__dirname, "..", "..");
@@ -71,7 +72,7 @@ function emitNotApplicable(nodeKey, title, reason) {
 
 // 目标项目定位：状态文件、设计树根、阶段键全序（权威源为方法论主技能第一节的通道表，由 inject 矩阵键序给出顺）
 function statusFile(root) {
-  return path.join(root, "docs", ".ddd-state.json");
+  return path.join(root, ...STATE_FILE_REL.split("/"));
 }
 function readStatus(root) {
   const file = statusFile(root);
@@ -178,22 +179,14 @@ function runCrossCheck({ nodeKey, title, root, checks }) {
 }
 
 module.exports = {
-  loadCheckItems,
-  nodeItems,
   finding,
-  emit,
   emitNotApplicable,
   runCrossCheck,
-  isMethodologyRepo,
-  methodologyReason,
   // 目标项目原语
-  statusFile,
   readStatus,
   designDir,
   nodeUniverse,
   designDocs,
   sourceFiles,
   acIds,
-  CODE_EXT,
-  PACKAGE_ROOT,
 };

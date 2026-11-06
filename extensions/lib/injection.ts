@@ -39,7 +39,7 @@ export type MatrixRow = { constraint?: unknown; language?: unknown; tool?: unkno
 export type Matrix = Record<string, MatrixRow>;
 
 // 六种语言与 DESIGN-skills.md 第二节同集；name 为归一语言名，skill 为语言技能名，extensions 为源文件扩展名
-export const LANGUAGES: ReadonlyArray<{ name: string; skill: string; extensions: readonly string[] }> = [
+const LANGUAGES: ReadonlyArray<{ name: string; skill: string; extensions: readonly string[] }> = [
 	{ name: "python", skill: "lang-python", extensions: ["py"] },
 	{ name: "java", skill: "lang-java", extensions: ["java"] },
 	{ name: "javascript", skill: "lang-javascript", extensions: ["js", "jsx", "mjs", "cjs"] },
@@ -71,7 +71,7 @@ function skillOfLanguage(name: string): string | null {
 }
 
 // 维度取值归一为技能名数组：非数组或非字符串项一律剔除，避免矩阵形状异常导致注入污染
-export function toSkillNames(value: unknown): string[] {
+function toSkillNames(value: unknown): string[] {
 	if (!Array.isArray(value)) return [];
 	return value
 		.filter((item): item is string => typeof item === "string" && item.trim() !== "")
@@ -212,15 +212,15 @@ export function buildTaskGuidance(node: string, skills: string[]): string | null
 
 // ---- 读盘落点：与纯逻辑同处，避免两扩展各拼一次路径 ----
 
-export function loadMatrixText(): string | null {
+function loadMatrixText(): string | null {
 	return readText(MATRIX_PATH);
 }
 
-export function readStateText(cwd: string): string | null {
+function readStateText(cwd: string): string | null {
 	return typeof cwd === "string" && cwd !== "" ? readText(join(cwd, STATE_FILE_REL)) : null;
 }
 
-export function readArchitectureText(cwd: string): string | null {
+function readArchitectureText(cwd: string): string | null {
 	return typeof cwd === "string" && cwd !== "" ? readText(join(cwd, ARCHITECTURE_REL)) : null;
 }
 

@@ -94,4 +94,4 @@ function createSpecReader(root) {
   return { docs, headingSources, headingSet, findSection, firstRel, missing, sectionDrift };
 }
 
-module.exports = { createSpecReader, relPath, trimHeadingNumber, stripHeadingNumber, sectionInText, SPEC_INDEX_REL };
+module.exports = { createSpecReader, relPath, trimHeadingNumber, sectionInText, SPEC_INDEX_REL };

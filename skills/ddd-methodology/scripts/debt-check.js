@@ -4,7 +4,7 @@
  * 范围：下列机械可判定事项——docs/debts.json 存在且 JSON 合法；顶层含 currentVersion、maxOpen、defaultDueSpan 与 debts 数组；
  *   id 在仓库内唯一；每条含 id、desc、registeredAt、owner、status、reason、rootCause、recurrence 且 owner 具名非空；registeredAt 形如 v主.次[.补丁]；
  *   rootCause 取根因分类之一；recurrence 含非负整数 count 与最近一次复发的版本 lastVersion，count 为零时 lastVersion 须为 null，否则形如 v主.次[.补丁]；
- *   dueBy 对未清项条件必填、对已清项可省；省略时按 registeredAt 加 defaultDueSpan 个补丁步推导应清版本，且结果须严格晚于 currentVersion，不满足时直接取 currentVersion 加一个补丁步；给出时须形如 v主.次[.补丁]；
+ *   dueBy 对未清项条件必填、对已清项可省；省略时按 registeredAt 加 defaultDueSpan 个补丁步推导应清版本，且结果须严格晚于 currentVersion，不满足时直接取 currentVersion 加一个补丁步；给出时须形如 v主.次[.补丁]；structural 为可选顶层数组，存在时每项须为对象且含 rootCause（取根因分类之一）、since（形如 v主.次[.补丁]）、entries（非空字符串数组，元素须在 debts 中存在）与 action（非空字符串）；
  *   status 仅取 open 或 closed；status 为 open 的条目不省略 dueBy；未清项数不超 maxOpen；每个未清项的应清版本不早于 currentVersion。
  *   并在登记簿合法且当前版本可解析时按当前版本维护债务历史快照（落点由共享层按内部区存在性择址）、以独立段落输出根因复发；该段落不改变末行结论与退出码。
  * 不包含：债务是否真被清偿、desc 与 reason 的合理性、连续两轮超期后的用户升级裁决，交由审计代理与根会话判定。
@@ -27,7 +27,7 @@ const { DEFAULT_LIMIT_BYTES, capLines } = require("./lib/truncate.js");
 // 版本标识的解析、比较、应清版本推导与格式化取共享层，与 metrics-report 共用，避免第三处实现
 const { parseVersion, isOverdue, deriveDue, formatVersion } = require("./lib/version.js");
 // 债务历史快照与根因复发检测取共享层，本脚本只负责按登记簿构建摘要并落盘、输出段落
-const { readHistory, summarize, upsertSnapshot, capHistory, saveHistory, detectRecurrence } = require("./lib/debt-history.js");
+const { readHistory, summarize, upsertSnapshot, capHistory, saveHistory, detectRecurrence, previousSnapshot } = require("./lib/debt-history.js");
 // 产物路径取共享层单一常量，登记簿路径不再复写字面量
 const { DEBT_BOOK_REL, artifactReadPath } = require("./lib/paths.js");
 
@@ -39,6 +39,10 @@ const debtsPath = artifactReadPath(root, DEBTS_REL);
 const REQUIRED_TOP = ["currentVersion", "maxOpen", "defaultDueSpan"];
 // 条目数组字段单列：其齐备性另须数组形态判定，故不与三标量字段混列
 const ENTRY_ARRAY_FIELD = "debts";
+// 可选顶层字段：structural 为结构性问题登记面，缺省不报缺口，存在时另按元素判定；本文件不直接读取，由 ref-check 的 C14 以文本形态抽取比对，删改须同步该判据
+const OPTIONAL_TOP = ["structural"];
+// 结构性问题登记面字段名：取可选顶层字段声明处，校验体内不得再写该字面量，改名只改一处
+const STRUCTURAL_TOP = OPTIONAL_TOP[0];
 // dueBy 对未清项条件必填、对已清项可省；省略时由校验脚本按 registeredAt 加 defaultDueSpan 个补丁步推导，故不入必填清单而列可省清单
 const REQUIRED_ENTRY = ["id", "desc", "registeredAt", "owner", "status", "reason", "rootCause", "recurrence"];
 const OPTIONAL_ENTRY = ["dueBy"]; // 本文件不直接读取，由 ref-check 的 C14 以文本形态抽取比对，删改须同步该判据
@@ -83,6 +87,26 @@ function check() {
   }
 
   const debts = Array.isArray(data[ENTRY_ARRAY_FIELD]) ? data[ENTRY_ARRAY_FIELD] : [];
+  // 结构性问题：structural 为可选顶层字段，存在时须为数组，每项为对象且含 rootCause、since、entries 与 action 四键，不合即报缺口
+  if (data[STRUCTURAL_TOP] !== undefined) {
+    if (!Array.isArray(data[STRUCTURAL_TOP])) {
+      reasons.push(`${DEBTS_REL} ${STRUCTURAL_TOP} 非法（须为数组）：${JSON.stringify(data[STRUCTURAL_TOP])}`);
+    } else {
+      const debtIds = new Set(debts.map((entry) => entry && entry.id).filter((id) => !isBlank(id)));
+      data[STRUCTURAL_TOP].forEach((item, index) => {
+        const label = `${STRUCTURAL_TOP} 第 ${index + 1} 项`;
+        if (!item || typeof item !== "object" || Array.isArray(item)) { reasons.push(`${DEBTS_REL} ${label} 不是对象`); return; }
+        if (!ROOT_CAUSES.includes(item.rootCause)) reasons.push(`${DEBTS_REL} ${label} rootCause 非法（须取根因分类之一）：${JSON.stringify(item.rootCause)}`);
+        if (parseVersion(item.since) === null) reasons.push(`${DEBTS_REL} ${label} since 非法（须形如 v主.次[.补丁]）：${JSON.stringify(item.since)}`);
+        if (!Array.isArray(item.entries) || item.entries.length === 0 || item.entries.some((id) => typeof id !== "string" || isBlank(id))) {
+          reasons.push(`${DEBTS_REL} ${label} entries 非法（须为非空字符串数组）：${JSON.stringify(item.entries)}`);
+        } else {
+          for (const id of item.entries) if (!debtIds.has(id)) reasons.push(`${DEBTS_REL} ${label} entries 引用的编号不在 debts 中：${JSON.stringify(id)}`);
+        }
+        if (typeof item.action !== "string" || isBlank(item.action)) reasons.push(`${DEBTS_REL} ${label} action 非法（须为非空字符串）：${JSON.stringify(item.action)}`);
+      });
+    }
+  }
   // id 仓库内唯一：同名 id 出现两次及以上即报缺口
   const idCounts = new Map();
   for (const entry of debts) {
@@ -150,6 +174,22 @@ function check() {
       reasons.push(`${DEBTS_REL} ${label} 超期：dueBy ${shown} 早于 currentVersion ${data.currentVersion}`);
     }
   });
+
+  // 结构性问题的触发：同一根因分类连续两版存在未清项而 structural 未登记该根因，即判该根因未被真正处理，报缺口；无上一版本快照时跳过不报
+  {
+    const history = readHistory(root);
+    const prev = previousSnapshot(history, data.currentVersion);
+    const declared = new Set((Array.isArray(data[STRUCTURAL_TOP]) ? data[STRUCTURAL_TOP] : []).map((item) => item && item.rootCause).filter(Boolean));
+    if (prev) {
+      const prevOpenRoots = new Set((prev.entries || []).filter((item) => item && item.status === "open").map((item) => item.rootCause));
+      const nowOpenRoots = new Set(debts.filter((entry) => entry && entry.status === "open").map((entry) => entry.rootCause));
+      for (const rootCause of nowOpenRoots) {
+        if (prevOpenRoots.has(rootCause) && !declared.has(rootCause)) {
+          reasons.push(`${DEBTS_REL} 根因分类 ${rootCause} 连续两版存在未清项而 ${STRUCTURAL_TOP} 未登记该根因`);
+        }
+      }
+    }
+  }
 
   if (maxOpen !== null && openCount > maxOpen) {
     reasons.push(`${DEBTS_REL} 未清项 ${openCount} 项，超过 maxOpen ${maxOpen}`);

@@ -93,4 +93,4 @@ function detectRecurrence(history, currentVersion, summaries) {
   return found;
 }
 
-module.exports = { readHistory, summarize, upsertSnapshot, capHistory, saveHistory, detectRecurrence };
+module.exports = { readHistory, summarize, upsertSnapshot, capHistory, saveHistory, detectRecurrence, previousSnapshot };

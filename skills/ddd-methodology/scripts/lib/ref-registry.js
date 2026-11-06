@@ -165,4 +165,4 @@ const CONTRACTS = [
   },
 ];
 
-module.exports = { loadRegistry, contracts: CONTRACTS, CONTRACT_KEYS, RETIRED_IDS };
+module.exports = { loadRegistry, contracts: CONTRACTS, RETIRED_IDS };

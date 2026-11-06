@@ -23,6 +23,14 @@
       "rootCause": "机械校验有盲区",
       "recurrence": { "count": 0, "lastVersion": null }
     }
+  ],
+  "structural": [
+    {
+      "rootCause": "反复修补同一处",
+      "since": "v2.11",
+      "entries": ["D-001"],
+      "action": "该根因的对策，例如补机械校验或收敛单一权威"
+    }
   ]
 }
 ```
@@ -37,6 +45,7 @@
 | maxOpen | 未清项上限 | 固定默认值十项，未清项数不得超过该字面值；「约三倍」仅说明其由来，非计算规则或校验公式 |
 | defaultDueSpan | 默认时限跨度 | 未给 dueBy 时取登记版本加此补丁步数，默认 1 个补丁步 |
 | debts | 债务条目数组 | 元素字段见下表 |
+| structural | 结构性问题数组 | 可选；每项四键，记根因分类 rootCause、判定版本 since、牵涉条目 entries 与对策 action，entries 元素须为 debts 中已存在的编号；清除条件为该根因不再复发；登记规则来自「同一根因分类连续两版登记为未清即判结构性问题」，故 since 取判定当轮的版本 |
 
 条目字段（`debts` 数组元素）：
 

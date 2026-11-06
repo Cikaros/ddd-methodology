@@ -1,7 +1,7 @@
 /**
  * 目标：把 ref-check 中「债务登记簿字段清单」这一域的校验外置为单一模块，检出债务模板与 debt-check 常量两处的字段集合漂移。
- * 范围：C14 登记簿字段集合一致性——顶层字段集合、条目字段集合与根因分类集合两方互比，债务模板 `templates-debts.md` 的
- *   「字段说明」节为源（字段权威在本文件），debt-check 常量为受控副本；另比根因字段表行的类别数声明与根因集合大小，集合扩员而单元格漏改即报。
+ * 范围：C14 登记簿字段集合一致性——顶层字段集合、条目字段集合与根因分类集合两方互比，顶层字段集合由必填顶层字段、条目数组字段与可选顶层字段三者构成，
+ *   债务模板 `templates-debts.md` 的「字段说明」节为源（字段权威在本文件），debt-check 常量为受控副本；另比根因字段表行的类别数声明与根因集合大小，集合扩员而单元格漏改即报。
  * 不包含：引用形态（见 ref-refs.js）、常量集合（见 ref-constants.js）、冻结短语（见 ref-phrases.js）、阶段键（见 ref-stages.js）、
  *   规范读取面（见 spec-doc.js）、命令行入口。不引入第三方依赖。
  */
@@ -100,16 +100,17 @@ function createDebtFieldChecks(env) {
     };
   }
 
-  // 脚本副本：必填顶层字段加条目数组字段为顶层集合，必填与可省条目字段合并为条目集合，根因分类为独立集合
+  // 脚本副本：必填顶层字段、条目数组字段与可选顶层字段合并为顶层集合，必填与可省条目字段合并为条目集合，根因分类为独立集合
   function readScriptFields() {
     const text = readScript();
     const requiredTop = arrayLiteral(text, "REQUIRED_TOP");
+    const optionalTop = arrayLiteral(text, "OPTIONAL_TOP");
     const requiredEntry = arrayLiteral(text, "REQUIRED_ENTRY");
     const optionalEntry = arrayLiteral(text, "OPTIONAL_ENTRY");
     const rootCauses = arrayLiteral(text, "ROOT_CAUSES");
     const entryArrayField = stringLiteral(text, "ENTRY_ARRAY_FIELD");
     return {
-      top: requiredTop && entryArrayField ? [...requiredTop, entryArrayField] : null,
+      top: requiredTop && entryArrayField && optionalTop ? [...requiredTop, entryArrayField, ...optionalTop] : null,
       entry: requiredEntry && optionalEntry ? [...requiredEntry, ...optionalEntry] : null,
       root: rootCauses,
     };

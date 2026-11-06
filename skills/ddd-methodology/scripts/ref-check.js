@@ -6,7 +6,7 @@
  *   默认只读不落盘；C19 的收敛度基线在缺失时首次生成。
  * 装配四步：装载注册表（见 lib/ref-registry.js 的 loadRegistry）、校验契约完整性（由 C31 承接）、按 id 数字序排序、逐个执行并汇总；
  *   本脚本只做这四步与输出，不掌握任何校验项的判据内容。
- * 校验实现按域外置于 ./lib/：规范读取面见 spec-doc.js，引用形态见 ref-refs.js，常量集合见 ref-constants.js，
+ * 校验实现按域外置于 ./lib/：规范读取面见 spec-doc.js，引用形态见 ref-refs.js，常量集合见 ref-constants.js，导出面见 ref-exports.js，
  *   阶段键见 ref-stages.js，冻结短语见 ref-phrases.js，登记簿字段集合见 ref-debt-fields.js，校验项映射见 ref-coverage.js，
  *   工作区行尾见 ref-line-endings.js，结构树与安装内容明细、命令入口清单与模板章节引用见 ref-structure.js，
  *   提示模板集与基线键见 ref-inventory.js，项目级代理不可迭代面见 ref-agent.js，矩阵与技能清单一致性见 matrix.js（经 ref-external.js 包装），环境记录与命令模板见 ref-env.js，

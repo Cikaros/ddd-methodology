@@ -190,11 +190,8 @@ function interfaceFreezeFindings({ root, designRootRel, designFiles, relPath }) 
 
 module.exports = {
   CONTRACT_SECTION_RE,
-  FREEZE_NAME,
-  isWellFormedAnchor,
   extractContractSection,
   normalizeSection,
-  freezeRel,
   validateFreezeRecord,
   readFreeze,
   writeFreeze,

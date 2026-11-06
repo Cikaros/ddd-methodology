@@ -65,4 +65,4 @@ function checkMatrix(root) {
   return found;
 }
 
-module.exports = { checkMatrix, enumerateSkills, LANGUAGE_TOKENS, RESIDENT_SKILL, MATRIX_REL };
+module.exports = { checkMatrix, MATRIX_REL };
