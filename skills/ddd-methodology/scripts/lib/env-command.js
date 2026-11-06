@@ -1,10 +1,10 @@
 /**
  * 目标：为环境探测的多版本记录与命令组装提供无副作用核心——识别版本管理器、取可用版本清单、把工具事实扩为七键，并把命令模板按环境形态与所需版本两级解析为可执行命令（见 DESIGN-environment.md 第八节）；
  *   运行时提供者型管理器（如 uv 提供 python）另记其所提供语言的版本清单，与该管理器自身版本分属两处，不得混记。
- * 范围：版本管理器对照表、通用管理器表、运行时提供者表、语言到运行时行的映射，managerCandidates、detectManager、parseVersionList、managerFact、collectManagers、enrichTools、versionCheckDowngrades 七个多版本记录函数，以及 resolveLanguageManager、managedRow、versionAdjustedRunner、composeCommand、frameworkAvailable、runnerAvailable、candidateMatches、candidateRunner、missingFrameworks、buildFromCandidates、buildCommand 十一个命令组装函数。
+ * 范围：版本管理器对照表、通用管理器表、运行时提供者表、语言到运行时行的映射，managerCandidates、detectManager、parseVersionList、managerFact、collectManagers、enrichTools、versionCheckDowngrades 七个多版本记录函数，parseRequiredArgs、mergeRequired、declaredRequired 三个所需版本声明函数，以及 resolveLanguageManager、managedRow、versionAdjustedRunner、composeCommand、frameworkAvailable、runnerAvailable、candidateMatches、candidateRunner、missingFrameworks、buildFromCandidates、buildCommand 十一个命令组装函数。
  * 不包含：进程调用与文件读写——由 scripts/env-probe.js 注入 isFile、listDir 与 runManager 三类副作用原语；亦不含探测主链、记录落盘与命令行入口。复用同目录 env-resolve.js 的目录级解析原语，可执行文件的位置表与四级优先级不在本模块。不引入第三方依赖。
  * 边界：普通管理器列出命令失败只降级为单一版本文本，不报缺陷；运行时提供者清单不可得则留空，命令组装对所需版本的校验降级为不校验并登记降级，绝不回填管理器自身版本冒充清单；
- *   所需版本未声明时不加版本前缀，只按激活版本执行；不得为取版本改动全局激活状态，切换只以逐命令形态表达。
+ *   所需版本未声明时不加版本前缀，只按激活版本执行；入参未给所需版本时回退取记录中的 required，使命令组装与记录声明同源，本模块不保证仓库内有生产调用者；不得为取版本改动全局激活状态，切换只以逐命令形态表达。
  * 消费方：scripts/env-probe.js 的装配处与 lib/env-probe.test.js；语言形态优先级表的最终判据归语言技能，本版为缺省序。
  */
 
@@ -205,6 +205,46 @@ function composeCommand(template, runner) {
   return command;
 }
 
+// 所需版本参数解析（纯函数）：扫描 `--required <名>=<版本>` 与 `--required=<名>=<版本>` 两形态，回传 { entries, rest }；
+// rest 为去掉这些参数后的其余参数；`--required` 缺值、值缺 `=`、或名为空即抛错
+function parseRequiredArgs(argv) {
+  const args = Array.isArray(argv) ? argv : [];
+  const entries = {};
+  const rest = [];
+  for (let i = 0; i < args.length; i++) {
+    const token = String(args[i]);
+    let value;
+    if (token === "--required") {
+      if (i + 1 >= args.length) throw new Error("缺口：--required 缺值");
+      value = String(args[++i]);
+    } else if (token.startsWith("--required=")) {
+      value = token.slice("--required=".length);
+    } else {
+      rest.push(args[i]);
+      continue;
+    }
+    if (value === "") throw new Error("缺口：--required 缺值");
+    const eq = value.indexOf("=");
+    if (eq < 0) throw new Error(`缺口：--required 值缺 =：${value}`);
+    const name = value.slice(0, eq);
+    if (name === "") throw new Error("缺口：--required 名为空");
+    entries[name] = value.slice(eq + 1);
+  }
+  return { entries, rest };
+}
+
+// 所需版本合并（纯函数）：回传并入后的新对象，entries 同名键覆盖 base；两参缺省按空对象处理
+function mergeRequired(base, entries) {
+  return Object.assign({}, base || {}, entries || {});
+}
+
+// 记录中所需版本读取（纯函数）：回传 record.required[language]，无则 undefined
+function declaredRequired(record, language) {
+  const required = record && record.required;
+  if (!required || typeof required !== "object") return undefined;
+  return required[language];
+}
+
 // 框架可用性（纯函数）：记录中 frameworks 键下同名项须存在且 available；三态中的「未安装但可装」不得据此判为可用（设计册第十节其一）
 function frameworkAvailable(record, name) {
   const row = record.frameworks && record.frameworks[name];
@@ -245,23 +285,26 @@ function missingFrameworks(candidates, record) {
 }
 
 // 候选集组装（纯函数）：按优先级取首个命中候选，以候选运行器替换 {runner} 后经版本前缀拼合；
+// 入参 required 为空时回退取记录中的声明值，使记录里的 required 有代码消费方；
 // 无一命中即报缺口并指明缺哪类框架，绝不回落写死的默认框架（设计册第十节其三）
 function buildFromCandidates(candidates, language, required, record) {
+  const effectiveRequired = required || declaredRequired(record, language);
   const form = record && record.languages ? record.languages[language] : null;
   if (!form || !form.available || !form.runner) throw new Error(`缺口：语言 ${language} 无可用形态，无法组装命令`);
   const matched = candidates.find((candidate) => candidateMatches(candidate, record));
   if (!matched) throw new Error(`缺口：语言 ${language} 缺少可用的测试框架（${missingFrameworks(candidates, record)}）`);
-  const runner = versionAdjustedRunner(language, required, candidateRunner(matched, language, record), record);
+  const runner = versionAdjustedRunner(language, effectiveRequired, candidateRunner(matched, language, record), record);
   return composeCommand(matched.template, runner);
 }
 
 // 命令组装（纯函数，对外接口）：入参候选集或单件模板、语言与所需版本，出可执行命令；
-// 候选集走 buildFromCandidates，单件模板走旧路径——两级解析先版本前缀再与环境形态拼合；语言无可用形态、占位符残留均抛错
+// 入参 required 为空时回退取记录中的声明值；候选集走 buildFromCandidates，单件模板走旧路径——两级解析先版本前缀再与环境形态拼合；语言无可用形态、占位符残留均抛错
 function buildCommand({ template, candidates, language, required }, record) {
-  if (candidates) return buildFromCandidates(candidates, language, required, record);
+  const effectiveRequired = required || declaredRequired(record, language);
+  if (candidates) return buildFromCandidates(candidates, language, effectiveRequired, record);
   const form = record && record.languages ? record.languages[language] : null;
   if (!form || !form.available || !form.runner) throw new Error(`缺口：语言 ${language} 无可用形态，无法组装命令`);
-  const runner = versionAdjustedRunner(language, required, form.runner, record);
+  const runner = versionAdjustedRunner(language, effectiveRequired, form.runner, record);
   return composeCommand(template, runner);
 }
 
@@ -284,6 +327,9 @@ module.exports = {
   managedRow,
   versionAdjustedRunner,
   composeCommand,
+  parseRequiredArgs,
+  mergeRequired,
+  declaredRequired,
   frameworkAvailable,
   runnerAvailable,
   candidateMatches,

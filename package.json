@@ -1,6 +1,6 @@
 {
   "name": "ddd-methodology",
-  "version": "0.8.7",
+  "version": "0.8.8",
   "description": "分治式设计驱动开发方法论：为 pi 与 pi-subagents 提供技能、代理模板与运行时守卫",
   "license": "MIT",
   "keywords": ["pi-package", "ddd", "subagents", "methodology"],

@@ -150,10 +150,11 @@ function deriveFrameworks(tools, languages, results) {
   return frameworks;
 }
 
-// 记录装配（纯函数）：四键缺一不可，tools、languages、frameworks 由前几步的推导结果注入；required 仅在项目声明所需版本时并入
+// 记录装配（纯函数）：四键缺一不可，tools、languages、frameworks 由前几步的推导结果注入；
+// required 为可选第五键，仅在项目声明了非空所需版本时并入，空对象或缺省时该键不出现
 function buildEnvRecord({ probedAt, tools, languages, frameworks, required }) {
   const record = { probedAt, tools, languages, frameworks };
-  if (required) record.required = required;
+  if (required && typeof required === "object" && Object.keys(required).length) record.required = required;
   return record;
 }
 

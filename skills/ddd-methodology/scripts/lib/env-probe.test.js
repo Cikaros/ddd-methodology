@@ -5,7 +5,8 @@
  *   与命令组装（无所需版本、所需版本拼合、所需不在清单、占位符残留）三类新情形。
  * 范围：env-probe.js 的 buildTools、deriveLanguages、deriveFrameworks、buildEnvRecord 纯函数、parseVersionOutput 原语与 probeCommand 的注入驱动，
  *   以及 env-resolve.js 的 resolveExecutablePath 目录级原语（四级优先链的逐级命中与其来源级别由同目录 env-resolve.test.js 承接）；
- *   以及 env-command.js 的 parseVersionList、collectManagers、enrichTools、versionCheckDowngrades、buildCommand、composeCommand 的多版本与组装路径，候选集组装的命中、优先级、条件不成立、全部不成立报缺口四类。
+ *   以及 env-command.js 的 parseVersionList、collectManagers、enrichTools、versionCheckDowngrades、buildCommand、composeCommand 的多版本与组装路径，候选集组装的命中、优先级、条件不成立、全部不成立报缺口四类，
+ *   以及所需版本声明的 parseRequiredArgs 两形态与三类错误、mergeRequired 覆盖语义、declaredRequired 与 buildCommand 缺省取记录值。
  * 运行：node --test skills/ddd-methodology/scripts/lib/env-probe.test.js。
  * 不包含：进程调用与文件读写（由 scripts/env-probe.js 注入）、记录落盘、命令行入口装配。
  */
@@ -30,6 +31,9 @@ const {
   versionCheckDowngrades,
   buildCommand,
   composeCommand,
+  parseRequiredArgs,
+  mergeRequired,
+  declaredRequired,
 } = require("./env-command.js");
 
 // 夹具：由可用命令名集合造探测结果清单，路径、来源与可用性一律造为固定值，供纯函数消费
@@ -80,6 +84,23 @@ test("顺序无关：结果清单乱序不改工具事实与语言形态", () =>
 test("记录装配：四键齐全且键序为 probedAt、tools、languages、frameworks", () => {
   const record = buildEnvRecord({ probedAt: "2020-01-01T00:00:00.000Z", tools: {}, languages: {}, frameworks: {} });
   assert.deepStrictEqual(Object.keys(record), ["probedAt", "tools", "languages", "frameworks"]);
+});
+
+test("记录装配：required 仅在声明时并入，未声明不落该键", () => {
+  const base = { probedAt: "2020-01-01T00:00:00.000Z", tools: {}, languages: {}, frameworks: {} };
+  assert.ok(!("required" in buildEnvRecord(base)), "未声明时不得落 required 键");
+  const withRequired = buildEnvRecord({ ...base, required: { javascript: "22.23.3" } });
+  assert.deepStrictEqual(withRequired.required, { javascript: "22.23.3" });
+  assert.deepStrictEqual(Object.keys(withRequired), ["probedAt", "tools", "languages", "frameworks", "required"]);
+});
+
+test("记录装配：required 缺省与空对象两种入参下顶层恰为四键且无 required", () => {
+  const base = { probedAt: "2020-01-01T00:00:00.000Z", tools: {}, languages: {}, frameworks: {} };
+  for (const required of [undefined, {}]) {
+    const record = buildEnvRecord({ ...base, required });
+    assert.deepStrictEqual(Object.keys(record), ["probedAt", "tools", "languages", "frameworks"]);
+    assert.ok(!("required" in record), "缺省或空对象时不得落 required 键");
+  }
 });
 
 test("路径解析：按目录与扩展名组合命中首个存在的文件", () => {
@@ -213,6 +234,46 @@ test("命令组装：语言无可用形态时报缺口", () => {
 
 test("命令组装：模板残留未解析占位符即报错，不返回半成品", () => {
   assert.throws(() => composeCommand("{runner} -m pytest --cov={target}", "uv run python"), /残留未解析占位符/);
+});
+
+// ── 所需版本声明（设计册第八节其三、第九节其六） ──
+
+test("所需版本参数解析：空格与等号两形态均入 entries，rest 留下其余参数，同名后者覆盖前者", () => {
+  const spaced = parseRequiredArgs(["--required", "javascript=22.23.3", "/root"]);
+  assert.deepStrictEqual(spaced.entries, { javascript: "22.23.3" });
+  assert.deepStrictEqual(spaced.rest, ["/root"]);
+  const inline = parseRequiredArgs(["/root", "--required=python=3.11"]);
+  assert.deepStrictEqual(inline.entries, { python: "3.11" });
+  assert.deepStrictEqual(inline.rest, ["/root"]);
+  const repeated = parseRequiredArgs(["--required", "javascript=22.23.3", "--required", "javascript=18.20.8"]);
+  assert.deepStrictEqual(repeated.entries, { javascript: "18.20.8" });
+});
+
+test("所需版本参数解析：缺值、值缺等号、名为空三类均报错", () => {
+  assert.throws(() => parseRequiredArgs(["--required"]), /缺值/);
+  assert.throws(() => parseRequiredArgs(["--required="]), /缺值/);
+  assert.throws(() => parseRequiredArgs(["--required", "javascript"]), /缺 =/);
+  assert.throws(() => parseRequiredArgs(["--required", "=22.23.3"]), /名为空/);
+});
+
+test("所需版本合并：entries 同名键覆盖 base，两参缺省按空对象，不就地改基对象", () => {
+  assert.deepStrictEqual(mergeRequired({ javascript: "22.23.3", python: "3.11" }, { javascript: "18.20.8" }), { javascript: "18.20.8", python: "3.11" });
+  assert.deepStrictEqual(mergeRequired({ javascript: "22.23.3" }, {}), { javascript: "22.23.3" });
+  assert.deepStrictEqual(mergeRequired(undefined, undefined), {});
+  const base = { javascript: "22.23.3" };
+  mergeRequired(base, { python: "3.11" });
+  assert.deepStrictEqual(base, { javascript: "22.23.3" });
+});
+
+test("记录中所需版本读取：命中回值，无 required 或无该键回 undefined", () => {
+  assert.strictEqual(declaredRequired({ required: { javascript: "22.23.3" } }, "javascript"), "22.23.3");
+  assert.strictEqual(declaredRequired({ required: { javascript: "22.23.3" } }, "python"), undefined);
+  assert.strictEqual(declaredRequired({}, "javascript"), undefined);
+});
+
+test("命令组装：入参 required 缺省时取记录中的声明值", () => {
+  const record = { ...uvRecord(), required: { python: "3.11" } };
+  assert.strictEqual(buildCommand({ template: "{runner} -m pytest", language: "python" }, record), "uv run --python 3.11 -m pytest");
 });
 
 // 夹具：按「可执行文件 + 参数」取列出命令输出的上下文，供运行时提供者用例区分 `uv python list` 与 `uv --version`

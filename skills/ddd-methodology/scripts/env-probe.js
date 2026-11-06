@@ -1,8 +1,8 @@
 /**
  * 目标：探测本机工具链并落盘为 <项目根>/docs/.ddd-env.json，供后续节点按环境记录组装测试与覆盖率命令，替代写死的调用形态。
- * 范围：校验项目根入参、注入进程与文件两类副作用原语、调用 lib/env-probe.js 的纯函数装配四键记录（probedAt、tools、languages、frameworks；tools 每项七键：path、source 与可用性、版本，加管理器三键，其中 source 取四级优先链所得来源级别，见 DESIGN-environment.md 第八、十、十二节）、写出机读件并输出人读摘要（含提供者行、校验降级、来源分级与测试框架三态）。
- * 不包含：跨机合并既有记录（本机探测结果覆盖旧件，因记录须反映当前机器的工具链）、门禁接入、覆盖率基线、跨机比较。不引入第三方依赖。
- * 用法：node env-probe.js <项目根绝对路径>；只查本机 PATH 与命令输出，不访问网络。
+ * 范围：校验项目根入参、解析所需版本参数（命令行 `--required <语言名>=<版本>` 与旧件声明的 `required` 并入）、注入进程与文件两类副作用原语、调用 lib/env-probe.js 的纯函数装配记录（结构键集为 probedAt、tools、languages、frameworks 四键，项目声明所需版本时并入可选第五键 required；tools 每项七键：path、source 与可用性、版本，加管理器三键，其中 source 取四级优先链所得来源级别，见 DESIGN-environment.md 第八、十、十二节）、写出机读件并输出人读摘要（含提供者行、校验降级、来源分级、测试框架三态与已声明的所需版本）。
+ * 不包含：跨机合并既有记录（本机探测结果覆盖旧件，仅旧件已声明的 `required` 按并入规则保留，因记录须反映当前机器的工具链）、门禁接入、覆盖率基线、跨机比较。不引入第三方依赖。
+ * 用法：node env-probe.js <项目根绝对路径> [--required <语言名>=<版本>]...；只查本机 PATH 与命令输出，不访问网络。
  * 出口：恒 0，探测本身不因工具缺失失败；入参非法时 2。机读件是权威，stdout 摘要仅供人读。
  * 版本控制：该件随机器而异，同仓库不同机器会互相覆盖，故不纳入版本控制，由 .gitignore 排除，理由见 spec-govern 的状态相关节。
  */
@@ -11,7 +11,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const { DEFAULT_VERSION_ARGS, VERSION_ARGS, FRAMEWORK_COMMANDS, probeAll, buildTools, deriveLanguages, deriveFrameworks, buildEnvRecord } = require("./lib/env-probe.js");
-const { collectManagers, enrichTools, versionCheckDowngrades, PROVIDER_LANGUAGES } = require("./lib/env-command.js");
+const { collectManagers, enrichTools, versionCheckDowngrades, PROVIDER_LANGUAGES, parseRequiredArgs, mergeRequired } = require("./lib/env-command.js");
 const { SOURCE_LEVELS } = require("./lib/env-resolve.js");
 
 // 平台扩展名：Windows 先试 PATHEXT 各扩展名、再退无扩展名，使 .cmd/.exe 优先于同名的 POSIX 壳脚本；其余平台只按原样
@@ -60,7 +60,7 @@ function runProcess(exePath, args, timeout) {
 }
 
 // 探测并装配记录：把本机原语注入纯核心，先按四级优先链归一工具事实，再并入版本管理器事实，最后推语言形态，不含落盘
-function probeProject(root) {
+function probeProject(root, required) {
   const ctx = {
     root,
     pathDirs: envPathDirs(process.env),
@@ -76,7 +76,15 @@ function probeProject(root) {
   const tools = enrichTools(base, collectManagers(base, ctx));
   const languages = deriveLanguages(tools);
   const frameworks = deriveFrameworks(tools, languages, probeAll(ctx, FRAMEWORK_COMMANDS));
-  return buildEnvRecord({ probedAt: new Date().toISOString(), tools, languages, frameworks });
+  return buildEnvRecord({ probedAt: new Date().toISOString(), tools, languages, frameworks, required });
+}
+
+// 旧件所需版本读取：探测前读旧件并取其 required 作基，文件缺失或不可解析按空对象，不回退报错
+function readDeclaredRequired(root) {
+  let data;
+  try { data = JSON.parse(fs.readFileSync(path.join(root, "docs", ".ddd-env.json"), "utf8")); } catch (e) { return {}; }
+  const required = data && data.required;
+  return required && typeof required === "object" && !Array.isArray(required) ? required : {};
 }
 
 // 落盘：docs 目录不存在即创建，写入机读件，回传绝对路径
@@ -113,6 +121,8 @@ function summarize(record) {
   const frameworks = Object.entries(record.frameworks || {});
   const fwReady = frameworks.filter(([, value]) => value.available).map(([name, value]) => `${name}(${value.kind === "builtin" ? "内建" : "已装"})`);
   const fwMissing = frameworks.filter(([, value]) => !value.available).map(([name, value]) => `${name}(${value.kind === "builtin" ? "内建但运行器缺席" : "未安装"})`);
+  // 已声明所需版本：有声明才输出该行，无声明不输出
+  const required = Object.entries(record.required || {}).map(([language, version]) => `${language}=${version}`);
   return [
     `=== 环境探测：${record.probedAt} ===`,
     `工具可用 ${ready.length}/${names.length}：${ready.join("、") || "无"}`,
@@ -120,6 +130,7 @@ function summarize(record) {
     `工具不可用 ${missing.length}：${missing.join("、") || "无"}`,
     `版本管理器：${managed.join("；") || "无"}`,
     `运行时提供者：${providers.join("；") || "无"}`,
+    ...(required.length ? [`已声明所需版本：${required.join("、")}`] : []),
     ...(downgrades.length ? [`校验降级：${downgrades.join("；")}`] : []),
     `测试框架可用：${fwReady.join("、") || "无"}`,
     `测试框架缺失：${fwMissing.join("、") || "无"}`,
@@ -128,15 +139,18 @@ function summarize(record) {
   ].join("\n");
 }
 
-// 入口：校验入参为存在的绝对目录，探测、落盘并输出摘要；返回进程退出码
+// 入口：解析入参并校验项目根为存在的绝对目录，合并旧件与命令行声明的所需版本，探测、落盘并输出摘要；返回进程退出码
 function main(argv) {
-  const root = argv[0];
-  if (!root) { process.stderr.write("用法：node env-probe.js <项目根绝对路径>\n"); return 2; }
+  let parsedArgs;
+  try { parsedArgs = parseRequiredArgs(argv); } catch (error) { process.stderr.write(`${error.message}\n`); return 2; }
+  const root = parsedArgs.rest[0];
+  if (!root) { process.stderr.write("用法：node env-probe.js <项目根绝对路径> [--required <语言名>=<版本>]...\n"); return 2; }
   if (!path.isAbsolute(root)) { process.stderr.write(`项目根须为绝对路径：${root}\n`); return 2; }
   let stat;
   try { stat = fs.statSync(root); } catch (e) { stat = null; }
   if (!stat || !stat.isDirectory()) { process.stderr.write(`项目根不存在或非目录：${root}\n`); return 2; }
-  const record = probeProject(root);
+  const required = mergeRequired(readDeclaredRequired(root), parsedArgs.entries);
+  const record = probeProject(root, required);
   const file = writeRecord(root, record);
   process.stdout.write(`${summarize(record)}\n环境记录已写入 ${file}\n`);
   return 0;

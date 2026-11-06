@@ -40,7 +40,9 @@
 
 每个阶段完成后由该阶段代理或其后继写入者合并更新。并行段仅实现者写。JSON 损坏时中断续跑并交根会话，不得当作全新启动。
 
-环境记录 `<项目根>/docs/.ddd-env.json` 与状态文件同落 `docs/` 下，但性质不同：它由初始化 `/ddd-init` 经 `node skills/ddd-methodology/scripts/env-probe.js <项目根绝对路径>` 探测生成，落四类工具的路径、版本与可用性，以及由工具推导出的各语言可用命令形态，供命令组装读取，结构固定为 `probedAt`、`tools`、`languages` 三键。该件随机器而异，同一仓库在不同机器上探测结果不同，纳入版本控制会让不同机器互相覆盖并误导读命令组装者，故不纳入版本控制，由 `.gitignore` 排除；每台机器初始化或维护时重新探测覆盖。
+环境记录 `<项目根>/docs/.ddd-env.json` 与状态文件同落 `docs/` 下，但性质不同：它由初始化 `/ddd-init` 经 `node skills/ddd-methodology/scripts/env-probe.js <项目根绝对路径>` 探测生成，落四类工具的路径、版本与可用性，以及由工具推导出的各语言可用命令形态，供命令组装读取，其结构以下条环境记录键集声明为准。该件随机器而异，同一仓库在不同机器上探测结果不同，纳入版本控制会让不同机器互相覆盖并误导读命令组装者，故不纳入版本控制，由 `.gitignore` 排除；每台机器初始化或维护时重新探测覆盖。
+
+环境记录键集：顶层 `probedAt`、`tools`、`languages`、`frameworks`；逐工具 `path`、`source`、`version`、`available`、`manager`、`versions`、`active`。
 
 ## 17. 结构与契约的演进治理
 
