@@ -15,6 +15,7 @@
 | 判断型证据 | 项目术语 | 由指名代理按判据给出的门禁证据 | 不指脚本输出 | `skills/ddd-methodology/references/spec-gate.md` | 由指定角色判断后给出的结论 |
 | 内敛次序 | 自造词 | 准确、规则内敛、设计内敛、文件内敛、测试内敛、token 内敛的固定次序 | 不指代码风格偏好 | `skills/ddd-methodology/references/spec-design.md` | 先保证准确，再让规则与结构不随迭代发散，例如同一规则在两处并列定义即违反第二层 |
 | 接缝 | 项目术语 | 并行实现时按依赖约束图划分出的互斥工作边界 | 不指代码里的函数拆分 | `skills/ddd-methodology/references/spec-design.md` | 并行开发时各人负责的互不重叠的部分 |
+| 接口接缝 | 项目术语 | 模块接口所在之处，即可在不编辑该处的前提下改变行为的位置 | 不指上一条的并行工作边界 | `skills/spec-contract/SKILL.md` | 接口摆在哪，改了它就能换掉后面的一切 |
 | 粒度阈值 | 项目术语 | 代码文件 500 行、基础或核心模块 300 行、文档 200 行或 10 项契约 | 不指可自由调整的建议值 | `skills/ddd-methodology/scripts/code-health.js` | 单个文件与文档的规模上限 |
 | 收敛度 | 自造词 | 仓库文件数、文档标题数与跨文件规则重复不随迭代增长的度量 | 不指运行时性能 | `skills/ddd-methodology/scripts/lib/ref-convergence.js` | 项目规模不随迭代膨胀，例如新增文件须在结构树与收敛基线中登记 |
 | 缺陷四级路由 | 项目术语 | A、B、C、D 四级缺陷的定级与去向 | 不指缺陷严重度排序 | `skills/ddd-methodology/references/spec-gate.md` | 按缺陷性质决定谁来修 |
