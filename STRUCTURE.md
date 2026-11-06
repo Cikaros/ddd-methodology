@@ -8,6 +8,7 @@
 
 ```
 ddd-methodology/
+├── AGENTS.md  # 项目级指令文件，五节，逐字注入子代理常驻上下文
 ├── CHANGELOG.md  # 变更记录，按发布版本续写
 ├── GLOSSARY.md  # 术语表，本仓库术语唯一权威处
 ├── LICENSE  # 许可协议，MIT
@@ -150,7 +151,11 @@ ddd-methodology/
 ├── prompts/ddd-init.md  # 初始化入口，命令 /ddd-init
 ├── prompts/ddd-parser-install.md  # 解析器安装入口，命令 /ddd-parser-install
 ├── prompts/ddd-rebuild.md  # 存量重建入口，命令 /ddd-rebuild
-└── prompts/ddd-refactor.md  # 定向重构入口，命令 /ddd-refactor
+├── prompts/ddd-refactor.md  # 定向重构入口，命令 /ddd-refactor
+└── .pi/  # 项目本地配置
+    └── agents/  # 项目级代理定义，初始化落盘后归项目所有
+        ├── ddd-auditor.md  # 声明面审计者
+        └── ddd-doc-sync.md  # 文档同步者
 ```
 
 ## 安装内容

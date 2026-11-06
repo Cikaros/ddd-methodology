@@ -1,7 +1,7 @@
 {
   "repoItems": {
-    "files": 150,
-    "dirs": 41
+    "files": 152,
+    "dirs": 43
   },
   "docHeadings": {
     "agents/ddd-acceptance.md": 7,
@@ -15,6 +15,7 @@
     "agents/ddd-test-designer.md": 7,
     "agents/ddd-tester.md": 7,
     "extensions/rules/global-rules.md": 6,
+    "AGENTS.md": 6,
     "GLOSSARY.md": 1,
     "README.md": 8,
     "prompts/ddd-init.md": 0,
