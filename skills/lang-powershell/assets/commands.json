@@ -1,0 +1,17 @@
+{
+  "language": "powershell",
+  "test": [
+    {
+      "when": { "framework": "pester", "runner": "pwsh" },
+      "template": "{runner} -Command Invoke-Pester",
+      "note": "Pester 需外部安装（Install-Module Pester），Invoke-Pester 默认发现当前目录 *.Tests.ps1（pester.dev/docs/commands/Invoke-Pester；reference-runtimes.md 1.8）。PowerShell 无内建测试框架。"
+    }
+  ],
+  "coverage": [
+    {
+      "tool": "Pester",
+      "template": "{runner} -Configuration $config",
+      "note": "$config 由同目录 PesterConfig.ps1 构造（reference-test-coverage.md 2.4）。Pester 的 CoveragePercentTarget 为报告目标而非失败条件，属软判据；硬门禁由统一解析脚本读取其 Cobertura 兼容 XML 补齐。"
+    }
+  ]
+}

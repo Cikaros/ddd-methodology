@@ -2,8 +2,8 @@
  * 目标：为环境探测的无副作用核心补纯函数单元测试，覆盖可用、不可用、多形态取优先级、全缺失四类情形，并验证顺序无关；
  *   另覆盖多版本记录（管理器在位与不在位、版本清单为空）、运行时提供者（清单取自语言列出命令、清单为空时的降级与降级登记）
  *   与命令组装（无所需版本、所需版本拼合、所需不在清单、占位符残留）三类新情形。
- * 范围：env-probe.js 的 buildTools、deriveLanguages、buildEnvRecord 三纯函数，resolveExecutablePath、parseVersionOutput 两原语与 probeCommand 的注入驱动；
- *   以及 env-command.js 的 parseVersionList、collectManagers、enrichTools、versionCheckDowngrades、buildCommand、composeCommand 的多版本与组装路径。
+ * 范围：env-probe.js 的 buildTools、deriveLanguages、deriveFrameworks、buildEnvRecord 纯函数，resolveExecutablePath、parseVersionOutput 两原语与 probeCommand 的注入驱动；
+ *   以及 env-command.js 的 parseVersionList、collectManagers、enrichTools、versionCheckDowngrades、buildCommand、composeCommand 的多版本与组装路径，候选集组装的命中、优先级、条件不成立、全部不成立报缺口四类。
  * 运行：node --test skills/ddd-methodology/scripts/lib/env-probe.test.js。
  * 不包含：进程调用与文件读写（由 scripts/env-probe.js 注入）、记录落盘、命令行入口装配。
  */
@@ -18,6 +18,7 @@ const {
   probeCommand,
   buildTools,
   deriveLanguages,
+  deriveFrameworks,
   buildEnvRecord,
 } = require("./env-probe.js");
 const {
@@ -36,8 +37,8 @@ test("可用：解析到路径的工具记 available 为真，语言取到可用
   const tools = buildTools(resultsOf(["node", "tsc"]));
   assert.deepStrictEqual(tools.node, { path: "/usr/bin/node", version: "1.2.3", available: true });
   const languages = deriveLanguages(tools);
-  assert.deepStrictEqual(languages.javascript, { runner: "node", test: "node --test", available: true });
-  assert.deepStrictEqual(languages.typescript, { runner: "node", test: "node --test", available: true });
+  assert.deepStrictEqual(languages.javascript, { runner: "node", available: true });
+  assert.deepStrictEqual(languages.typescript, { runner: "node", available: true });
 });
 
 test("不可用：未解析到路径的工具记 available 为假且 path 与 version 为空", () => {
@@ -45,14 +46,14 @@ test("不可用：未解析到路径的工具记 available 为假且 path 与 ve
   assert.deepStrictEqual(tools.bun, { path: null, version: null, available: false });
   // 失去首选 uv，但次优先的 python3 与 pytest 均在，python 仍应为可用且落到次优先形态
   const languages = deriveLanguages(buildTools(resultsOf(["python3", "pytest"])));
-  assert.deepStrictEqual(languages.python, { runner: "python3", test: "pytest", available: true });
+  assert.deepStrictEqual(languages.python, { runner: "python3", available: true });
 });
 
 test("多形态取优先级：多候选同时就绪时取优先级最高者", () => {
   const python = deriveLanguages(buildTools(resultsOf(["uv", "python3", "pytest"]))).python;
-  assert.deepStrictEqual(python, { runner: "uv run python", test: "uv run pytest", available: true });
+  assert.deepStrictEqual(python, { runner: "uv run python", available: true });
   const js = deriveLanguages(buildTools(resultsOf(["bun", "node"]))).javascript;
-  assert.deepStrictEqual(js, { runner: "bun", test: "bun test", available: true });
+  assert.deepStrictEqual(js, { runner: "bun", available: true });
 });
 
 test("全缺失：无任何可用工具时全部语言记不可用", () => {
@@ -60,7 +61,7 @@ test("全缺失：无任何可用工具时全部语言记不可用", () => {
   assert.deepStrictEqual(tools, {});
   const languages = deriveLanguages(tools);
   for (const name of Object.keys(LANGUAGE_FORMS)) assert.strictEqual(languages[name].available, false);
-  assert.deepStrictEqual(languages.python, { runner: null, test: null, available: false });
+  assert.deepStrictEqual(languages.python, { runner: null, available: false });
 });
 
 test("顺序无关：结果清单乱序不改工具事实与语言形态", () => {
@@ -70,9 +71,9 @@ test("顺序无关：结果清单乱序不改工具事实与语言形态", () =>
   assert.deepStrictEqual(shuffled, ordered);
 });
 
-test("记录装配：三键齐全且键序为 probedAt、tools、languages", () => {
-  const record = buildEnvRecord({ probedAt: "2020-01-01T00:00:00.000Z", tools: {}, languages: {} });
-  assert.deepStrictEqual(Object.keys(record), ["probedAt", "tools", "languages"]);
+test("记录装配：四键齐全且键序为 probedAt、tools、languages、frameworks", () => {
+  const record = buildEnvRecord({ probedAt: "2020-01-01T00:00:00.000Z", tools: {}, languages: {}, frameworks: {} });
+  assert.deepStrictEqual(Object.keys(record), ["probedAt", "tools", "languages", "frameworks"]);
 });
 
 test("路径解析：按目录与扩展名组合命中首个存在的文件", () => {
@@ -116,7 +117,7 @@ const managerCtx = (files, outputs = {}) => ({
 
 // 夹具：只装 uv 一行可用的 python 环境记录，供组装用例复用
 const uvRecord = () => ({
-  languages: { python: { runner: "uv run python", test: "uv run pytest", available: true } },
+  languages: { python: { runner: "uv run python", available: true } },
   tools: { uv: { path: "/bin/uv", version: "0.13.7", available: true, manager: "", versions: ["0.13.7"], active: "0.13.7" } },
 });
 
@@ -173,7 +174,7 @@ test("命令组装：所需版本经切换形态得前缀后拼合，无占位�
 
 test("命令组装：前置型管理器把版本前缀加到运行时命令前", () => {
   const record = {
-    languages: { javascript: { runner: "node", test: "node --test", available: true } },
+    languages: { javascript: { runner: "node", available: true } },
     tools: { node: { path: "/bin/node", version: "22.23.3", available: true, manager: "nvm", versions: ["22.23.3", "18.0.0"], active: "22.23.3" } },
   };
   assert.strictEqual(buildCommand({ template: "{runner} --test", language: "javascript", required: "18.0.0" }, record), "nvm exec 18.0.0 -- node --test");
@@ -193,14 +194,14 @@ test("命令组装：所需版本不在清单内即报缺口", () => {
 
 test("命令组装：管理器不支持逐命令指定版本时报缺口", () => {
   const record = {
-    languages: { python: { runner: "python3", test: "pytest", available: true } },
+    languages: { python: { runner: "python3", available: true } },
     tools: { python3: { path: "/bin/python3", version: "3.12.0", available: true, manager: "mise", versions: [], active: "3.12.0" } },
   };
   assert.throws(() => buildCommand({ template: "{runner} -m pytest", language: "python", required: "3.9" }, record), /不支持逐命令指定版本/);
 });
 
 test("命令组装：语言无可用形态时报缺口", () => {
-  const record = { languages: { go: { runner: null, test: null, available: false } }, tools: {} };
+  const record = { languages: { go: { runner: null, available: false } }, tools: {} };
   assert.throws(() => buildCommand({ template: "{runner} test", language: "go" }, record), /无可用形态/);
 });
 
@@ -220,7 +221,7 @@ const providerCtx = (files, outputs = {}) => ({
 const uvOnlyRecord = (uvPath, uvListOutput) => {
   const tools = buildTools([{ name: "uv", path: uvPath, version: "0.13.7" }]);
   return {
-    languages: { python: { runner: "uv run python", test: "uv run pytest", available: true } },
+    languages: { python: { runner: "uv run python", available: true } },
     tools: enrichTools(tools, collectManagers(tools, providerCtx([uvPath], { [`${uvPath} python list`]: uvListOutput }))),
   };
 };
@@ -261,7 +262,7 @@ test("降级登记：提供者清单可得即无降级，提供者不可用即�
 
 test("命令组装：nvm 的清单取自 nvm ls，所需版本不在其中即报缺口", () => {
   const record = {
-    languages: { javascript: { runner: "node", test: "node --test", available: true } },
+    languages: { javascript: { runner: "node", available: true } },
     tools: { node: { path: "/bin/node", version: "22.23.3", available: true, manager: "nvm", versions: ["22.23.3", "18.20.8"], active: "22.23.3" } },
   };
   assert.strictEqual(buildCommand({ template: "{runner} --test", language: "javascript", required: "18.20.8" }, record), "nvm exec 18.20.8 -- node --test");
@@ -271,4 +272,113 @@ test("命令组装：nvm 的清单取自 nvm ls，所需版本不在其中即报
 test("版本清单解析按行取首个版本：路径与注释里的版本片段不算独立条目", () => {
   const listed = "cpython-3.10.21-windows-x86_64-none   D:\\uv\\cpython-3.10-windows-x86_64-none\\python.exe\n  pypy-3.10.16-windows-x86_64-none  <download available>\n";
   assert.deepStrictEqual(parseVersionList(listed), ["3.10.21", "3.10.16"]);
+});
+
+// ── 测试框架事实（设计册第十节其一；三态：内建可用、已装可用、未安装） ──
+
+test("框架事实：外部框架按可执行文件在位记 kind 为 external，不在位即未安装而非可装", () => {
+  const tools = buildTools(resultsOf(["node", "bun"]));
+  const languages = deriveLanguages(tools);
+  const results = [
+    { name: "pytest", path: null, version: null },
+    { name: "jest", path: "/usr/bin/jest", version: "29.7.0" },
+  ];
+  const frameworks = deriveFrameworks(tools, languages, results);
+  assert.deepStrictEqual(frameworks.pytest, { kind: "external", runner: null, path: null, version: null, available: false });
+  assert.deepStrictEqual(frameworks.jest, { kind: "external", runner: null, path: "/usr/bin/jest", version: "29.7.0", available: true });
+});
+
+test("框架事实：内建框架随所依附运行器定可用，运行器缺席即不可用", () => {
+  const frameworks = deriveFrameworks(buildTools(resultsOf(["node"])), deriveLanguages(buildTools(resultsOf(["node"]))), []);
+  assert.deepStrictEqual(frameworks["node:test"], { kind: "builtin", runner: "node", path: "/usr/bin/node", version: "1.2.3", available: true });
+  assert.deepStrictEqual(frameworks["bun:test"], { kind: "builtin", runner: "bun", path: null, version: null, available: false });
+  assert.strictEqual(frameworks["deno:test"].available, false);
+  assert.strictEqual(frameworks.unittest.available, false);
+});
+
+test("框架事实：python 由 uv 提供时 unittest 记内建可用", () => {
+  const tools = buildTools(resultsOf(["uv"]));
+  const frameworks = deriveFrameworks(tools, deriveLanguages(tools), [{ name: "pytest", path: null, version: null }]);
+  assert.strictEqual(frameworks.unittest.kind, "builtin");
+  assert.strictEqual(frameworks.unittest.available, true);
+});
+
+// ── 候选集组装（设计册第十节其二、其三） ──
+
+// 夹具：按 lang-javascript/commands.json 的候选次序，jest、vitest 各两态、mocha、bun:test、node:test
+const jsCandidates = [
+  { when: { framework: "jest", runner: "npx" }, template: "{runner} jest" },
+  { when: { framework: "vitest", runner: "bun" }, template: "{runner} run test" },
+  { when: { framework: "vitest", runner: "npx" }, template: "{runner} vitest run" },
+  { when: { framework: "mocha", runner: "npx" }, template: "{runner} mocha" },
+  { when: { framework: "bun:test", runner: "bun" }, template: "{runner} test" },
+  { when: { framework: "node:test", runner: "node" }, template: "{runner} --test" },
+];
+
+// 夹具：可注入框架可用性的 node 环境 javascript 记录，工具行只置可用性（bun 环境另在用例内注入 bun 与 npx）
+const jsRecord = (frameworks) => ({
+  languages: { javascript: { runner: "node", available: true } },
+  tools: { node: { available: true }, npx: { available: true } },
+  frameworks,
+});
+
+// 夹具：bun 环境记录，供内建候选与 vitest 陷阱用例
+const bunRecord = (frameworks) => ({
+  languages: { javascript: { runner: "bun", available: true } },
+  tools: { node: { available: true }, bun: { available: true }, npx: { available: true } },
+  frameworks,
+});
+
+test("候选命中：bun 环境无外部框架时落内建 bun:test，拼出 bun test", () => {
+  const record = bunRecord({ "bun:test": { available: true }, "node:test": { available: true } });
+  assert.strictEqual(buildCommand({ candidates: jsCandidates, language: "javascript" }, record), "bun test");
+});
+
+test("候选优先级：node 环境按 jest、vitest、node:test 取首个命中者", () => {
+  const both = jsRecord({ jest: { available: true }, vitest: { available: true }, "node:test": { available: true } });
+  assert.strictEqual(buildCommand({ candidates: jsCandidates, language: "javascript" }, both), "npx jest");
+  const noJest = jsRecord({ vitest: { available: true }, "node:test": { available: true } });
+  assert.strictEqual(buildCommand({ candidates: jsCandidates, language: "javascript" }, noJest), "npx vitest run");
+  const onlyNode = jsRecord({ "node:test": { available: true } });
+  assert.strictEqual(buildCommand({ candidates: jsCandidates, language: "javascript" }, onlyNode), "node --test");
+});
+
+test("条件不成立：框架未安装即不命中该候选，落到次候选", () => {
+  const record = jsRecord({ jest: { available: false }, vitest: { available: false }, mocha: { available: false }, "node:test": { available: true } });
+  assert.strictEqual(buildCommand({ candidates: jsCandidates, language: "javascript" }, record), "node --test");
+});
+
+test("陷阱：bun 与 vitest 并存时取 bun run test，不取 bun test", () => {
+  const record = bunRecord({ vitest: { available: true }, "bun:test": { available: true } });
+  assert.strictEqual(buildCommand({ candidates: jsCandidates, language: "javascript" }, record), "bun run test");
+});
+
+test("python 候选：pytest 优先于 unittest，pytest 未安装时落 unittest", () => {
+  const candidates = [
+    { when: { framework: "pytest" }, template: "{runner} -m pytest" },
+    { when: { framework: "unittest" }, template: "{runner} -m unittest discover" },
+  ];
+  const base = { languages: { python: { runner: "uv run python", available: true } }, tools: {} };
+  const withPytest = { ...base, frameworks: { pytest: { available: true }, unittest: { available: true } } };
+  assert.strictEqual(buildCommand({ candidates, language: "python" }, withPytest), "uv run python -m pytest");
+  const noPytest = { ...base, frameworks: { pytest: { available: false }, unittest: { available: true } } };
+  assert.strictEqual(buildCommand({ candidates, language: "python" }, noPytest), "uv run python -m unittest discover");
+});
+
+test("全部不成立报缺口：指明缺哪类框架，不回落写死的默认框架", () => {
+  const candidates = [
+    { when: { framework: "bats", runner: "bats" }, template: "{runner} tests/" },
+    { when: { framework: "shunit2", runner: "bash" }, template: "{runner} test.sh" },
+  ];
+  const record = {
+    languages: { shell: { runner: "bash", available: true } },
+    tools: { bash: { available: true } },
+    frameworks: { bats: { available: false }, shunit2: { available: false } },
+  };
+  assert.throws(() => buildCommand({ candidates, language: "shell" }, record), /缺少可用的测试框架.*缺 bats、shunit2/);
+});
+
+test("候选集组装：语言无可用形态即报缺口，不逐候选试跑", () => {
+  const record = { languages: { java: { runner: null, available: false } }, tools: {}, frameworks: {} };
+  assert.throws(() => buildCommand({ candidates: [{ when: { runner: "mvn" }, template: "{runner} test" }], language: "java" }, record), /无可用形态/);
 });

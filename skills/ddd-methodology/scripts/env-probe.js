@@ -1,6 +1,6 @@
 /**
  * 目标：探测本机工具链并落盘为 <项目根>/docs/.ddd-env.json，供后续节点按环境记录组装测试与覆盖率命令，替代写死的调用形态。
- * 范围：校验项目根入参、注入进程与文件两类副作用原语、调用 lib/env-probe.js 的纯函数装配三键记录（tools 每项六键：普通行含管理器与可用版本清单，运行时提供者行含所提供语言的清单，见 DESIGN-environment.md 第八节）、写出机读件并输出人读摘要（含提供者行与校验降级）。
+ * 范围：校验项目根入参、注入进程与文件两类副作用原语、调用 lib/env-probe.js 的纯函数装配四键记录（probedAt、tools、languages、frameworks；tools 每项六键：普通行含管理器与可用版本清单，运行时提供者行含所提供语言的清单，frameworks 每项含 kind 与可用性三态，见 DESIGN-environment.md 第八节与第十节）、写出机读件并输出人读摘要（含提供者行、校验降级与测试框架三态）。
  * 不包含：跨机合并既有记录（本机探测结果覆盖旧件，因记录须反映当前机器的工具链）、门禁接入、覆盖率基线、跨机比较。不引入第三方依赖。
  * 用法：node env-probe.js <项目根绝对路径>；只查本机 PATH 与命令输出，不访问网络。
  * 出口：恒 0，探测本身不因工具缺失失败；入参非法时 2。机读件是权威，stdout 摘要仅供人读。
@@ -10,7 +10,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
-const { DEFAULT_VERSION_ARGS, VERSION_ARGS, probeAll, buildTools, deriveLanguages, buildEnvRecord } = require("./lib/env-probe.js");
+const { DEFAULT_VERSION_ARGS, VERSION_ARGS, FRAMEWORK_COMMANDS, probeAll, buildTools, deriveLanguages, deriveFrameworks, buildEnvRecord } = require("./lib/env-probe.js");
 const { collectManagers, enrichTools, versionCheckDowngrades, PROVIDER_LANGUAGES } = require("./lib/env-command.js");
 
 // 平台扩展名：Windows 先试 PATHEXT 各扩展名、再退无扩展名，使 .cmd/.exe 优先于同名的 POSIX 壳脚本；其余平台只按原样
@@ -59,7 +59,8 @@ function probeProject() {
   const base = buildTools(probeAll(ctx));
   const tools = enrichTools(base, collectManagers(base, ctx));
   const languages = deriveLanguages(tools);
-  return buildEnvRecord({ probedAt: new Date().toISOString(), tools, languages });
+  const frameworks = deriveFrameworks(tools, languages, probeAll(ctx, FRAMEWORK_COMMANDS));
+  return buildEnvRecord({ probedAt: new Date().toISOString(), tools, languages, frameworks });
 }
 
 // 落盘：docs 目录不存在即创建，写入机读件，回传绝对路径
@@ -90,6 +91,9 @@ function summarize(record) {
     .filter(Boolean);
   const downgrades = versionCheckDowngrades(record)
     .map((item) => `${item.tool}→${item.language}：${item.reason}，所需版本校验降级为不校验`);
+  const frameworks = Object.entries(record.frameworks || {});
+  const fwReady = frameworks.filter(([, value]) => value.available).map(([name, value]) => `${name}(${value.kind === "builtin" ? "内建" : "已装"})`);
+  const fwMissing = frameworks.filter(([, value]) => !value.available).map(([name, value]) => `${name}(${value.kind === "builtin" ? "内建但运行器缺席" : "未安装"})`);
   return [
     `=== 环境探测：${record.probedAt} ===`,
     `工具可用 ${ready.length}/${names.length}：${ready.join("、") || "无"}`,
@@ -97,6 +101,8 @@ function summarize(record) {
     `版本管理器：${managed.join("；") || "无"}`,
     `运行时提供者：${providers.join("；") || "无"}`,
     ...(downgrades.length ? [`校验降级：${downgrades.join("；")}`] : []),
+    `测试框架可用：${fwReady.join("、") || "无"}`,
+    `测试框架缺失：${fwMissing.join("、") || "无"}`,
     `语言可用形态：${langReady.join("；") || "无"}`,
     `语言不可用：${langMissing.join("、") || "无"}`,
   ].join("\n");

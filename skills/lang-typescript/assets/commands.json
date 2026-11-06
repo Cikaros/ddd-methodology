@@ -1,0 +1,42 @@
+{
+  "language": "typescript",
+  "test": [
+    {
+      "when": { "framework": "jest", "runner": "npx" },
+      "template": "{runner} jest",
+      "note": "Jest 需外部安装，TS 项目须另配 babel 预设或 ts-jest（jestjs.io/docs/getting-started#using-typescript；reference-runtimes.md 2.4）。"
+    },
+    {
+      "when": { "framework": "vitest", "runner": "bun" },
+      "template": "{runner} run test",
+      "note": "bun 作包管理器时跑 Vitest 唯此为正确形态：`bun test` 会启动 bun 自带运行器而非 Vitest，须写 `bun run test`（vitest.dev/guide；reference-runtimes.md 1.2、2.9）。"
+    },
+    {
+      "when": { "framework": "vitest", "runner": "npx" },
+      "template": "{runner} vitest run",
+      "note": "Vitest 原生支持 TS，`vitest run` 为单次全量形态；非 bun 环境下经包内可执行入口调用（vitest.dev/guide；reference-runtimes.md 1.1）。"
+    },
+    {
+      "when": { "framework": "mocha", "runner": "npx" },
+      "template": "{runner} mocha",
+      "note": "Mocha 需外部安装，TS 项目另配转换（mochajs.org/getting-started；reference-runtimes.md 1.1）。"
+    },
+    {
+      "when": { "framework": "bun:test", "runner": "bun" },
+      "template": "{runner} test",
+      "note": "bun 自带运行器，直接跑 TS 测试而不做类型检查；无外部框架时走内建（bun.sh/docs/cli/test；reference-runtimes.md 1.2）。"
+    },
+    {
+      "when": { "framework": "node:test", "runner": "node" },
+      "template": "{runner} --test",
+      "note": "Node 内建运行器跑 TS 依赖类型剥离（v23.6.0/v22.18.0 起默认启用），不做类型检查且忽略 tsconfig.json（nodejs.org/api/typescript.html；reference-runtimes.md 1.1）。"
+    }
+  ],
+  "coverage": [
+    {
+      "tool": "vitest",
+      "template": "{runner} vitest run --coverage",
+      "note": "Vitest 覆盖率（reference-test-coverage.md 2.2）；reporter、阈值与 source map 重映射由 coverage.config.mjs 声明，cobertura 报告供统一解析脚本判定。"
+    }
+  ]
+}

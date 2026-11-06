@@ -1,0 +1,42 @@
+{
+  "language": "javascript",
+  "test": [
+    {
+      "when": { "framework": "jest", "runner": "npx" },
+      "template": "{runner} jest",
+      "note": "Jest 需外部安装（npm install --save-dev jest），经包内可执行入口调用（jestjs.io/docs/getting-started；reference-runtimes.md 1.1）。"
+    },
+    {
+      "when": { "framework": "vitest", "runner": "bun" },
+      "template": "{runner} run test",
+      "note": "bun 作包管理器时跑 Vitest 唯此为正确形态：`bun test` 会启动 bun 自带运行器而非 Vitest，须写 `bun run test`（vitest.dev/guide；reference-runtimes.md 1.2、2.9）。"
+    },
+    {
+      "when": { "framework": "vitest", "runner": "npx" },
+      "template": "{runner} vitest run",
+      "note": "Vitest 需外部安装（npm install -D vitest），`vitest run` 为单次全量形态；非 bun 环境下经包内可执行入口调用（vitest.dev/guide；reference-runtimes.md 1.1）。"
+    },
+    {
+      "when": { "framework": "mocha", "runner": "npx" },
+      "template": "{runner} mocha",
+      "note": "Mocha 需外部安装（npm i -D mocha），断言库另配，官方示例用 node:assert（mochajs.org/getting-started；reference-runtimes.md 1.1）。"
+    },
+    {
+      "when": { "framework": "bun:test", "runner": "bun" },
+      "template": "{runner} test",
+      "note": "bun 自带运行器，`bun test` 递归发现 *.test.*、*_test.*、*.spec.*、*_spec.*；无外部框架时走内建（bun.sh/docs/cli/test；reference-runtimes.md 1.2）。"
+    },
+    {
+      "when": { "framework": "node:test", "runner": "node" },
+      "template": "{runner} --test",
+      "note": "Node 内建运行器，`node --test` 默认发现 *.test.*、*-test.*、*_test.*、test-*.*、test/**（nodejs.org/api/test.html；reference-runtimes.md 1.1）。其覆盖率采集仍为实验性，需覆盖率门禁时不宜作唯一候选。"
+    }
+  ],
+  "coverage": [
+    {
+      "tool": "jest",
+      "template": "{runner} jest --coverage",
+      "note": "Jest 内置覆盖率（reference-test-coverage.md 2.1）；reporters 与阈值由 coverage.config.mjs 声明，cobertura 报告供统一解析脚本判定。"
+    }
+  ]
+}

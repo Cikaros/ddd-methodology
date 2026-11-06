@@ -1,0 +1,24 @@
+# 目标与范围：Python 测试覆盖率的配置基线，承载被测源范围、分支采集、阈值与 Cobertura 兼容 XML 输出。
+# 部署形态：落项目根并命名 .coveragerc（coverage.py 的默认配置名）；本资产名去掉前导点，便于随技能分发与版本管理。
+# 命令模板见同目录 commands.json；覆盖是否充分的语义判据归 spec-test-case。
+# 官方来源：coverage.py 配置文档 https://coverage.readthedocs.io/en/latest/config.html
+
+[run]
+# 被测源码范围，官方选项名 source（[run] 节）。
+source = .
+# 采集分支覆盖，官方选项名 branch（[run] 节）；分支覆盖一并参与 fail_under 判定。
+branch = True
+
+[report]
+# 阈值，官方选项名 fail_under（[report] 节）。
+# 默认 80，可被项目覆盖：改本值，或经命令行 --fail-under，或 pytest-cov 的 --cov-fail-under 覆盖。
+# 依据：80 在 Jest 与 JaCoCo 官方示例中即为起点，为跨语言最常见门禁值（DESIGN-test-baseline.md 第六节）。
+# 语义：行覆盖率低于该值，coverage 进程以状态码 2 退出（官方 fail_under 语义）。
+fail_under = 80
+# 百分比精度（小数位），官方选项名 precision（[report] 节）；与 fail_under 小数位共同决定比较精度。
+precision = 2
+
+[xml]
+# Cobertura 兼容 XML 输出路径，官方选项名 output（[xml] 节）。
+# 取 Cobertura 兼容格式而非 coverage.py 的 text/html 自有报告集，供统一解析脚本判定阈值。
+output = coverage.xml

@@ -1,7 +1,7 @@
 /**
  * 目标：为环境探测的多版本记录与命令组装提供无副作用核心——识别版本管理器、取可用版本清单、把工具事实扩为六键，并把命令模板按环境形态与所需版本两级解析为可执行命令（见 DESIGN-environment.md 第八节）；
  *   运行时提供者型管理器（如 uv 提供 python）另记其所提供语言的版本清单，与该管理器自身版本分属两处，不得混记。
- * 范围：版本管理器对照表、通用管理器表、运行时提供者表、语言到运行时行的映射，managerCandidates、detectManager、parseVersionList、managerFact、collectManagers、enrichTools、versionCheckDowngrades 七个多版本记录函数，以及 resolveLanguageManager、managedRow、versionAdjustedRunner、composeCommand、buildCommand 五个命令组装函数。
+ * 范围：版本管理器对照表、通用管理器表、运行时提供者表、语言到运行时行的映射，managerCandidates、detectManager、parseVersionList、managerFact、collectManagers、enrichTools、versionCheckDowngrades 七个多版本记录函数，以及 resolveLanguageManager、managedRow、versionAdjustedRunner、composeCommand、frameworkAvailable、runnerAvailable、candidateMatches、candidateRunner、missingFrameworks、buildFromCandidates、buildCommand 十一个命令组装函数。
  * 不包含：进程调用与文件读写——由 scripts/env-probe.js 注入 isFile 与 runManager 两类副作用原语；亦不含探测主链、记录落盘与命令行入口。复用同目录 env-probe.js 的路径解析原语。不引入第三方依赖。
  * 边界：普通管理器列出命令失败只降级为单一版本文本，不报缺陷；运行时提供者清单不可得则留空，命令组装对所需版本的校验降级为不校验并登记降级，绝不回填管理器自身版本冒充清单；
  *   所需版本未声明时不加版本前缀，只按激活版本执行；不得为取版本改动全局激活状态，切换只以逐命令形态表达。
@@ -204,9 +204,56 @@ function composeCommand(template, runner) {
   return command;
 }
 
-// 命令组装（纯函数，对外接口）：入参命令模板、语言与所需版本，出可执行命令；
-// 两级解析——先版本前缀再与环境形态拼合；语言无可用形态、占位符残留均抛错
-function buildCommand({ template, language, required }, record) {
+// 框架可用性（纯函数）：记录中 frameworks 键下同名项须存在且 available；三态中的「未安装但可装」不得据此判为可用（设计册第十节其一）
+function frameworkAvailable(record, name) {
+  const row = record.frameworks && record.frameworks[name];
+  return Boolean(row && row.available);
+}
+
+// 运行器可用性（纯函数）：when.runner 指名的形态须在工具、框架、语言三处任一处可用——故 bats、pwsh、npx、mvn 均可作条件
+function runnerAvailable(record, name) {
+  return [record.tools, record.frameworks, record.languages]
+    .some((pool) => Boolean(pool && pool[name] && pool[name].available));
+}
+
+// 候选命中（纯函数）：when 内的 framework 与 runner 均须成立，未给者不设该条件；when 整体缺省即恒成立
+function candidateMatches(candidate, record) {
+  const when = (candidate && candidate.when) || {};
+  if (when.framework && !frameworkAvailable(record, when.framework)) return false;
+  if (when.runner && !runnerAvailable(record, when.runner)) return false;
+  return true;
+}
+
+// 候选所用运行器（纯函数）：when.runner 指名者即替代记录中的语言形态，使同一语言可按框架取不同调用前缀（如 jest 经 npx、node:test 经 node）；未指名者用语言形态
+function candidateRunner(candidate, language, record) {
+  const when = (candidate && candidate.when) || {};
+  if (when.runner) return when.runner;
+  const form = record && record.languages ? record.languages[language] : null;
+  return form && form.runner;
+}
+
+// 缺口描述（纯函数）：列出候选所引用而记录中不可用的框架名，供缺口信息指明缺哪类框架
+function missingFrameworks(candidates, record) {
+  const names = [...new Set(candidates.map((candidate) => candidate.when && candidate.when.framework).filter(Boolean))];
+  const missing = names.filter((name) => !frameworkAvailable(record, name));
+  return missing.length ? `缺 ${missing.join("、")}` : "候选条件均不成立";
+}
+
+// 候选集组装（纯函数）：按优先级取首个命中候选，以候选运行器替换 {runner} 后经版本前缀拼合；
+// 无一命中即报缺口并指明缺哪类框架，绝不回落写死的默认框架（设计册第十节其三）
+function buildFromCandidates(candidates, language, required, record) {
+  const form = record && record.languages ? record.languages[language] : null;
+  if (!form || !form.available || !form.runner) throw new Error(`缺口：语言 ${language} 无可用形态，无法组装命令`);
+  const matched = candidates.find((candidate) => candidateMatches(candidate, record));
+  if (!matched) throw new Error(`缺口：语言 ${language} 缺少可用的测试框架（${missingFrameworks(candidates, record)}）`);
+  const runner = versionAdjustedRunner(language, required, candidateRunner(matched, language, record), record);
+  return composeCommand(matched.template, runner);
+}
+
+// 命令组装（纯函数，对外接口）：入参候选集或单件模板、语言与所需版本，出可执行命令；
+// 候选集走 buildFromCandidates，单件模板走旧路径——两级解析先版本前缀再与环境形态拼合；语言无可用形态、占位符残留均抛错
+function buildCommand({ template, candidates, language, required }, record) {
+  if (candidates) return buildFromCandidates(candidates, language, required, record);
   const form = record && record.languages ? record.languages[language] : null;
   if (!form || !form.available || !form.runner) throw new Error(`缺口：语言 ${language} 无可用形态，无法组装命令`);
   const runner = versionAdjustedRunner(language, required, form.runner, record);
@@ -232,5 +279,11 @@ module.exports = {
   managedRow,
   versionAdjustedRunner,
   composeCommand,
+  frameworkAvailable,
+  runnerAvailable,
+  candidateMatches,
+  candidateRunner,
+  missingFrameworks,
+  buildFromCandidates,
   buildCommand,
 };

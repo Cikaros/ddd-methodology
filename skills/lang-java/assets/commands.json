@@ -1,0 +1,27 @@
+{
+  "language": "java",
+  "test": [
+    {
+      "when": { "runner": "mvn" },
+      "template": "{runner} test",
+      "note": "Maven 全量测试，test 阶段默认绑定 surefire:test；测试框架（JUnit 5 等）由 pom.xml 依赖声明，非运行时自带（maven.apache.org/surefire/maven-surefire-plugin/；reference-runtimes.md 1.6）。"
+    },
+    {
+      "when": { "runner": "gradle" },
+      "template": "{runner} test",
+      "note": "Gradle `Test` 任务由 JVM 语言插件提供并挂到 check；测试框架经 useJUnitPlatform() 等在构建文件选择（docs.gradle.org/current/userguide/java_testing.html；reference-runtimes.md 1.6）。"
+    }
+  ],
+  "coverage": [
+    {
+      "tool": "maven",
+      "template": "{runner} verify",
+      "note": "JaCoCo report 与 check 均绑 verify，故 mvn verify 一并出报告并卡阈值（reference-test-coverage.md 2.6）。选择依据同 test 的 maven 候选。"
+    },
+    {
+      "tool": "gradle",
+      "template": "{runner} test jacocoTestReport jacocoTestCoverageVerification",
+      "note": "Gradle 经 jacocoTestReport 出报告、jacocoTestCoverageVerification 卡阈值（reference-test-coverage.md 2.6）。选择依据同 test 的 gradle 候选。"
+    }
+  ]
+}

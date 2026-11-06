@@ -1,0 +1,22 @@
+{
+  "language": "python",
+  "test": [
+    {
+      "when": { "framework": "pytest" },
+      "template": "{runner} -m pytest",
+      "note": "pytest 需外部安装（pip install pytest；uv 项目 `uv add --dev pytest`），`{runner}` 取环境记录 languages.python.runner（如 uv run python），故本候选只在 pytest 已安装时命中（reference-runtimes.md 1.5）。"
+    },
+    {
+      "when": { "framework": "unittest" },
+      "template": "{runner} -m unittest discover",
+      "note": "stdlib unittest，随 python 运行器可用即为内建可用（docs.python.org/3/library/unittest.html；reference-runtimes.md 1.5）。"
+    }
+  ],
+  "coverage": [
+    {
+      "tool": "coverage",
+      "template": "{runner} -m coverage run -m pytest",
+      "note": "coverage.py 包裹 pytest 运行（reference-test-coverage.md 2.5）。Cobertura 兼容 XML 由 coveragerc 的 [xml] output 指定，经 coverage xml 产出，供统一解析脚本判定阈值。"
+    }
+  ]
+}

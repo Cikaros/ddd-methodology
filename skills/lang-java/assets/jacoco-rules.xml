@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 目标与范围：Java 覆盖率的 JaCoCo check goal 规则片段，供 pom.xml 或 build.gradle(.kts) 引用。
+     只给 <rules> 片段，不含构建工具外壳；命令模板见同目录 commands.json；覆盖是否充分的语义判据归 spec-test-case。
+     官方来源：check goal https://www.jacoco.org/jacoco/trunk/doc/check-mojo.html
+     report goal https://www.jacoco.org/jacoco/trunk/doc/report-mojo.html
+     格式说明：JaCoCo 无第一方 Cobertura 报告器（reference-test-coverage.md 1.6 仅列 HTML/XML/CSV），
+     本语言的阈值硬门禁由 check goal 自身承担；需 Cobertura 统一解析时由解析侧消费 JaCoCo XML，见完成报告残余风险。 -->
+<rules>
+  <!-- rule 的 element 取 BUNDLE，即整包聚合判定（官方默认 element 亦为 BUNDLE） -->
+  <rule>
+    <element>BUNDLE</element>
+    <limits>
+      <limit>
+        <!-- limit 的 counter 取 LINE，value 取 COVEREDRATIO（官方取值域） -->
+        <counter>LINE</counter>
+        <value>COVEREDRATIO</value>
+        <!-- 阈值默认 0.80 即 80%，可被项目覆盖；minimum 必须显式给出（官方 check-mojo 语义）。
+             依据：80 在 Jest 与 JaCoCo 官方示例中即为起点（DESIGN-test-baseline.md 第六节）。 -->
+        <minimum>0.80</minimum>
+      </limit>
+    </limits>
+  </rule>
+</rules>
