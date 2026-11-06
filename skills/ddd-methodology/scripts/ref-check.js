@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 /**
  * 目标：把本仓库跨文档引用、常量、清单与冻结短语的一致性外化为可复现的机械证据，供文档同步链在提交前校验。
- * 范围：二十三项校验，编号沿用 C1 至 C25，其中 C13 与 C18 无对应校验项、C9 按废弃处置只报不适用；编号不复用，以免既有引用与教训回写映射漂移；
+ * 范围：二十八项校验，编号沿用 C1 至 C30，其中 C13 与 C18 无对应校验项、C9 按废弃处置只报不适用；编号不复用，以免既有引用与教训回写映射漂移；
  *   默认只读不落盘；C19 的收敛度基线在缺失时首次生成。
+ *   C26 至 C30 为环境记录与命令模板的校验，落 lib/ref-env.js。
  * 校验实现按域外置于 ./lib/：规范读取面见 spec-doc.js，引用形态见 ref-refs.js，常量集合见 ref-constants.js，
  *   阶段键见 ref-stages.js，冻结短语见 ref-phrases.js，登记簿字段集合见 ref-debt-fields.js，校验项映射见 ref-coverage.js，
  *   工作区行尾见 ref-line-endings.js，结构树与安装内容明细、命令入口清单与模板章节引用见 ref-structure.js，
- *   提示模板集与基线键见 ref-inventory.js，矩阵与技能清单一致性见 matrix.js；随装脚本枚举见顶层 ./install-manifest-check.js。本脚本只作装配与输出。
+ *   提示模板集与基线键见 ref-inventory.js，矩阵与技能清单一致性见 matrix.js，环境记录与命令模板见 ref-env.js；随装脚本枚举见顶层 ./install-manifest-check.js。本脚本只作装配与输出。
  * 清单类校验 C5 与 C11 由 ./roster-check.js 提供，本脚本只作调用。
  * 索引表校验 C12 由 ./spec-index-check.js 提供，本脚本只作调用并注入已枚举的规范文件清单与索引入口路径。
  * 用法：node ref-check.js <仓库根>；只读不落盘。
@@ -37,6 +38,7 @@ const { createStructureChecks } = require("./lib/ref-structure.js");
 const { createConvergenceChecks } = require("./lib/ref-convergence.js");
 const { createObligationChecks } = require("./lib/ref-obligations.js");
 const { createInventoryChecks } = require("./lib/ref-inventory.js");
+const { createEnvChecks } = require("./lib/ref-env.js");
 const { checkMatrix } = require("./lib/matrix.js");
 const installManifestCheck = require("./install-manifest-check.js");
 const decisionTables = require("./decision-tables.js");
@@ -88,6 +90,7 @@ const structureChecks = createStructureChecks(env);
 const convergenceChecks = createConvergenceChecks(env);
 const obligationChecks = createObligationChecks(env);
 const inventoryChecks = createInventoryChecks(env);
+const envChecks = createEnvChecks(env);
 
 const CHECKS = [
   ["C1", "语义化节引用有效", refChecks.checkSemanticRefs],
@@ -113,6 +116,11 @@ const CHECKS = [
   ["C23", "提示模板集一致性", inventoryChecks.checkPromptTemplates],
   ["C24", "基线键一致性", inventoryChecks.checkBaselineKeys],
   ["C25", "矩阵与技能清单一致性", () => checkMatrix(root)],
+  ["C26", "环境记录完备性", envChecks.checkEnvRecord],
+  ["C27", "可用工具路径实存", envChecks.checkToolPaths],
+  ["C28", "命令模板候选集与占位", envChecks.checkCommandTemplates],
+  ["C29", "模板框架在探测覆盖面内", envChecks.checkTemplateFrameworks],
+  ["C30", "管理器版本键非空", envChecks.checkManagerVersions],
 ];
 
 // 每项独立执行：单项异常记入漂移清单后继续，不中断其余项

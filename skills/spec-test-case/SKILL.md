@@ -41,6 +41,12 @@ description: 用例设计规范，管同目录 TEST.md 的用例与覆盖。当�
 - 执行命令须含超时；用例须标预估时长与风险级别。
 - 缺陷记录与路由表只记结果，级别定义与路由去向见 spec-defect-routing。
 
+**覆盖是否充分**：
+
+- 量化口径为行覆盖率，阈值默认 80%，与统一解析脚本 `skills/ddd-methodology/scripts/coverage-check.js` 的默认值一致，两处不得不同。
+- 覆盖率经 Cobertura 兼容 XML 由该脚本判定，不依赖具体语言工具；阈值可为具体项目配置覆盖。
+- 报告缺失与报告不可解析同为报告缺口，未达阈为覆盖缺口，三者均不得视为通过；覆盖缺口按 D 级或 C 级路由，不得以覆盖率数字好看为由放行。
+
 ## 不做什么
 
 - 缺 AC 与设计即报派发类型不匹配，不凭空造用例。
@@ -58,3 +64,4 @@ description: 用例设计规范，管同目录 TEST.md 的用例与覆盖。当�
 | 高风险用例须桩化 | DESIGN-governance.md 门禁表 G5 行 |
 | 桩化、超时与四态报告 | spec-design.md 的测试阻塞防护节 |
 | 缺 AC 与设计即报派发类型不匹配 | DESIGN-agents.md 契约总表（ddd-test-designer 前置阻断条件） |
+| 覆盖是否充分的行覆盖率口径、三态与阈值默认值 | DESIGN-test-baseline.md 第三、五、六节 |

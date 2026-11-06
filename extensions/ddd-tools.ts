@@ -9,7 +9,7 @@
  *
  * 目标：把甲类机械校验脚本注册为类型化工具，使父会话以工具调用替代文本解析与绝对路径拼装；
  *   工具回传结构化结果，模型只收到精简摘要与关键结论行，降低上下文负担。
- * 范围：六个机械证据工具与六个脚本一一对应——ddd_governance_check、ddd_trace_check、ddd_span_check、ddd_code_health、ddd_debt_check、ddd_metrics_report；
+ * 范围：七个机械证据工具与七个脚本一一对应——ddd_governance_check、ddd_trace_check、ddd_span_check、ddd_code_health、ddd_debt_check、ddd_metrics_report、ddd_coverage_check；
  *   另接入五个交叉检查节点的校验脚本入口 ddd_check_scope、ddd_check_design、ddd_check_file_design、ddd_check_code、ddd_check_consistency，脚本落 skills/ddd-methodology/scripts/，与 DESIGN-crosscheck.md 的五个执行点对应；
  *   交叉检查工具由主链编排脚本在对应节点自动调用，手工复核同一检查时直接调用同一工具，两处共用同一工具面，不各写一套语义。
  * 不包含：全局规则注入与前置依赖探测（见同目录 ddd-context.ts）、结构治理守卫（见同目录 ddd-governance.ts）、技能裁剪与路径供给（见同目录 ddd-resources.ts）。
@@ -71,6 +71,13 @@ const TOOLS = [
 		label: "DDD 绩效度量聚合",
 		description: "运行 metrics-report 聚合被开发项目的健康、债务、门禁与报告数据并写入 docs/metrics.json，末行 RESULT: report。root 传被开发项目根的绝对路径。",
 		snippet: "聚合被开发项目的绩效度量（metrics-report）",
+	},
+	{
+		name: "ddd_coverage_check",
+		script: "coverage-check",
+		label: "DDD 覆盖率判定",
+		description: "运行 coverage-check 解析 Cobertura 兼容 XML 并判定行覆盖率是否达阈，报告缺失、报告不可解析与未达阈三态各有结论，末行 RESULT: pass 或 gap，作为 G6 的覆盖率子项。root 传被开发项目根的绝对路径。",
+		snippet: "解析覆盖率报告并判定行覆盖率（coverage-check）",
 	},
 ];
 
