@@ -52,7 +52,7 @@ skill、agent、扩展与提示模板的安装与移除均由 pi package 机制�
 
 ## 资源清单
 
-- 技能十八份，位于 `skills/`：主技能 `ddd-methodology`；治理类四份 `governance-code`、`governance-comment`、`governance-declaration`、`governance-document`；规范类六份 `spec-requirements`、`spec-acceptance`、`spec-architecture`、`spec-contract`、`spec-test-case`、`spec-defect-routing`；语言类六份 `lang-python`、`lang-java`、`lang-javascript`、`lang-typescript`、`lang-shell`、`lang-powershell`；工具类一份 `tool-bash`。
+- 技能二十份，位于 `skills/`：主技能 `ddd-methodology`；治理类四份 `governance-code`、`governance-comment`、`governance-declaration`、`governance-document`；规范类七份 `spec-requirements`、`spec-acceptance`、`spec-architecture`、`spec-contract`、`spec-test-case`、`spec-defect-routing`、`spec-diagnosis`；语言类七份 `lang-python`、`lang-java`、`lang-javascript`、`lang-typescript`、`lang-shell`、`lang-powershell`、`lang-md`；工具类一份 `tool-bash`。
 - 固定代理十个，位于 `agents/`：需求采集者、架构设计者、验收标准制定者、设计分解者、详细设计者、接口契约评审者、实现者、单元测试制定者、测试执行者与缺陷修复者。
 - 项目级代理模板两份与项目级规范文档模板两份，位于 `skills/ddd-methodology/assets/`，经 `/ddd-init` 落项目。
 - 扩展四模块，位于 `extensions/`：`ddd-context.ts` 注入全局规则与任务引导，`ddd-governance.ts` 承担运行时守卫，`ddd-tools.ts` 注册机械证据工具，`ddd-resources.ts` 按注入矩阵裁剪可得技能集。
@@ -91,3 +91,11 @@ skill、agent、扩展与提示模板的安装与移除均由 pi package 机制�
 版本以 `package.json` 的 `version` 为准，采用三段式语义化版本，tag 与之一致。安装命令默认跟随默认分支；需要固定版本时，把所需 tag 以 `@vX.Y.Z` 的形式拼进安装命令，即 `pi install git:github.com/Cikaros/ddd-methodology@vX.Y.Z`，并将 `vX.Y.Z` 换成具体 tag。示例不写具体版本号，以免每次发版后陈旧。
 
 规范修订后运行 `node skills/ddd-methodology/scripts/ref-check.js .` 校验跨文档一致性，作为提交前检查。代理与 skill 清单的一致性判据由 `scripts/roster-check.js` 提供，`ref-check` 的 C5 代理清单校验与 C11 skill 清单校验均调用它。`ref-check` 只读，不写盘。
+
+## 参考来源
+
+本项目的设计与实现参考了以下上游项目。
+
+- [earendil-works/pi](https://github.com/earendil-works/pi)：宿主平台。本包以其扩展接口、技能机制与提示模板机制为承载，全局规则以 section 注入而不改写用户全局文件。
+- [nicobailon/pi-subagents](https://github.com/nicobailon/pi-subagents)：子代理与脚本化工作流机制。本包的代理定义格式、编排脚本与声明式验收均以其为准。
+- [mattpocock/skills](https://github.com/mattpocock/skills)：部分工程实践思想的来源。本项目按自身体系选择性借鉴，未整体引入，具体为缺陷诊断的反馈回路纪律、代码坏味道清单、接口深度判据、用例反模式与主动扫描方式五处，只取本体系未有者，且不改变既有判据与流程。

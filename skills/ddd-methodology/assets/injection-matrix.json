@@ -14,7 +14,7 @@
   "g5-int": { "constraint": ["governance-code"], "language": [], "tool": ["tool-bash"] },
   "test-execute": { "constraint": ["spec-defect-routing"], "language": [], "tool": ["tool-bash"] },
   "check-consistency": { "constraint": ["governance-declaration"], "language": [], "tool": [] },
-  "defect-fix": { "constraint": ["governance-code", "governance-comment", "spec-defect-routing", "lang-md"], "language": ["任务涉及语言"], "tool": ["tool-bash"] },
+  "defect-fix": { "constraint": ["governance-code", "governance-comment", "spec-defect-routing", "spec-diagnosis", "lang-md"], "language": ["任务涉及语言"], "tool": ["tool-bash"] },
   "audit": { "constraint": ["governance-declaration", "lang-md"], "language": [], "tool": [] },
   "probe": { "constraint": [], "language": [], "tool": [] },
   "self-design": { "constraint": ["spec-contract", "governance-document", "lang-md"], "language": [], "tool": [] },

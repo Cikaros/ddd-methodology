@@ -159,6 +159,10 @@ ddd-methodology/
 │   └── SKILL.md
 ├── skills/spec-defect-routing/  # 规范类：四级定级与轮回上限
 │   └── SKILL.md
+├── skills/spec-diagnosis/  # 规范类：缺陷根因定位纪律
+│   ├── references/
+│   │   └── loop-methods.md
+│   └── SKILL.md
 ├── skills/spec-requirements/  # 规范类：需求表述与澄清记录
 │   └── SKILL.md
 ├── skills/spec-test-case/  # 规范类：用例设计与覆盖
@@ -184,7 +188,7 @@ ddd-methodology/
 - 主技能 `skills/ddd-methodology/`，目录内只含 `SKILL.md` 与 `references/`、`scripts/`、`assets/` 三子目录；随包脚本在 `scripts/`，模板与配置基线在 `assets/`。
 - 随包脚本位于 `skills/ddd-methodology/scripts/`。五个交叉检查脚本在对应节点交出后立即机械校对：`check-scope.js` 对架构、`check-design.js` 对分解设计、`check-file-design.js` 对文件级设计、`check-code.js` 对实现与测试规划、`check-consistency.js` 对测试执行。机械证据入口七个：`trace-check.js` 作 G4 与 G5 的追溯一致性证据；`span-check.js` 比对契约签名与代码导出符号，输出一致、不一致与无法判定三态；`governance-check.js` 校验接口节定向 diff 与结构趋势并输出 verdict；`code-health.js` 度量结构健康，仅报告；`debt-check.js` 校验债务登记簿；`metrics-report.js` 聚合五类度量；`coverage-check.js` 读 Cobertura XML 判覆盖率阈值，作 G6 子项。本仓库维护入口四个：`ref-check.js` 校验跨文档一致性，供文档同步链使用；`toolchain-selftest.js` 断言脚本族语法可加载、入口可运行、退出码符合基线；`matrix-check.js` 校验注入矩阵与技能清单一致；`env-probe.js` 探测本机环境并写 `docs/.ddd-env.json`，供命令组装读取。编排脚本两份，与状态文件 schema 共用阶段键集，只做编排不做机械校验：`ddd-workflow.js` 走 A 主链，`ddd-hotfix.js` 走 B 快速修复。
 - 校验模块与共享层位于 `skills/ddd-methodology/scripts/lib/`：`text.js`、`walk.js`、`paths.js`、`spec-doc.js`、`cross-check.js`、`matrix.js`、`matrix.test.js`、`obligations.js`、`debt-history.js`、`version.js`、`metrics-sources.js`、`metrics-structure.js`、`metrics-delivery.js`、`truncate.js`、`repo-scope.js`、`ref-refs.js`、`ref-constants.js`、`ref-stages.js`、`ref-phrases.js`、`ref-debt-fields.js`、`ref-coverage.js`、`ref-line-endings.js`、`ref-structure.js`、`ref-inventory.js`、`ref-convergence.js`、`ref-obligations.js`、`ref-external.js`、`ref-registry.js`、`ref-registry.test.js`、`span-parser.js`、`span-ast.js`、`span-langs.js`、`span-langs-convention.js`、`span-extract.js`、`span-compare.js`、`freeze.js`、`freeze.test.js`、`env-probe.js`、`env-command.js`、`env-resolve.js`、`env-probe.test.js`、`env-resolve.test.js`、`coverage-parse.js`、`coverage-parse.test.js`、`ref-env.js`、`ref-env.test.js`，以及两份基线 `convergence-baseline.json` 与 `toolchain-baseline.json`。其余供 `ref-check.js` 调用的库文件 `roster-check.js`、`spec-index-check.js`、`decision-tables.js`、`design-root.js`、`install-manifest-check.js`，与部署辅助入口 `install-parser.js`，位于 `scripts/` 根目录而非 `lib/` 子目录。
-- 技能十八份，加主技能一份，位于 `skills/`：治理类四份为 `governance-code`、`governance-comment`、`governance-declaration`、`governance-document`；规范类六份为 `spec-requirements`、`spec-acceptance`、`spec-architecture`、`spec-contract`、`spec-test-case`、`spec-defect-routing`；语言类七份为 `lang-python`、`lang-java`、`lang-javascript`、`lang-typescript`、`lang-shell`、`lang-powershell`、`lang-md`；工具类一份为 `tool-bash`。
+- 技能十九份，加主技能一份，位于 `skills/`：治理类四份为 `governance-code`、`governance-comment`、`governance-declaration`、`governance-document`；规范类七份为 `spec-requirements`、`spec-acceptance`、`spec-architecture`、`spec-contract`、`spec-defect-routing`、`spec-diagnosis`、`spec-test-case`；语言类七份为 `lang-python`、`lang-java`、`lang-javascript`、`lang-typescript`、`lang-shell`、`lang-powershell`、`lang-md`；工具类一份为 `tool-bash`。
 - 提示模板四份，位于 `prompts/`：`prompts/ddd-init.md` 对应命令 `/ddd-init`，`prompts/ddd-parser-install.md` 对应 `/ddd-parser-install`，`prompts/ddd-rebuild.md` 对应 `/ddd-rebuild`，`prompts/ddd-refactor.md` 对应 `/ddd-refactor`。模板只写入口与指针，流程规则正文归主技能。
 - 十个固定代理位于 `agents/ddd-*.md`，由 pi-subagents 消费；两份项目级代理模板位于 `skills/ddd-methodology/assets/agent-templates/`，项目初始化后落 `<项目根>/.pi/agents/`。
 - 项目级规范文档模板两份，位于 `skills/ddd-methodology/assets/project-templates/`，即 `AGENTS.md` 与 `GLOSSARY.md`，初始化后落项目根。
