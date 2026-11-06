@@ -3,7 +3,7 @@
  *
  * 目标：为 DDD 项目补充过程拦截，机械判定结构粒度、测试分离、目录越权、结构同构与语言基线五类门槛，覆盖声明式门禁覆盖不到的过程；并在启动时注入未完成项 section。
  * 范围：守卫仅当 ctx.cwd 下存在 docs/gates 或声明的设计树根时激活，设计树根缺省回退 docs/design；对普通项目静默，所有处理函数立即返回 undefined。
- *   未完成项注入不受该激活判据约束，对象是项目内实际存在的未完成项，任一类非空即注入，无未完成项者仍静默。
+ *   未完成项注入不受该激活判据约束，对象是项目内实际存在的未完成项，任一类非空即注入，无未完成项者仍静默；其读盘与依赖绑定见 extensions/lib/open-items-source.ts，本文件只调该模块，注入面与 H-4 面共用同一次采集。
  *
  * 判定编号摘要，与设计 DESIGN-extensions.md 第二节的守卫表逐项一致：
  * - H-1 粒度守卫。触发点：tool_call 的 write/edit。判定条件：估算写入后行数超 500 行。动作：拦截，理由含文件路径、就近 DESIGN 路径与拆解要求。
@@ -30,17 +30,11 @@
 import { createRequire } from "node:module";
 import { existsSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { notifyUser } from "./lib/notify.ts";
-import { describeError, readText } from "./lib/shared.ts";
-import {
-	buildOpenItemsText,
-	gateClearanceBlock,
-	overdueDebts,
-	parseDebtRegistry,
-	parseStageState,
-} from "./lib/open-items.ts";
+import { describeError, readText, STATE_FILE_REL } from "./lib/shared.ts";
+import { buildOpenItemsText, gateClearanceBlock, parseStageState } from "./lib/open-items.ts";
+import { collectOpenItems } from "./lib/open-items-source.ts";
 import {
 	countLines,
 	coversFile,
@@ -62,40 +56,6 @@ try {
 	designRootResolver = null;
 }
 
-// 债务登记簿落点解析取自脚本侧 paths.js，公开区优先、内部区回退；取不到即债务类降级略过
-let debtPathDeps = null;
-try {
-	const requireFromExtension = createRequire(import.meta.url);
-	const paths = requireFromExtension("../skills/ddd-methodology/scripts/lib/paths.js");
-	if (paths && typeof paths.artifactReadPath === "function" && typeof paths.DEBT_BOOK_REL === "string") {
-		debtPathDeps = { artifactReadPath: paths.artifactReadPath, debtBookRel: paths.DEBT_BOOK_REL };
-	}
-} catch {
-	debtPathDeps = null;
-}
-
-// 版本比较取自脚本侧 version.js；取不到即超期判定降级略过
-let versionDeps = null;
-try {
-	const requireFromExtension = createRequire(import.meta.url);
-	const version = requireFromExtension("../skills/ddd-methodology/scripts/lib/version.js");
-	if (version && typeof version.parseVersion === "function" && typeof version.compareVersion === "function") {
-		versionDeps = { parseVersion: version.parseVersion, compareVersion: version.compareVersion };
-	}
-} catch {
-	versionDeps = null;
-}
-
-// 通道阶段键解析取自脚本侧 ref-stages.js，与 ref-check 的 C4 同源；取不到即阶段类降级略过
-let stageParser = null;
-try {
-	const requireFromExtension = createRequire(import.meta.url);
-	const refStages = requireFromExtension("../skills/ddd-methodology/scripts/lib/ref-stages.js");
-	if (refStages && typeof refStages.parseChannelStages === "function") stageParser = refStages.parseChannelStages;
-} catch {
-	stageParser = null;
-}
-
 // 设计树根的绝对路径：以项目 ARCHITECTURE 的声明为源，解析实现与脚本侧同源；取不到时用默认值
 function designRootAbs(root) {
 	if (typeof designRootResolver === "function") {
@@ -111,12 +71,7 @@ function designRootAbs(root) {
 
 const GRANULARITY_LINE_LIMIT = 500;
 const RUNTIME_EXCEPTION_MARK = "运行时例外";
-const STATE_FILE = "docs/.ddd-state.json";
 const G5_INT_STAGE = "g5-int";
-// 主技能正文落点锚定包根：通道阶段键全序自其调度模型节的通道表解析，与 ref-check 的 C4 同源
-const SKILL_FILE = fileURLToPath(new URL("../skills/ddd-methodology/SKILL.md", import.meta.url));
-// 三类未完成项俱不可得时的降级形态：任一项解析失败不阻断其余项的采集
-const EMPTY_OPEN_ITEMS = { obligations: null, debts: null, state: null, channelStages: null };
 
 
 export default function (pi: ExtensionAPI) {
@@ -274,32 +229,6 @@ function checkObligationCoverage(event, ctx) {
 
 // ---- H-4 门禁清零守卫 ----
 
-// 未闭合义务节点：扫 docs/board 下全部节点文件，取类型为义务且状态为未开始或进行中者
-function collectOpenObligations(root) {
-	const boardDir = join(root, "docs", "board");
-	if (!existsSync(boardDir)) return null;
-	const open = [];
-	const walk = (dir) => {
-		for (const entry of readdirSync(dir, { withFileTypes: true })) {
-			const full = join(dir, entry.name);
-			if (entry.isDirectory()) { walk(full); continue; }
-			if (entry.name !== "NODES.md") continue;
-			const text = readText(full) || "";
-			for (const line of text.split("\n")) {
-				if (!line.trim().startsWith("|")) continue;
-				const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
-				if (cells.length < 5 || !cells[0] || cells[0] === "节点编号" || /^-+$/.test(cells[0])) continue;
-				if (cells[2] !== "义务") continue;
-				if (cells[4] === "未开始" || cells[4] === "进行中") {
-					open.push(`${relative(root, full).split(sep).join("/")} ${cells[0]}（${cells[4]}）`);
-				}
-			}
-		}
-	};
-	walk(boardDir);
-	return open;
-}
-
 function checkGateRecordClearance(event, ctx) {
 	const input = (event && event.input) || {};
 	const rawPath = input.path ?? input.file_path ?? input.filePath;
@@ -401,7 +330,7 @@ function checkFullTestCommand(event, ctx) {
 	if (typeof input.command !== "string") return undefined;
 	const normalized = normalizeFullTestCommand(input.command);
 	if (normalized === null || !isFullTestCommand(normalized)) return undefined;
-	if (readLastStage(ctx.cwd) !== G5_INT_STAGE) return undefined;
+	if (parseStageState(readText(join(resolve(ctx.cwd), STATE_FILE_REL)))?.lastStage !== G5_INT_STAGE) return undefined;
 	return {
 		block: true,
 		reason: [
@@ -411,17 +340,6 @@ function checkFullTestCommand(event, ctx) {
 			"规范依据：规范「实现与测试分离」节。",
 		].join("\n"),
 	};
-}
-
-function readLastStage(cwd) {
-	const text = readText(join(resolve(cwd), STATE_FILE));
-	if (typeof text !== "string") return null;
-	try {
-		const state = JSON.parse(text);
-		return state && typeof state.lastStage === "string" ? state.lastStage : null;
-	} catch {
-		return null;
-	}
 }
 
 // ---- 共用助手 ----
@@ -436,43 +354,3 @@ function isDddProject(cwd) {
 // ---- 未完成项注入 ----
 
 const OPEN_ITEMS_SECTION_NAME = "ddd_open_items";
-
-// 三类未完成项的一次性采集：义务节点与超期债务共用同一读盘与判定，注入与 H-4 守卫复用同一结果；任一组依赖缺失即该类降级略过
-function collectOpenItems(ctx) {
-	try {
-		const cwd = ctx && ctx.cwd;
-		if (typeof cwd !== "string" || cwd === "") return EMPTY_OPEN_ITEMS;
-		const root = resolve(cwd);
-		return {
-			obligations: collectOpenObligations(root),
-			debts: collectDebtView(root),
-			state: parseStageState(readText(join(root, STATE_FILE))),
-			channelStages: collectChannelStages(),
-		};
-	} catch {
-		return EMPTY_OPEN_ITEMS;
-	}
-}
-
-// 债务未清项视图：登记簿读盘一次，超期判定在此一次完成；路径或版本依赖缺失即降级
-function collectDebtView(root) {
-	if (!debtPathDeps) return null;
-	const debtPath = debtPathDeps.artifactReadPath(root, debtPathDeps.debtBookRel);
-	if (!debtPath) return null;
-	const registry = parseDebtRegistry(readText(debtPath));
-	if (!registry) return null;
-	const overdue = versionDeps ? overdueDebts(registry, versionDeps.compareVersion, versionDeps.parseVersion) : [];
-	return { ...registry, overdue };
-}
-
-// 通道阶段键全序：读包内主技能正文后交由脚本侧解析实现；解析器缺失或正文不可读即降级
-function collectChannelStages() {
-	if (typeof stageParser !== "function") return null;
-	const text = readText(SKILL_FILE);
-	if (typeof text !== "string") return null;
-	try {
-		return stageParser(text);
-	} catch {
-		return null;
-	}
-}

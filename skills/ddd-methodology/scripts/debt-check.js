@@ -15,7 +15,8 @@
  * 输出上限：12000 字节，按 UTF-8 字节计量；超限截断明细，末行结论保留完整
  * 未启用取向：docs/debts.json 不存在时视为未启用，输出说明并判通过，不报错，兼容既有项目
  * 版本比较：按 v主.次[.补丁] 解析为数值后比较，不做字符串比较，避免 v2.10 与 v2.9 误判；补丁段缺省按零，v1.2 与 v1.2.0 视为同一版本
- * 依赖：文本读取取 ./lib/text.js 的 readFileText，版本比较取 ./lib/version.js，债务快照与复发检测取 ./lib/debt-history.js，本脚本不再内联这些实现
+ * 超期判据：取 ./lib/version.js 的 isOverdue 唯一实现，本脚本不另写一次版本比较
+ * 依赖：文本读取取 ./lib/text.js 的 readFileText，版本标识解析与超期判据取 ./lib/version.js，债务快照与复发检测取 ./lib/debt-history.js，本脚本不再内联这些实现
  * 规范依据：规范「存量债务的登记与清偿」节的登记、超期校验与上限三节
  */
 
@@ -24,7 +25,7 @@ const fs = require("fs");
 const { readFileText, isBlank } = require("./lib/text.js");
 const { DEFAULT_LIMIT_BYTES, capLines } = require("./lib/truncate.js");
 // 版本标识的解析、比较、应清版本推导与格式化取共享层，与 metrics-report 共用，避免第三处实现
-const { parseVersion, compareVersion, deriveDue, formatVersion } = require("./lib/version.js");
+const { parseVersion, isOverdue, deriveDue, formatVersion } = require("./lib/version.js");
 // 债务历史快照与根因复发检测取共享层，本脚本只负责按登记簿构建摘要并落盘、输出段落
 const { readHistory, summarize, upsertSnapshot, capHistory, saveHistory, detectRecurrence } = require("./lib/debt-history.js");
 // 产物路径取共享层单一常量，登记簿路径不再复写字面量
@@ -130,22 +131,22 @@ function check() {
       reasons.push(`${DEBTS_REL} ${label} registeredAt 非法（须形如 v主.次[.补丁]）：${JSON.stringify(entry.registeredAt)}`);
     }
     // dueBy 对未清项条件必填、对已清项可省；省略时按 registeredAt 加 defaultDueSpan 个补丁步推导应清版本，推导结果严格晚于 currentVersion
-    let due = null;
+    let dueText = null;
     let derived = null;
     if (isBlank(entry.dueBy)) {
       if (registered !== null && dueSpan !== null) derived = deriveDue(registered, dueSpan, current);
       if (entry.status === "open") reasons.push(`${DEBTS_REL} ${label} 未清项须显式给出 dueBy`);
     } else {
-      due = parseVersion(entry.dueBy);
-      if (due === null) reasons.push(`${DEBTS_REL} ${label} dueBy 非法（须形如 v主.次[.补丁]）：${JSON.stringify(entry.dueBy)}`);
+      dueText = entry.dueBy;
+      if (parseVersion(entry.dueBy) === null) reasons.push(`${DEBTS_REL} ${label} dueBy 非法（须形如 v主.次[.补丁]）：${JSON.stringify(entry.dueBy)}`);
     }
     // 快照摘要取全部条目，含已清项：复发检测按上一版本快照的未清项与当前版本新增登记项比对
-    summaries.push(summarize(entry, !isBlank(entry.dueBy) ? entry.dueBy : (derived ? formatVersion(derived) : null)));
+    summaries.push(summarize(entry, dueText !== null ? dueText : (derived ? formatVersion(derived) : null)));
     if (entry.status !== "open") return;
     openCount++;
-    const effectiveDue = due || derived;
-    if (effectiveDue && current && compareVersion(effectiveDue, current) < 0) {
-      const shown = derived ? `推导 ${formatVersion(derived)}` : entry.dueBy;
+    const effectiveDueText = dueText !== null ? dueText : (derived ? formatVersion(derived) : null);
+    if (isOverdue(effectiveDueText, data.currentVersion)) {
+      const shown = dueText !== null ? dueText : `推导 ${formatVersion(derived)}`;
       reasons.push(`${DEBTS_REL} ${label} 超期：dueBy ${shown} 早于 currentVersion ${data.currentVersion}`);
     }
   });

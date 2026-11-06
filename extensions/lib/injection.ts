@@ -14,13 +14,12 @@
  */
 
 import { join } from "node:path";
-import { PACKAGE_ROOT, readText } from "./shared.ts";
+import { PACKAGE_ROOT, STATE_FILE_REL, readText } from "./shared.ts";
 
 export const PROJECT_LANGUAGE_STACK = "项目语言栈";
 export const TASK_LANGUAGE = "任务涉及语言";
 
 export const MATRIX_PATH = join(PACKAGE_ROOT, "skills", "ddd-methodology", "assets", "injection-matrix.json");
-export const STATE_REL = join("docs", ".ddd-state.json");
 export const ARCHITECTURE_REL = "ARCHITECTURE.md";
 
 // 任务文本候选字段：宿主 before_agent_start 事件形状未定，按序取第一个非空字符串，取不到即空串（语言维度退回项目语言栈）
@@ -218,7 +217,7 @@ export function loadMatrixText(): string | null {
 }
 
 export function readStateText(cwd: string): string | null {
-	return typeof cwd === "string" && cwd !== "" ? readText(join(cwd, STATE_REL)) : null;
+	return typeof cwd === "string" && cwd !== "" ? readText(join(cwd, STATE_FILE_REL)) : null;
 }
 
 export function readArchitectureText(cwd: string): string | null {

@@ -3,7 +3,7 @@
  *
  * 目标：以 bun test 与 node --test 验证 extensions/lib/open-items.ts 的六项纯函数——债务登记簿解析、超期未清项判定、
  *   状态文件解析、通道剩余阶段、三类聚合文本与 H-4 清零拦截理由，覆盖正常与损坏、三态与两态等边界。
- * 范围：不读项目文件、不起子进程；版本解析与比较复用脚本侧 version.js，不另写一份。
+ * 范围：不读项目文件、不起子进程；超期判据复用脚本侧 version.js 的 isOverdue，不另写一份。
  * 运行：bun test extensions（本文件位于 extensions/lib/，该目录无 index 入口，不被宿主当作扩展加载）
  */
 
@@ -19,9 +19,9 @@ import {
 	remainingStages,
 } from "./open-items.ts";
 
-// 版本解析与比较取脚本侧唯一实现，使超期判定与债务校验同源
+// 超期判据取脚本侧唯一实现，使超期判定与债务校验同源
 const require = createRequire(import.meta.url);
-const { parseVersion, compareVersion } = require("../../skills/ddd-methodology/scripts/lib/version.js");
+const { isOverdue } = require("../../skills/ddd-methodology/scripts/lib/version.js");
 
 const CHANNEL_STAGES = {
 	A: ["requirements", "architect", "audit"],
@@ -65,13 +65,13 @@ test("overdueDebts：超期、未超期与不可解析三态，不可解析者�
 			{ id: "D-103", owner: "x", desc: "", status: "open" },
 		]),
 	);
-	assert.deepEqual(overdueDebts(registry, compareVersion, parseVersion).map((item) => item.id), ["D-100"]);
+	assert.deepEqual(overdueDebts(registry, isOverdue).map((item) => item.id), ["D-100"]);
 });
 
 test("overdueDebts：currentVersion 不可解析或登记簿缺失一律回空数组", () => {
 	const bad = { currentVersion: "bad", maxOpen: null, open: [{ id: "D-1", dueBy: "v0.1.0", owner: "x", desc: "" }] };
-	assert.deepEqual(overdueDebts(bad, compareVersion, parseVersion), []);
-	assert.deepEqual(overdueDebts(null, compareVersion, parseVersion), []);
+	assert.deepEqual(overdueDebts(bad, isOverdue), []);
+	assert.deepEqual(overdueDebts(null, isOverdue), []);
 });
 
 test("parseStageState：正常状态字段齐备，非法 JSON 或非对象回 null", () => {

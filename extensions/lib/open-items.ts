@@ -5,15 +5,13 @@
  *   H-4 清零拦截理由收敛为一处纯实现，供 ddd-governance 的启动注入与门禁清零守卫共用同一口径。
  * 范围：六项纯函数——parseDebtRegistry、overdueDebts、parseStageState、remainingStages、buildOpenItemsText、gateClearanceBlock。
  *   入参一律为文本或已解析对象，出参为解析结果或文本。
- * 不包含：读盘与落点解析（由 ddd-governance 经 createRequire 复用脚本侧 paths.js）、版本比较实现（复用脚本侧 version.js）、
+ * 不包含：读盘与落点解析（见同目录 open-items-source.ts）、版本比较实现（复用脚本侧 version.js 的 isOverdue）、
  *   阶段键解析实现（复用脚本侧 ref-stages.js）、section 写入与守卫激活判据（见 ddd-governance.ts）。
  * 依据：设计 DESIGN-extensions.md 第一节四模块表、第二节 H-4 行、第三节「未完成项注入」小节。
  */
 
-// 版本三段形态与脚本侧 version.js 的解析结果同形，比较与解析实现由调用方注入，本模块不另写一份
-export type Version = { major: number; minor: number; patch: number };
-export type ParseVersion = (value: unknown) => Version | null;
-export type CompareVersion = (a: Version, b: Version) => number;
+// 超期判据：入参为应清版本声明文本与当前版本文本，均可解析且前者早于后者即真；实现由调用方注入（脚本侧 version.js 的 isOverdue），本模块不另写一份
+export type IsOverdue = (dueValue: unknown, currentValue: unknown) => boolean;
 
 // 未清债务项：字段名与债务登记簿一致；dueBy 可省，省略即 null
 export type OpenDebt = { id: string; dueBy: string | null; owner: string; desc: string };
@@ -63,15 +61,12 @@ export function parseDebtRegistry(text: string | null): DebtRegistry | null {
 	};
 }
 
-// 超期未清项：dueBy 与 currentVersion 均可解析且 dueBy 早于 currentVersion 者计入；不可解析者不判超期
-export function overdueDebts(registry: DebtRegistry | null, compareVersion: CompareVersion, parseVersion: ParseVersion): OpenDebt[] {
-	if (!registry || !Array.isArray(registry.open)) return [];
-	const current = parseVersion(registry.currentVersion);
-	if (!current) return [];
+// 超期未清项：应清版本早于当前版本者计入；不可解析者由判据回假，不判超期
+export function overdueDebts(registry: DebtRegistry | null, isOverdue: IsOverdue): OpenDebt[] {
+	if (!registry || !Array.isArray(registry.open) || typeof isOverdue !== "function") return [];
 	const overdue: OpenDebt[] = [];
 	for (const item of registry.open) {
-		const due = parseVersion(item.dueBy);
-		if (due && compareVersion(due, current) < 0) overdue.push(item);
+		if (isOverdue(item.dueBy, registry.currentVersion)) overdue.push(item);
 	}
 	return overdue;
 }

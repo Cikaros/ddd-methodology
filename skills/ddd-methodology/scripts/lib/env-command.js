@@ -5,7 +5,7 @@
  * 不包含：进程调用与文件读写——由 scripts/env-probe.js 注入 isFile、listDir 与 runManager 三类副作用原语；亦不含探测主链、记录落盘与命令行入口。复用同目录 env-resolve.js 的目录级解析原语，可执行文件的位置表与四级优先级不在本模块。不引入第三方依赖。
  * 边界：普通管理器列出命令失败只降级为单一版本文本，不报缺陷；运行时提供者清单不可得则留空，命令组装对所需版本的校验降级为不校验并登记降级，绝不回填管理器自身版本冒充清单；
  *   所需版本未声明时不加版本前缀，只按激活版本执行；入参未给所需版本时回退取记录中的 required，使命令组装与记录声明同源，其生产调用者为 scripts/env-command.js；不得为取版本改动全局激活状态，切换只以逐命令形态表达。
- * 消费方：scripts/env-command.js 的生产入口、scripts/env-probe.js 的装配处，以及 lib/env-probe.test.js 与 lib/env-command.test.js 的测试；语言形态优先级表的最终判据归语言技能，本版为缺省序。
+ * 消费方：scripts/env-command.js 的生产入口、scripts/env-probe.js 的装配处，以及 lib/ref-env.js、lib/env-probe.test.js 与 lib/env-command.test.js 的测试；语言形态优先级表的权威为 lib/env-probe.js 的 LANGUAGE_FORMS 常量。
  */
 
 const { resolveExecutablePath } = require("./env-resolve.js");
@@ -312,33 +312,16 @@ function buildCommand({ template, candidates, language, required }, record) {
 }
 
 module.exports = {
-  NODE_MANAGERS,
-  PYTHON_MANAGERS,
-  JAVA_MANAGERS,
-  MANAGER_CANDIDATES,
-  UNIVERSAL_MANAGERS,
   COMMAND_GROUPS,
   LANGUAGE_RUNTIMES,
-  managerCandidates,
-  detectManager,
   parseVersionList,
-  managerFact,
   collectManagers,
   enrichTools,
   versionCheckDowngrades,
   PROVIDER_LANGUAGES,
-  resolveLanguageManager,
-  managedRow,
-  versionAdjustedRunner,
   composeCommand,
   parseRequiredArgs,
   mergeRequired,
   declaredRequired,
-  frameworkAvailable,
-  runnerAvailable,
-  candidateMatches,
-  candidateRunner,
-  missingFrameworks,
-  buildFromCandidates,
   buildCommand,
 };

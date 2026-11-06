@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 /**
  * 目标：把「脚本族可用」这件事本身外化为可复现的机械证据，闭合「机械校验有盲区、工具链自身无测试」的盲区。
- * 范围：三项断言——其一，skills/ddd-methodology/scripts/ 下全部 .js 逐个过语法检查，任一不通过即失败，直接防止整族集体静默失效；
- *   其二，对每个有命令行入口的脚本以本仓库根为参数运行并记退出码，超时记 timeout 并判失败，不得静默跳过；
- *   其三，退出码与基线文件比对，不一致即打印差异并失败。
+ * 范围：四项断言——其一，skills/ddd-methodology/scripts/ 下全部 .js 逐个过语法检查，任一不通过即失败，直接防止整族集体静默失效；
+ *   其二，对每个有命令行入口的脚本运行并记退出码，超时记 timeout 并判失败，不得静默跳过；运行根分两类：环境探测入口的根入参是「项目数据根」，其副作用（写环境记录与补写 .gitignore）直接落该根，
+ *   故自测先为它建一个临时根、运行后清理，隔离其对本仓库的写入，而非把它排除出运行面——排除会让该入口在自测链上留下盲区；其余入口一律以本仓库根为参数运行；
+ *   其三，退出码与基线文件比对，不一致即打印差异并失败；
+ *   其四，跑入口前与跑完后各取一次 git status --porcelain，两者不相等即报缺口并判失败；入口的副作用须限于被忽略或未跟踪件，且前后工作区状态不变；
+ *   该比对的保证面为「跟踪面」，即版本控制可见的已跟踪改动与未被忽略的未跟踪件，被忽略产物（如环境记录 docs/.ddd-env.json）不在其内，故此类写入只能由上面的临时根隔离另行保证。
  * 语法判定口径：普通 .js 直接 `node --check`；编排脚本（如 ddd-workflow.js）运行在宿主 workflow 沙箱中，其正文被宿主包进 async 函数，
  *   顶层 await 与顶层 return 合法，故 `node --check` 会误报。对此类文件改以「沙箱口径」复检：把正文包进 async IIFE 后经 stdin 过 `node --check`，
  *   沙箱口径仍失败才计语法失败。该口径不排除任何文件，消除「用排除掩盖真实缺口」的风险，只改判定方式。
@@ -13,16 +16,20 @@
  * 基线：skills/ddd-methodology/scripts/lib/toolchain-baseline.json，记录每个入口脚本在本仓库的预期退出码，由首次运行生成并纳入版本管理，
  *   此后仅由人工在确有正当变化时以 --init 更新。
  * 输出形态：文本正文；末行机读结论 `RESULT: pass`（全部符合）或 `RESULT: fail`（存在不一致）。
- * 退出码：0 全部符合基线，1 存在语法失败、运行失败、超时或退出码与基线不一致。
+ * 退出码：0 全部符合基线，1 存在语法失败、运行失败、超时、工作区状态改变或退出码与基线不一致；工作区状态改变一事以「跟踪面」为判据，被忽略产物不在其内。
  */
 
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const { spawnSync } = require("child_process");
 
 const TIMEOUT_MS = 120000; // 单个入口的运行上限，超时判失败，避免挂死拖垮自测
 // 不入自动调用的入口：自身运行会递归，故排除自身；其余入口一律参与运行与退出码断言
 const EXCLUDED_ENTRIES = new Set(["toolchain-selftest.js"]);
+// 隔离运行的入口：环境探测入口的根入参是「项目数据根」，其副作用直接写该根，以本仓库根运行会覆盖本仓库环境记录并可能改写本仓库 .gitignore；
+// 故为它建临时根并清理，只验证退出码，不把它排除出运行面——排除会让该入口在自测链上留下盲区
+const ISOLATED_ROOT_ENTRIES = new Set(["env-probe.js"]);
 const BASELINE_REL = ["skills", "ddd-methodology", "scripts", "lib", "toolchain-baseline.json"];
 
 const argv = process.argv.slice(2);
@@ -53,6 +60,11 @@ function outcomeOf(result) {
   if (result.status === null) return "timeout";
   return result.status;
 }
+// 工作区状态快照：取 git status --porcelain 原文，供入口运行前后比对；git 不可用或当前根非工作树回 null，此时该项跳过不误判
+function gitStatus(root) {
+  const result = spawnSync("git", ["-C", root, "status", "--porcelain"], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  return result.status === 0 ? String(result.stdout || "") : null;
+}
 // 沙箱口径语法复检：把正文包进 async IIFE 后经 stdin 过 node --check，顶层 await 与 return 在此口径下合法
 function checkSandboxSyntax(source) {
   const wrapped = `(async () => {\n${source}\n})();\n`;
@@ -81,11 +93,28 @@ const entries = scripts.filter((file) => hasEntry(file) && !EXCLUDED_ENTRIES.has
 
 const observed = {};
 const runFailures = [];
+// 入口运行前后的工作区状态：入口的副作用须限于被忽略或未跟踪件，前后不等即报缺口
+const statusBefore = gitStatus(root);
 for (const file of entries) {
-  const result = spawnSync(process.execPath, [file, root], { cwd: root, encoding: "utf8", timeout: TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024 });
+  const isolated = ISOLATED_ROOT_ENTRIES.has(path.basename(file));
+  // 隔离入口以临时根运行，运行后连根一并清理，使副作用不落本仓库
+  const runRoot = isolated ? fs.mkdtempSync(path.join(os.tmpdir(), "ddd-selftest-")) : root;
+  let result;
+  try {
+    result = spawnSync(process.execPath, [file, runRoot], { cwd: root, encoding: "utf8", timeout: TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024 });
+  } finally {
+    if (isolated) fs.rmSync(runRoot, { recursive: true, force: true });
+  }
   const outcome = outcomeOf(result);
   observed[relOf(file)] = outcome;
   if (outcome === "timeout") runFailures.push(`${relOf(file)}：运行超时（> ${TIMEOUT_MS}ms）`);
+}
+const statusAfter = gitStatus(root);
+// 两项皆可得方可比；任一不可得时该项不可判，跳过而不误报
+const workspaceComparable = statusBefore !== null && statusAfter !== null;
+const workspaceChanged = workspaceComparable && statusBefore !== statusAfter;
+if (workspaceChanged) {
+  runFailures.push(`入口运行前后工作区状态不一致（git status --porcelain 改变），入口的副作用须限于被忽略或未跟踪件`);
 }
 
 const baselinePath = path.join(root, ...BASELINE_REL);
@@ -122,6 +151,7 @@ lines.push(`仓库根：${root}`);
 lines.push(`语法：${scripts.length} 个 .js 过语法检查（普通口径通过 ${scripts.length - sandboxChecked - syntaxFailures.length}，沙箱口径通过 ${sandboxChecked}），失败 ${syntaxFailures.length}`);
 for (const item of syntaxFailures) lines.push(`  ✗ ${item}`);
 lines.push(`入口：${entries.length} 个（自检脚本 ${scripts.length} 个，含命令行入口且有 shebang 者；仅排除自身）`);
+lines.push(`工作区状态：入口运行前后 git status --porcelain ${workspaceComparable ? (workspaceChanged ? "不一致" : "一致") : "不可比（git 不可用或当前根非工作树）"}`);
 lines.push(`基线：${baselineNote}`);
 for (const [key, value] of Object.entries(observed)) lines.push(`  · ${key} 退出码 ${value}`);
 if (runFailures.length) { lines.push("[运行失败]"); for (const item of runFailures) lines.push(`  ✗ ${item}`); }

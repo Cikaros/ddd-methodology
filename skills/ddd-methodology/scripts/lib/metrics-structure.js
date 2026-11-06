@@ -1,6 +1,6 @@
 /**
  * 目标：脚本共享层的结构与债务类度量，按规范「绩效度量」节的结构与债务类口径计算三项——超阈值文件数趋势、债务未清数与超期率、同一根因复发次数。
- * 范围：基于已读取的健康度量与登记簿数据计算——趋势取历史末三条的源码与文档超限之和、超期按未清项应清版本与当前版本比较、复发按根因分类汇总复发计数；
+ * 范围：基于已读取的健康度量与登记簿数据计算——趋势取历史末三条的源码与文档超限之和、超期按共享层 isOverdue 判据与当前版本比较、复发按根因分类汇总复发计数；
  *   数据缺失或字段不全时相应度量记空并给出说明，不改口径、不判失败。
  * 不包含：来源读取原语（见 metrics-sources.js）、交付质量类与声明面类度量（见 metrics-delivery.js）、文本报告装配与产物落盘、命令行入口。不引入第三方依赖。
  */
@@ -8,7 +8,7 @@
 const { HEALTH_REL, DEBT_BOOK_REL } = require("./paths.js");
 const { num, isBlank } = require("./text.js");
 const { isMissingNumber } = require("./metrics-sources.js");
-const { parseVersion, compareVersion, deriveDue } = require("./version.js");
+const { parseVersion, isOverdue, deriveDue, formatVersion } = require("./version.js");
 
 // 度量一：超阈值文件数趋势。取历史末三条，超阈值文件数按源码超限与文档超限之和计；缺字段条目按缺省零处理并标注
 function computeTrend(health) {
@@ -66,14 +66,17 @@ function computeDebt(debts) {
     if (entry.status !== "open") continue;
     openTotal++;
     // dueBy 可省：省略时按登记版本加 defaultDueSpan 个补丁步并经 deriveDue 保证严格晚于当前版本；推导不出应清版本时不判超期
-    let due = null;
+    let dueText = null;
     if (isBlank(entry.dueBy)) {
       const registeredVersion = parseVersion(entry.registeredAt);
-      if (registeredVersion !== null && span !== null) due = deriveDue(registeredVersion, span, current);
+      if (registeredVersion !== null && span !== null) {
+        const derived = deriveDue(registeredVersion, span, current);
+        if (derived !== null) dueText = formatVersion(derived);
+      }
     } else {
-      due = parseVersion(entry.dueBy);
+      dueText = entry.dueBy;
     }
-    if (due && current && compareVersion(due, current) < 0) overdueCount++;
+    if (isOverdue(dueText, data.currentVersion)) overdueCount++;
   }
   if (current === null) notes.push(`${DEBT_BOOK_REL} 的 currentVersion 非法或缺失，超期率按无当前版本处理`);
   const overdueRate = openTotal ? Number((overdueCount / openTotal).toFixed(4)) : 0;

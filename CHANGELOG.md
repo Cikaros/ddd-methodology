@@ -2,6 +2,21 @@
 
 本文件记录 pi package 形态的版本变更，版本号与仓库根 `package.json` 的 `version` 对应，采用三段式语义化版本；本包经 `pi install` 安装，例如 `pi install git:github.com/Cikaros/ddd-methodology`。方法论规范版本 v1.0 至 v2.21 的演进史已归档至 `docs/internal/history/spec-changelog.md`，属内部档案，不作为公开内容。
 
+## 0.8.11 - 2026-11-06
+
+本轮为自维护通道 C 的五笔债务清偿，落在环境命令组装的声明面与导出面、超期判据与状态解析的单源、治理扩展的减重与自测链的写入面隔离四处。
+
+- **修复**：`lib/env-command.js` 与 `lib/env-probe.js` 头部关于语言形态优先级判据的声明改述为指向 `lib/env-probe.js` 的 `LANGUAGE_FORMS` 常量，删去「归语言技能」之说——六份语言技能与其资产内并无该声明，权威实落脚本常量。**清偿 D-042**。
+- **变更**：设计册 `DESIGN-environment.md` 第四节其三由「优先级的判据由语言技能给出」改述为以 `lib/env-probe.js` 的 `LANGUAGE_FORMS` 为单处权威，与 `lib/env-command.js`、`lib/env-probe.js` 头部声明同源，判据不再指向语言技能。
+- **变更**：`lib/env-command.js` 的导出面按消费面收敛，撤下 `NODE_MANAGERS`、`PYTHON_MANAGERS`、`JAVA_MANAGERS`、`MANAGER_CANDIDATES`、`UNIVERSAL_MANAGERS`、`managerCandidates`、`detectManager`、`managerFact`、`resolveLanguageManager`、`managedRow`、`versionAdjustedRunner`、`frameworkAvailable`、`runnerAvailable`、`candidateMatches`、`candidateRunner`、`missingFrameworks`、`buildFromCandidates` 十七项零外部引用的导出，其余函数改作不导出的模块内实现；全仓复检十七名在 `lib/env-command.js` 之外零引用。**清偿 D-043**。
+- **修复**：超期判据收敛为 `lib/version.js` 的 `isOverdue(dueValue, currentValue)` 单一实现，`debt-check.js`、`lib/metrics-structure.js` 与 `extensions/lib/open-items.ts` 的 `overdueDebts` 一律改用它，`overdueDebts` 入参改为接收该判据并由 `extensions/lib/open-items-source.ts` 经 `versionDeps` 传入；状态文件解析只留 `open-items.ts` 的 `parseStageState`，`ddd-governance.ts` 删去 `readLastStage` 改由后者取值，单处解析。**清偿 D-045**。
+- **重构**：未完成项注入与 H-4 清零所需的读盘与依赖绑定外置为 `extensions/lib/open-items-source.ts`，含债务登记簿、状态文件与主技能正文的读盘、`paths.js`、`version.js` 与 `ref-stages.js` 三处 `createRequire` 绑定与降级、以及三类采集的合成；`ddd-governance.ts` 只调该模块且注入面与 H-4 面共用同一次采集，行数由四百七十八降至三百五十七，退出五百行阈值的八成预警区；`open-items.ts` 仍只放纯函数。**清偿 D-046**。
+- **新增**：`toolchain-selftest.js` 加入写入面隔离的机械保证——跑入口前后各取一次 `git status --porcelain`，两者不相等即记运行失败并判失败；保证面明写为跟踪面，被忽略产物不在其内；环境探测入口以临时根运行，隔离其对本仓库的写入，其余入口仍以仓库根运行。**清偿 D-044**。
+- **修复**：`scripts/env-probe.js` 与 `scripts/coverage-check.js` 补 shebang，结束两条已自述用法、已入结构树入口声明却在自测入口集内静默跳过之状；自测入口由十五增至十七，`README.md` 命令入口清单由十六增至十八，工具链基线补登两条退出码。
+- **变更**：`docs/.ddd-state.json` 的路径常量收敛为 `extensions/lib/shared.ts` 的单一导出，`injection.ts`、`ddd-governance.ts` 与 `open-items-source.ts` 三处改为按名引用，消除同一路径三处并列，结构健康度量的同名声明项随之回落。
+- **变更**：收敛度基线 `repoItems.files` 由一百八十九更新为一百九十一；`package.json` 与债务登记簿 `currentVersion` 同步为 `v0.8.11`；`docs/internal/check-coverage.json` 未加行。
+- **变更**：全仓单测由一百九十二例增至二百零一例。脚本侧 `node --test` 由一百三十九例增至一百四十二例，增量为 `version.test.js` 的 `isOverdue` 三例；扩展侧 `bun test` 由五十三例增至五十九例，增量为 `open-items-source.test.ts` 六例，覆盖三类采集齐备、单类降级与 cwd 缺失时的全空降级。
+
 ## 0.8.10 - 2026-11-06
 
 本轮为未完成项注入的扩面、H-4 门禁清零判据的扩面与债务应清版本推导口径的调整三项。

@@ -1,6 +1,7 @@
 /**
- * 目标：脚本共享层的版本标识工具，把 v主.次[.补丁] 的解析、数值比较、补丁步推进、应清版本推导与格式化收敛为唯一实现，供 debt-check、metrics-report 与扩展侧经 createRequire 的复用方共用。
- * 范围：五项纯函数——解析、比较、加补丁步、应清版本推导、格式化；版本形态为 v主.次 或 v主.次.补丁，缺省补丁按零，比较按三段数值。
+ * 目标：脚本共享层的版本标识工具，把 v主.次[.补丁] 的解析、数值比较、补丁步推进、应清版本推导、超期判定与格式化收敛为唯一实现，供 debt-check、metrics-report 与扩展侧经 createRequire 的复用方共用。
+ * 范围：六项纯函数——解析、比较、加补丁步、应清版本推导、超期判定、格式化；版本形态为 v主.次 或 v主.次.补丁，缺省补丁按零，比较按三段数值。
+ *   超期判据 isOverdue 由 debt-check、lib/metrics-structure 与扩展侧经 createRequire 复用，各消费方不再各写一次比较。
  * 不包含：登记簿字段语义（见顶层 debt-check.js）、趋势与度量口径（见顶层 metrics-report.js）、命令行入口。不引入第三方依赖。
  */
 
@@ -48,4 +49,11 @@ function formatVersion(v) {
   return v.patch ? `v${v.major}.${v.minor}.${v.patch}` : `v${v.major}.${v.minor}`;
 }
 
-module.exports = { parseVersion, compareVersion, addSpan, deriveDue, formatVersion };
+// 超期判定（纯函数）：应清版本与当前版本均可解析且前者早于后者即真；任一不可解析即假，使不可判定的项不误判超期
+function isOverdue(dueValue, currentValue) {
+  const due = parseVersion(dueValue);
+  const current = parseVersion(currentValue);
+  return due !== null && current !== null && compareVersion(due, current) < 0;
+}
+
+module.exports = { parseVersion, compareVersion, addSpan, deriveDue, formatVersion, isOverdue };

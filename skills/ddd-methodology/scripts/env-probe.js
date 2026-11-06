@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * 目标：探测本机工具链并落盘为 <项目根>/docs/.ddd-env.json，供后续节点按环境记录组装测试与覆盖率命令，替代写死的调用形态。
  * 范围：校验项目根入参、解析所需版本参数（命令行 `--required <语言名>=<版本>` 与旧件声明的 `required` 并入）、注入进程与文件两类副作用原语、调用 lib/env-probe.js 的纯函数装配记录（结构键集为 probedAt、tools、languages、frameworks 四键，项目声明所需版本时并入可选第五键 required；tools 每项七键：path、source 与可用性、版本，加管理器三键，其中 source 取四级优先链所得来源级别，见 DESIGN-environment.md 第八、十、十二节）、写出机读件后确保 <项目根>/.gitignore 排除该件（先经 git check-ignore 判定；未排除而 .gitignore 存在时补写排除规则；.gitignore 不存在而根为 git 工作树时创建之，非工作树只提示不建文件；两处写盘失败——该路径是目录或权限不足——只登记失败取值，不上抛、不中断）、输出人读摘要（含提供者行、校验降级、来源分级、测试框架三态、已声明的所需版本与本次入库保证动作，后者取值五态：已排除、已补写排除规则、已新建 .gitignore、未检出 .gitignore、排除规则写入失败）。

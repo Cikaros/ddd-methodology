@@ -1,7 +1,7 @@
 /**
  * 扩展共享小工具
  *
- * 目标：收敛四个扩展各自的重复小工具，承载包根解析、脚本执行超时、pi.exec 退出码归一、错误描述与安全读文本五项，供扩展复用。
+ * 目标：收敛四个扩展各自的重复小工具，承载包根解析、状态文件相对路径、脚本执行超时、pi.exec 退出码归一、错误描述与安全读文本六项，供扩展复用。
  * 范围：只放与宿主及具体扩展无关的纯工具；无默认导出，不挂接任何事件、不注册工具与命令。
  * 不包含：各扩展的入口与注册逻辑（见同目录上层的 ddd-context、ddd-governance、ddd-tools、ddd-resources 四个文件）。
  *
@@ -12,10 +12,13 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 // 本文件位于 <包根>/extensions/lib/ 下，故自 import.meta.url 回退两级即包根；消费方按同一值拼 skills/ddd-methodology/scripts/ 下的脚本路径
 export const PACKAGE_ROOT = fileURLToPath(new URL("../..", import.meta.url));
+// 状态文件相对路径：注入矩阵的节点键、H-2 的当前阶段与未完成项采集均据此定位，本常量为唯一声明处
+export const STATE_FILE_REL = join("docs", ".ddd-state.json");
 // 脚本执行的统一超时：既有可用性冒烟的网络请求，也有机械校验的长任务，留足预算，超时一律按执行失败处理
 export const EXEC_TIMEOUT_MS = 120_000;
 

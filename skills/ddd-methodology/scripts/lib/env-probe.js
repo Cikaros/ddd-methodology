@@ -6,7 +6,7 @@
  * 不包含：进程调用与文件读写——由 scripts/env-probe.js 注入 isFile、listDir 与 runVersion 三类副作用原语；可执行文件的位置表与四级解析见 lib/env-resolve.js；版本管理器与命令组装见 lib/env-command.js；亦不含记录落盘、目录遍历与命令行入口。不引入第三方依赖。
  * 边界：探测只查本机文件系统与命令输出，不访问网络；某项缺失不报缺陷，只记 available 为 false。
  *   不可用有两态，须可区分：其一四级均不命中，path 为空；其二路径存在但该处不可执行（取不到版本，或经 pwsh 承载者模块不在），path 非空。
- * 消费方：scripts/env-probe.js 的装配处；语言形态优先级表的最终判据归语言技能，本版为缺省序。
+ * 消费方：scripts/env-probe.js 的装配处，以及 lib/ref-env.js、lib/env-probe.test.js 与 lib/env-command.test.js；语言形态优先级表的权威为本文件 LANGUAGE_FORMS 常量。
  */
 
 const { resolveWithSource } = require("./env-resolve.js");
