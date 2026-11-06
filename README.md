@@ -98,4 +98,4 @@ skill、agent、扩展与提示模板的安装与移除均由 pi package 机制�
 
 - [earendil-works/pi](https://github.com/earendil-works/pi)：宿主平台。本包以其扩展接口、技能机制与提示模板机制为承载，全局规则以 section 注入而不改写用户全局文件。
 - [nicobailon/pi-subagents](https://github.com/nicobailon/pi-subagents)：子代理与脚本化工作流机制。本包的代理定义格式、编排脚本与声明式验收均以其为准。
-- [mattpocock/skills](https://github.com/mattpocock/skills)：部分工程实践思想的来源。本项目按自身体系选择性借鉴，未整体引入，具体为缺陷诊断的反馈回路纪律、代码坏味道清单、接口深度判据、用例反模式与主动扫描方式五处，只取本体系未有者，且不改变既有判据与流程。
+- [mattpocock/skills](https://github.com/mattpocock/skills)：部分工程实践思想的来源。本项目按自身体系选择性借鉴，未整体引入，具体为缺陷诊断的六阶段骨架与反馈回路纪律、代码坏味道清单、接口深度判据与七个词汇、用例反模式与主动扫描方式五处，只取本体系未有者，且不改变既有判据与流程。
