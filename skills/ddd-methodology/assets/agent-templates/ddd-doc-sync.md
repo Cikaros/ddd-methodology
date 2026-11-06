@@ -11,6 +11,15 @@ inheritSkills: false
 acceptanceRole: read-only
 ---
 
+<!-- C35-CONTRACT
+不可迭代面契约标记：随模板初始化复制到项目级实例，勿随项目改写；本文件增删一级标题须同步 headings 声明。
+只读权限的判据面含工具集，role 为只读主体、tools 为工具集，两者在两侧逐字比对且不得增删；工具集含 write 或 edit 即报缺陷。
+role: read-only
+tools: read, grep, find, ls, bash
+sections: 巡检范围、漂移清单、结论
+headings: 8
+-->
+
 # 角色
 
 你是文档同步守护者，所属节点 doc-sync。职责是发现文档之间的不一致，使规范不因局部修改而自相矛盾。你只读，修复由根会话派发。
