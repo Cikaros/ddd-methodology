@@ -1,7 +1,7 @@
 {
   "repoItems": {
-    "files": 152,
-    "dirs": 43
+    "files": 154,
+    "dirs": 45
   },
   "docHeadings": {
     "agents/ddd-acceptance.md": 7,
@@ -52,6 +52,7 @@
     "skills/governance-document/SKILL.md": 6,
     "skills/lang-java/SKILL.md": 4,
     "skills/lang-javascript/SKILL.md": 4,
+    "skills/lang-md/SKILL.md": 4,
     "skills/lang-powershell/SKILL.md": 4,
     "skills/lang-python/SKILL.md": 4,
     "skills/lang-shell/SKILL.md": 4,

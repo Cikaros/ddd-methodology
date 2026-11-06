@@ -1,7 +1,7 @@
 /**
  * 目标：把本仓库的收敛度外化为四条机械断言——设计文档唯一、仓库条目数不增长、文档结构项数不增长、新增规则重复为零——
  *   作为 ref-check 的 C19 校验项，承载「设计内敛、文件内敛、规则内敛」判据。
- * 范围：C19 四项断言——其一，docs/internal/refactor/ 下 .md 文件恰好一份；
+ * 范围：C19 四项断言——其一，docs/internal/ 下改造设计文档树恰好一个（refactor-<版本>/），且其含入口 DESIGN.md；
  *   其二，仓库内非忽略文件数与目录数与基线比对，只报增长；其三，对 ref-check 已认定的活文档集合逐份统计标题数与基线比对，只报增长；
  *   其四，抽取候选规范句，在规范文件集内检出跨两个以上定义站点重复者中相对基线新增的部分，已登记于基线的重复不再计入。
  * 不包含：引用形态、常量集合、冻结短语的校验语义（各见同目录对应模块）、命令行入口。不引入第三方依赖。
@@ -17,7 +17,9 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 const { readFileText, drift } = require("./text.js");
 
-const REFACTOR_DIR_REL = "docs/internal/refactor";
+const REFACTOR_DIR_REL = "docs/internal";
+const REFACTOR_TREE_PREFIX = "refactor-";
+const REFACTOR_ENTRY_DOC = "DESIGN.md";
 const BASELINE_REL = "skills/ddd-methodology/scripts/lib/convergence-baseline.json";
 // 断言四的检出面：规范文件集，即 references/ 下的 spec*.md 与 templates*.md，只认定义站点，不收摘要重述
 const REFERENCES_DIR_REL = ["skills", "ddd-methodology", "references"];
@@ -103,14 +105,19 @@ function countHeadings(text) {
 function createConvergenceChecks(env) {
   const { root, relPath, liveDocPaths } = env;
 
-  // 断言一：设计文档恒为一份，零份或多份均属漂移
+  // 断言一：改造设计文档树恒为一个，零个或多个均属漂移；且该树须含入口 DESIGN.md
   function checkDesignSingleton(found) {
     const dir = path.join(root, ...REFACTOR_DIR_REL.split("/"));
-    let names;
-    try { names = fs.readdirSync(dir); } catch (e) { names = []; }
-    const mds = names.filter((name) => name.endsWith(".md"));
-    if (mds.length !== 1) {
-      found.push(drift("C19", `${REFACTOR_DIR_REL}/`, 0, "设计文档须恒为一份，零份或多份均属漂移", "恰好一份 .md", mds.length ? `${mds.length} 份：${mds.join("、")}` : "零份"));
+    let entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { entries = []; }
+    const trees = entries.filter((e) => e.isDirectory() && e.name.startsWith(REFACTOR_TREE_PREFIX)).map((e) => e.name).sort();
+    if (trees.length !== 1) {
+      found.push(drift("C19", `${REFACTOR_DIR_REL}/`, 0, "改造设计文档树须恒为一个，零个或多个均属漂移", `恰好一个 ${REFACTOR_TREE_PREFIX}<版本>/ 目录`, trees.length ? `${trees.length} 个：${trees.join("、")}` : "零个"));
+      return;
+    }
+    const entry = path.join(dir, trees[0], REFACTOR_ENTRY_DOC);
+    if (!fs.existsSync(entry)) {
+      found.push(drift("C19", `${REFACTOR_DIR_REL}/${trees[0]}`, 0, "改造设计文档树须含入口文档", `${REFACTOR_ENTRY_DOC} 存在`, "缺失"));
     }
   }
 

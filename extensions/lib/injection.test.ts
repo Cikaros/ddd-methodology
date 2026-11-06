@@ -82,7 +82,7 @@ test("矩阵三行取值与设计册一致：实现注入治理两份加工具�
 		tool: ["tool-bash"],
 	});
 	assert.deepEqual(matrix["detail-design"], {
-		constraint: ["spec-contract", "governance-document"],
+		constraint: ["spec-contract", "governance-document", "lang-md"],
 		language: [PROJECT_LANGUAGE_STACK],
 		tool: [],
 	});
