@@ -7,7 +7,7 @@
  * 输出形态：文本正文，含未覆盖（R 无 AC 承接 / 总 AC 无模块承接 / 模块 AC 无用例覆盖）、悬空引用（AC 引用了不存在的 R、模块引用了不存在的 AC、DESIGN 消费方引用了不存在的目录）、孤儿 AC、无设计来源的接口（接口在代码侧无对应导出）与模块名拼写不一致，以及义务核销缺口（设计侧义务条目在任务树模块节点文件中无对应节点，或节点状态与确定度取值不合法）
  * 新增判据的说明只在规范「结构与注释的机械证据」节的脚本消费契约表处展开，本脚本只落机械实现；判据无可机械判定形态时按「无法判定」告警并显式说明，不静默判过
  * 无设计来源的接口复用签名级提取能力，表格与章节解析原语（readTable、sectionBody）亦复用同一实现（均见 lib/span-compare.js），语言推导不出、消费方列非文件路径或解析器未安装时报「无法判定」并说明，不把比对逻辑复制进本脚本
- * 末行机读结论：通过输出 `RESULT: pass`，存在缺口输出 `RESULT: gap`，方法论仓库自身输出 `RESULT: pass`（不适用）
+ * 末行机读结论：通过输出 `RESULT: pass`，存在缺口输出 `RESULT: gap`，本仓库为方法论自身或目标项目尚未进入设计阶段时输出 `RESULT: pass`（不适用）
  * 退出码：0 通过（含不适用与仅告警的无法判定），1 存在缺口。门禁地位：G2、G4 与 G5 门禁的脚本证据源
  * 输出上限：12000 字节，按 UTF-8 计量；超限截断明细，末行机读结论与截断计数行保留
  * 依赖：文本读取取 ./lib/text.js 的 readFileText，本脚本不再内联读取实现。
@@ -28,7 +28,7 @@ const { capLines } = require("./lib/truncate.js");
 const { interfaceFreezeFindings } = require("./lib/freeze");
 const { absoluteDesignDir } = require("./design-root");
 const { walk, DOC_TREE_SKIP_DIR_NAMES } = require("./lib/walk");
-const { isMethodologyRepo, methodologyReason, NOT_APPLICABLE_TAIL } = require("./lib/repo-scope.js");
+const { notApplicableReason, NOT_APPLICABLE_TAIL } = require("./lib/repo-scope.js");
 const { readTable, sectionBody, readContractTable, interfaceExported } = require("./lib/span-compare.js");
 const { checkObligations } = require("./lib/obligations.js");
 
@@ -55,14 +55,15 @@ function capTraceReport(head, details, tail) {
   return capLines({ total: details.length, build });
 }
 
-// ---- 0. 方法论仓库自身：报不适用而非缺口 ----
-// 判据取文件存在性而非根路径字面量，与 span-check 共用 lib/repo-scope.js 的同一实现：
-// 根含 skills/ddd-methodology/SKILL.md 且无 REQUIREMENTS.md 者即方法论仓库自身，此类仓库无 AC.md 等应用侧产物，
-// G2/G4/G5 门禁无判定对象，按规范「本仓库适用边界」节报不适用并退出 0
-if (isMethodologyRepo(root)) {
+// ---- 0. 无判定对象：报不适用而非缺口 ----
+// 判据与 span-check、五个交叉检查脚本共用 lib/repo-scope.js 的同一实现：本仓库为方法论自身、或目标项目尚未进入设计阶段
+// （设计树不存在，或状态文件缺失/不含 architect）时，G2/G4/G5 门禁无判定对象，按规范「本仓库适用边界」节与 DESIGN-governance.md 第七节
+// 报不适用并退出 0；判据只到阶段，不进设计树内产物完备性，有设计树而缺产物仍取其下逐项缺口
+const naReason = notApplicableReason(root, "G2/G4/G5 门禁无判定对象");
+if (naReason) {
   const message = capTraceReport(
     ["=== DDD 追溯一致性校验 ==="],
-    [methodologyReason("G2/G4/G5 门禁无判定对象")],
+    [naReason],
     NOT_APPLICABLE_TAIL,
   );
   console.log(message.join("\n"));

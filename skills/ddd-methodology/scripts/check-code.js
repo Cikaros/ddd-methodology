@@ -7,7 +7,7 @@
  * 范围：三项检查——导出符号与两级设计签名一致、用例与模块级 AC 覆盖、基础能力独立用例存在；
  *   检查项定义在 skills/ddd-methodology/assets/check-items.json 的 check-code 节点下，本脚本只落机械实现。
  * 不包含：目录与文件级设计一致性（check-design、check-file-design）、语义判定。不引入第三方依赖。
- * 不适用：本仓库为方法论自身、或无设计树时无判定对象，报不适用而非缺口，退出码零。
+ * 不适用：本仓库为方法论自身、或目标项目尚未进入设计阶段时无判定对象，报不适用而非缺口，退出码零；判据与表述见 lib/repo-scope.js。
  * 输出形态：文本正文；末行机读结论 `RESULT: pass` 或 `RESULT: gap`。退出码：0 通过或不适用，1 存在缺口。
  * 依据：DESIGN-crosscheck.md 第二、三、四节；DESIGN-designtree.md 第二节。
  */
@@ -15,7 +15,8 @@
 const fs = require("fs");
 const path = require("path");
 const { readFileText } = require("./lib/text.js");
-const { runCrossCheck, finding, designDocs } = require("./lib/cross-check.js");
+const { runCrossCheck, emitNotApplicable, finding, designDocs } = require("./lib/cross-check.js");
+const { notApplicableReason } = require("./lib/repo-scope.js");
 const { sectionBody, readTable } = require("./lib/span-compare.js");
 
 const root = process.argv[2] || process.cwd();
@@ -96,4 +97,9 @@ const checks = {
   },
 };
 
-process.exit(runCrossCheck({ nodeKey: "check-code", title: "检查集：导出符号与两级设计签名一致、用例与模块级 AC 覆盖、基础能力独立用例存在", root, checks }));
+const NODE_KEY = "check-code";
+const TITLE = "检查集：导出符号与两级设计签名一致、用例与模块级 AC 覆盖、基础能力独立用例存在";
+// 不适用出口：本仓库为方法论自身、或目标项目尚未进入设计阶段时无判定对象，与其余五个脚本及 trace-check 共用 lib/repo-scope.js 的同一判据
+const naReason = notApplicableReason(root, `交叉检查 ${NODE_KEY} 无判定对象`);
+if (naReason) process.exit(emitNotApplicable(NODE_KEY, TITLE, naReason));
+process.exit(runCrossCheck({ nodeKey: NODE_KEY, title: TITLE, root, checks }));

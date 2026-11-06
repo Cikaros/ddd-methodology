@@ -7,7 +7,7 @@
  * 范围：五项检查——设计树逐层同构、契约表列头完整、义务编号唯一、契约表与 AC 覆盖、模块数声明相符；
  *   检查项定义在 skills/ddd-methodology/assets/check-items.json 的 check-design 节点下，本脚本只落机械实现。
  * 不包含：文件级清单与被依赖闭合（check-file-design）、实现与测试（check-code）。不引入第三方依赖。
- * 不适用：本仓库为方法论自身、或无设计树时无判定对象，报不适用而非缺口，退出码零。
+ * 不适用：本仓库为方法论自身、或目标项目尚未进入设计阶段时无判定对象，报不适用而非缺口，退出码零；判据与表述见 lib/repo-scope.js。
  * 输出形态：文本局部；末行机读结论 `RESULT: pass` 或 `RESULT: gap`。退出码：0 通过或不适用，1 存在缺口。
  * 依据：DESIGN-crosscheck.md 第二、三、四节；DESIGN-designtree.md 第一、二、六节。
  */
@@ -15,7 +15,8 @@
 const fs = require("fs");
 const path = require("path");
 const { readFileText } = require("./lib/text.js");
-const { runCrossCheck, finding, designDir, designDocs, acIds } = require("./lib/cross-check.js");
+const { runCrossCheck, emitNotApplicable, finding, designDir, designDocs, acIds } = require("./lib/cross-check.js");
+const { notApplicableReason } = require("./lib/repo-scope.js");
 const { sectionBody, readTable } = require("./lib/span-compare.js");
 
 const root = process.argv[2] || process.cwd();
@@ -108,4 +109,9 @@ const checks = {
   },
 };
 
-process.exit(runCrossCheck({ nodeKey: "check-design", title: "检查集：契约表与 AC 覆盖、设计树与代码目录逐层同构、义务编号唯一、契约表列头完整", root, checks }));
+const NODE_KEY = "check-design";
+const TITLE = "检查集：契约表与 AC 覆盖、设计树与代码目录逐层同构、义务编号唯一、契约表列头完整";
+// 不适用出口：本仓库为方法论自身、或目标项目尚未进入设计阶段时无判定对象，与其余五个脚本及 trace-check 共用 lib/repo-scope.js 的同一判据
+const naReason = notApplicableReason(root, `交叉检查 ${NODE_KEY} 无判定对象`);
+if (naReason) process.exit(emitNotApplicable(NODE_KEY, TITLE, naReason));
+process.exit(runCrossCheck({ nodeKey: NODE_KEY, title: TITLE, root, checks }));

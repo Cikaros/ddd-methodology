@@ -7,7 +7,7 @@
  * 范围：四项检查——全量命名集合三处一致、计数声明三处一致、声明落点完备、无悬空引用；
  *   检查项定义在 skills/ddd-methodology/assets/check-items.json 的 check-consistency 节点下，本脚本只落机械实现。
  * 不包含：语义判定（审计者）。不引入第三方依赖。
- * 不适用：本仓库为方法论自身、或无设计树时无判定对象，报不适用而非缺口，退出码零。
+ * 不适用：本仓库为方法论自身、或目标项目尚未进入设计阶段时无判定对象，报不适用而非缺口，退出码零；判据与表述见 lib/repo-scope.js。
  * 输出形态：文本正文；末行机读结论 `RESULT: pass` 或 `RESULT: gap`。退出码：0 通过或不适用，1 存在缺口。
  * 依据：DESIGN-crosscheck.md 第二、三、四节；DESIGN-governance.md 第七节。
  */
@@ -15,7 +15,8 @@
 const fs = require("fs");
 const path = require("path");
 const { readFileText, withLineNumbers } = require("./lib/text.js");
-const { runCrossCheck, finding, designDocs, acIds, sourceFiles } = require("./lib/cross-check.js");
+const { runCrossCheck, emitNotApplicable, finding, designDocs, acIds, sourceFiles } = require("./lib/cross-check.js");
+const { notApplicableReason } = require("./lib/repo-scope.js");
 const { sectionBody } = require("./lib/span-compare.js");
 
 const root = process.argv[2] || process.cwd();
@@ -107,4 +108,9 @@ const checks = {
   },
 };
 
-process.exit(runCrossCheck({ nodeKey: "check-consistency", title: "检查集：全量命名集合与计数声明三处一致、声明落点完备、无悬空引用", root, checks }));
+const NODE_KEY = "check-consistency";
+const TITLE = "检查集：全量命名集合与计数声明三处一致、声明落点完备、无悬空引用";
+// 不适用出口：本仓库为方法论自身、或目标项目尚未进入设计阶段时无判定对象，与其余五个脚本及 trace-check 共用 lib/repo-scope.js 的同一判据
+const naReason = notApplicableReason(root, `交叉检查 ${NODE_KEY} 无判定对象`);
+if (naReason) process.exit(emitNotApplicable(NODE_KEY, TITLE, naReason));
+process.exit(runCrossCheck({ nodeKey: NODE_KEY, title: TITLE, root, checks }));
