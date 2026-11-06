@@ -1,0 +1,236 @@
+/**
+ * 目标：为环境探测的多版本记录与命令组装提供无副作用核心——识别版本管理器、取可用版本清单、把工具事实扩为六键，并把命令模板按环境形态与所需版本两级解析为可执行命令（见 DESIGN-environment.md 第八节）；
+ *   运行时提供者型管理器（如 uv 提供 python）另记其所提供语言的版本清单，与该管理器自身版本分属两处，不得混记。
+ * 范围：版本管理器对照表、通用管理器表、运行时提供者表、语言到运行时行的映射，managerCandidates、detectManager、parseVersionList、managerFact、collectManagers、enrichTools、versionCheckDowngrades 七个多版本记录函数，以及 resolveLanguageManager、managedRow、versionAdjustedRunner、composeCommand、buildCommand 五个命令组装函数。
+ * 不包含：进程调用与文件读写——由 scripts/env-probe.js 注入 isFile 与 runManager 两类副作用原语；亦不含探测主链、记录落盘与命令行入口。复用同目录 env-probe.js 的路径解析原语。不引入第三方依赖。
+ * 边界：普通管理器列出命令失败只降级为单一版本文本，不报缺陷；运行时提供者清单不可得则留空，命令组装对所需版本的校验降级为不校验并登记降级，绝不回填管理器自身版本冒充清单；
+ *   所需版本未声明时不加版本前缀，只按激活版本执行；不得为取版本改动全局激活状态，切换只以逐命令形态表达。
+ * 消费方：scripts/env-probe.js 的装配处与 lib/env-probe.test.js；语言形态优先级表的最终判据归语言技能，本版为缺省序。
+ */
+
+const { resolveExecutablePath } = require("./env-probe.js");
+
+// 版本管理器对照表（设计册第八节）：键为运行时工具名或其语言别名，值按优先级降序列候选管理器；
+// 每项含命令名、列出命令参数与切换形态模板，切换形态内的 {} 为版本占位，无占位者即不支持逐命令指定版本
+const NODE_MANAGERS = [
+  { name: "nvm", command: "nvm", list: ["ls"], switch: "nvm exec {} --" },
+  { name: "fnm", command: "fnm", list: ["list"], switch: "fnm exec --using {}" },
+  { name: "volta", command: "volta", list: ["list"], switch: "volta run --node {}" },
+];
+const PYTHON_MANAGERS = [
+  { name: "uv", command: "uv", list: ["python", "list"], switch: "uv run --python {}" },
+  { name: "pyenv", command: "pyenv", list: ["versions"], switch: "pyenv shell {}" },
+];
+const JAVA_MANAGERS = [
+  { name: "sdkman", command: "sdk", list: ["list", "java"], switch: "sdk use java {}" },
+  { name: "jenv", command: "jenv", list: ["versions"], switch: "jenv shell {}" },
+];
+const MANAGER_CANDIDATES = {
+  node: NODE_MANAGERS,
+  javascript: NODE_MANAGERS,
+  typescript: NODE_MANAGERS,
+  python: PYTHON_MANAGERS,
+  java: JAVA_MANAGERS,
+};
+
+// 通用管理器（设计册第八节通用行）：覆盖全部工具，排在专有管理器之后；两者切换形态均不含版本占位，故不支持逐命令指定版本
+const UNIVERSAL_MANAGERS = [
+  { name: "mise", command: "mise", list: ["ls"], switch: "mise exec --" },
+  { name: "asdf", command: "asdf", list: ["list"], switch: "asdf exec" },
+];
+
+// 运行时提供者表：既是被探测的工具行、又提供某语言运行时的管理器；此类管理器的自身版本与所提供语言的版本是两回事，
+// 其行内 versions 须记所提供语言的清单（取自该语言的列出命令），自身版本只留 version——混记会让「所需版本在清单内」这一判据落在空处
+const PROVIDER_LANGUAGES = { uv: "python" };
+
+// 管理器按命令名索引：运行时提供者据此取其所提供语言的列出参数，与对照表同源，不两处维护
+const MANAGER_BY_COMMAND = new Map(
+  [...NODE_MANAGERS, ...PYTHON_MANAGERS, ...JAVA_MANAGERS, ...UNIVERSAL_MANAGERS].map((manager) => [manager.command, manager]),
+);
+
+// 语言到运行时工具行：用于从记录中取该语言的管理器声明与版本清单所在行，键须为 LANGUAGE_FORMS 内语言名
+const LANGUAGE_RUNTIMES = {
+  javascript: ["node"],
+  typescript: ["node"],
+  python: ["python", "python3"],
+  java: ["java"],
+  go: ["go"],
+  rust: ["rustc"],
+};
+
+// 管理器候选（纯函数）：专有候选在前、通用候选在后，返回顺序即优先级
+function managerCandidates(name) {
+  return [...(MANAGER_CANDIDATES[name] || []), ...UNIVERSAL_MANAGERS];
+}
+
+// 管理器检测（副作用经 ctx 注入）：按候选顺序找首个可执行文件在位的管理器，附解析到的路径；全无回 null
+function detectManager(name, ctx) {
+  for (const candidate of managerCandidates(name)) {
+    const resolved = resolveExecutablePath(candidate.command, ctx.pathDirs, ctx.exts, ctx.isFile);
+    if (resolved) return { ...candidate, path: resolved };
+  }
+  return null;
+}
+
+// 版本清单解析（纯函数）：逐行取首个 x.y[.z…] 形态版本号并去重保序，抹平各管理器列出命令的输出差异；
+// 取行域内首个版本，免得把路径或注释里的版本片段当成独立条目（如 uv 输出行尾的 cpython-3.12 目录名）；无版本号回空清单
+function parseVersionList(raw) {
+  const versions = [];
+  const seen = new Set();
+  for (const line of String(raw == null ? "" : raw).split(/\r?\n/)) {
+    const matched = line.match(/\d+(?:\.\d+)+/);
+    if (!matched || seen.has(matched[0])) continue;
+    seen.add(matched[0]);
+    versions.push(matched[0]);
+  }
+  return versions;
+}
+
+// 运行时提供者事实（副作用经 ctx 注入）：versions 取其所提供语言的列出命令输出，自身版本留在 version 两处分记；
+// 所提供语言的激活版本不在本次探测范围故 active 留空；清单不可得即留空，交由命令组装降级为不校验，绝不用自身版本顶替
+function providerFact(name, tool, ctx) {
+  const manager = MANAGER_BY_COMMAND.get(name);
+  const listed = manager && typeof ctx.runManager === "function" ? parseVersionList(ctx.runManager(tool.path, manager.list)) : [];
+  return { manager: "", versions: listed, active: null };
+}
+
+// 单工具管理器事实（副作用经 ctx 注入）：不可用者三键留空；运行时提供者走 providerFact；
+// 管理器不在位者只记单一版本文本；在位者经列出命令取版本清单，命令失败或清单为空即降级为单一版本文本，不报缺陷
+function managerFact(name, tool, ctx) {
+  if (!tool.available) return { manager: "", versions: [], active: null };
+  if (PROVIDER_LANGUAGES[name]) return providerFact(name, tool, ctx);
+  const single = tool.version ? [tool.version] : [];
+  const manager = detectManager(name, ctx);
+  if (!manager) return { manager: "", versions: single, active: tool.version || null };
+  const listed = typeof ctx.runManager === "function" ? parseVersionList(ctx.runManager(manager.path, manager.list)) : [];
+  return { manager: manager.name, versions: listed.length ? listed : single, active: tool.version || null };
+}
+
+// 管理器事实收集（副作用经 ctx 注入）：逐工具判断管理器是否在位并取版本清单
+function collectManagers(tools, ctx) {
+  const facts = {};
+  for (const [name, tool] of Object.entries(tools)) facts[name] = managerFact(name, tool, ctx);
+  return facts;
+}
+
+// 工具事实扩展（纯函数）：在三键上并入 manager、versions、active 三键，六键结构固定；
+// 普通行 active 恒取 version，使所需版本比对只有一个权威值；运行时提供者行例外——其行内 versions 记所提供语言，
+// 该语言的激活版本未探测故 active 留空，免得拿管理器自身版本冒充激活语言版本而误过「激活与所需一致」的短路
+function enrichTools(tools, facts) {
+  const enriched = {};
+  for (const [name, tool] of Object.entries(tools)) {
+    const fact = facts[name] || {};
+    enriched[name] = {
+      path: tool.path,
+      version: tool.version,
+      available: tool.available,
+      manager: fact.manager || "",
+      versions: Array.isArray(fact.versions) ? fact.versions : [],
+      active: PROVIDER_LANGUAGES[name] ? null : tool.version || null,
+    };
+  }
+  return enriched;
+}
+
+// 运行时提供者行（纯函数）：行名在提供者表内且呈提供者形态——所提供语言的激活版本未探测故 active 留空；
+// 旧形态的 uv 行 active 记管理器自身版本、versions 也记自身版本，不当作提供者行，免得拿自身版本冒充语言清单
+function providerRow(record, name) {
+  if (!PROVIDER_LANGUAGES[name]) return null;
+  const row = record.tools && record.tools[name];
+  return row && row.active === null ? row : null;
+}
+
+// 校验降级记录（纯函数）：运行时提供者所提供语言的清单不可得者，命令组装对所需版本的校验降级为不校验；
+// 降级须显式登记并呈现在摘要里，不得静默当作已校验。普通管理器清单不可得时降级为单一版本文本，不在此列
+function versionCheckDowngrades(record) {
+  const downgrades = [];
+  for (const [name, language] of Object.entries(PROVIDER_LANGUAGES)) {
+    const row = providerRow(record, name);
+    if (!row || !row.available) continue;
+    if (Array.isArray(row.versions) && row.versions.length) continue;
+    downgrades.push({ tool: name, language, reason: "所提供语言的版本清单不可得" });
+  }
+  return downgrades;
+}
+
+// 语言管理器解析（纯函数）：先在运行时工具行的 manager 声明里找，再退回 runner 首段出现的管理器名，全无回 null
+function resolveLanguageManager(language, runner, record) {
+  const candidates = managerCandidates(language);
+  const byName = new Map(candidates.map((candidate) => [candidate.name, candidate]));
+  for (const toolName of LANGUAGE_RUNTIMES[language] || []) {
+    const row = record.tools && record.tools[toolName];
+    if (row && row.manager && byName.has(row.manager)) return byName.get(row.manager);
+  }
+  const tokens = new Set(String(runner).split(/\s+/).filter(Boolean));
+  for (const candidate of candidates) if (tokens.has(candidate.name)) return candidate;
+  return null;
+}
+
+// 管理器所辖工具行：该语言运行时行中 manager 与所选管理器同名的行，用于取版本清单与激活版本；
+// 语言运行时行未声明该管理器时退回管理器自身行（运行时提供者型管理器，如本机无 python 而 python 由 uv 提供），无则回 null
+function managedRow(language, managerName, record) {
+  for (const toolName of LANGUAGE_RUNTIMES[language] || []) {
+    const row = record.tools && record.tools[toolName];
+    if (row && row.manager === managerName) return row;
+  }
+  if (PROVIDER_LANGUAGES[managerName] === language) return providerRow(record, managerName);
+  return null;
+}
+
+// 版本前缀解析（纯函数）：先由所需版本与切换形态得版本前缀，再与环境形态拼合；
+// 无所需版本即不加前缀；激活与所需一致即直接执行；所需不在清单、管理器不支持逐命令指定均抛缺口，不改全局激活；
+// 清单不可得者降级为不校验（跳过清单判据照发切换形态），其降级由 versionCheckDowngrades 显式登记，不静默当作已校验
+function versionAdjustedRunner(language, required, runner, record) {
+  if (!required) return runner;
+  const manager = resolveLanguageManager(language, runner, record);
+  if (!manager) throw new Error(`缺口：语言 ${language} 声明所需版本 ${required}，但无支持逐命令切换的管理器，需人工切换`);
+  const row = managedRow(language, manager.name, record);
+  if (row && row.active && row.active === required) return runner;
+  if (row && Array.isArray(row.versions) && row.versions.length && !row.versions.includes(required)) {
+    throw new Error(`缺口：所需版本 ${required} 不在 ${manager.name} 的版本清单内`);
+  }
+  if (!String(manager.switch).includes("{}")) {
+    throw new Error(`缺口：管理器 ${manager.name} 不支持逐命令指定版本，需人工切换`);
+  }
+  const prefix = String(manager.switch).replace("{}", required);
+  return runner.split(/\s+/)[0] === manager.command ? prefix : `${prefix} ${runner}`;
+}
+
+// 模板拼合（纯函数）：替换 runner 占位符；残留任何 {…} 占位符即抛错，不返回半成品
+function composeCommand(template, runner) {
+  const command = String(template).replace(/\{runner\}/g, runner).trim();
+  const leftover = command.match(/\{[^}]*\}/);
+  if (leftover) throw new Error(`缺陷：命令模板残留未解析占位符 ${leftover[0]}`);
+  return command;
+}
+
+// 命令组装（纯函数，对外接口）：入参命令模板、语言与所需版本，出可执行命令；
+// 两级解析——先版本前缀再与环境形态拼合；语言无可用形态、占位符残留均抛错
+function buildCommand({ template, language, required }, record) {
+  const form = record && record.languages ? record.languages[language] : null;
+  if (!form || !form.available || !form.runner) throw new Error(`缺口：语言 ${language} 无可用形态，无法组装命令`);
+  const runner = versionAdjustedRunner(language, required, form.runner, record);
+  return composeCommand(template, runner);
+}
+
+module.exports = {
+  NODE_MANAGERS,
+  PYTHON_MANAGERS,
+  JAVA_MANAGERS,
+  MANAGER_CANDIDATES,
+  UNIVERSAL_MANAGERS,
+  LANGUAGE_RUNTIMES,
+  managerCandidates,
+  detectManager,
+  parseVersionList,
+  managerFact,
+  collectManagers,
+  enrichTools,
+  versionCheckDowngrades,
+  PROVIDER_LANGUAGES,
+  resolveLanguageManager,
+  managedRow,
+  versionAdjustedRunner,
+  composeCommand,
+  buildCommand,
+};

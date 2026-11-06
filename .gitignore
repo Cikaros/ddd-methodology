@@ -2,3 +2,6 @@ node_modules/
 docs/internal/
 *.log
 .DS_Store
+
+# 环境记录随机器而异，纳入版本控制会让同仓库不同机器互相覆盖
+docs/.ddd-env.json
