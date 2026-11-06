@@ -10,7 +10,7 @@
 {
   "currentVersion": "v2.11",
   "maxOpen": 10,
-  "defaultDueSpan": 2,
+  "defaultDueSpan": 1,
   "debts": [
     {
       "id": "D-001",
@@ -33,9 +33,9 @@
 
 | 字段 | 含义 | 约束 |
 |---|---|---|
-| currentVersion | 当前版本 | 形如 v主.次，按主次两段数值比较 |
+| currentVersion | 当前版本 | 形如 v主.次，按三段数值比较 |
 | maxOpen | 未清项上限 | 固定默认值十项，未清项数不得超过该字面值；「约三倍」仅说明其由来，非计算规则或校验公式 |
-| defaultDueSpan | 默认时限跨度 | 未给 dueBy 时取登记版本加此跨度，默认 2 个版本 |
+| defaultDueSpan | 默认时限跨度 | 未给 dueBy 时取登记版本加此补丁步数，默认 1 个补丁步 |
 | debts | 债务条目数组 | 元素字段见下表 |
 
 条目字段（`debts` 数组元素）：
@@ -46,7 +46,7 @@
 | desc | 一句话描述 | 非空 |
 | registeredAt | 登记时的版本 | 形如 v主.次 |
 | owner | 承接方 | 必填且具名；禁「留待下一轮」这类无对象的表述 |
-| dueBy | 应清版本 | 未清项不得早于 currentVersion，否则判超期 |
+| dueBy | 应清版本 | 未清项须显式给出，省略仅限已清项；省略时取登记版本加 defaultDueSpan 个补丁步，且结果须严格晚于当前版本，不满足时直接取当前版本加一个补丁步，即取严格晚于当前版本的最小版本，用户明确要求推迟或指定版本时从其要求；未清项不得早于 currentVersion，否则判超期 |
 | status | 状态 | 仅取 open 或 closed |
 | reason | 登记理由 | 非空 |
 | rootCause | 根因分类 | 取六类之一，由债务文本归纳 |

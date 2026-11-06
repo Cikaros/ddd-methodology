@@ -1,14 +1,15 @@
 /**
  * DDD 结构治理运行时守卫
  *
- * 目标：为 DDD 项目补充过程拦截，机械判定结构粒度、测试分离、目录越权、结构同构与语言基线五类门槛，覆盖声明式门禁覆盖不到的过程。
- * 范围：仅当 ctx.cwd 下存在 docs/gates 或声明的设计树根时激活，设计树根缺省回退 docs/design；对普通项目静默，所有处理函数立即返回 undefined。
+ * 目标：为 DDD 项目补充过程拦截，机械判定结构粒度、测试分离、目录越权、结构同构与语言基线五类门槛，覆盖声明式门禁覆盖不到的过程；并在启动时注入未完成项 section。
+ * 范围：守卫仅当 ctx.cwd 下存在 docs/gates 或声明的设计树根时激活，设计树根缺省回退 docs/design；对普通项目静默，所有处理函数立即返回 undefined。
+ *   未完成项注入不受该激活判据约束，对象是项目内实际存在的未完成项，任一类非空即注入，无未完成项者仍静默。
  *
- * 判定编号摘要，与规范「结构与契约的演进治理」节的守卫判定表逐项一致：
+ * 判定编号摘要，与设计 DESIGN-extensions.md 第二节的守卫表逐项一致：
  * - H-1 粒度守卫。触发点：tool_call 的 write/edit。判定条件：估算写入后行数超 500 行。动作：拦截，理由含文件路径、就近 DESIGN 路径与拆解要求。
  * - H-2 测试分离守卫。触发点：tool_call 的 bash。判定条件：命令属窄口径的全量测试调用形态，且 docs/.ddd-state.json 的 lastStage 为 g5-int。动作：拦截，指明全量测试的唯一主体是 ddd-tester。
  * - H-3 义务覆盖守卫。触发点：tool_call 的 write/edit。判定条件：目标为源码文件、任务树已启用，而该文件所属接缝的节点文件缺失或该文件未被任何义务节点覆盖。动作：拦截，理由含节点文件路径与登记方式。覆盖边界：源目录内 DESIGN 组织不在覆盖内，设计树根取 ARCHITECTURE 的声明值，缺省回退 docs/design。
- * - H-4 门禁清零守卫。触发点：tool_call 的 write/edit。判定条件：目标为 docs/gates/ 下的门禁记录，且任务树存在未闭合义务节点。动作：拦截，理由含未闭合节点所在文件与逐项核销要求。
+ * - H-4 门禁清零守卫。触发点：tool_call 的 write/edit。判定条件：目标为 docs/gates/ 下的门禁记录，且存在未闭合义务节点或超期未清债务。动作：拦截，理由含未闭合节点所在文件、超期项编号与逐项核销要求。
  * - H-5 目录越权守卫。触发点：tool_call 的 write/edit。判定条件：目标为源码，且不在设计树映射的代码根之内。动作：拦截，理由含绝对路径、就近 DESIGN 路径与纳入设计树的补齐方式。
  * - H-6 结构不同构守卫。触发点：tool_call 的 write/edit。判定条件：目标所在目录在设计树中无对应节点。动作：拦截，指明须先补目录级设计再写码。
  * - H-7 语言基线守卫。触发点：tool_call 的 write/edit。判定条件：目标为源码，而该语言的编译基线未在项目内建立。动作：拦截，指明基线由架构设计者依语言技能资产生成。
@@ -29,9 +30,17 @@
 import { createRequire } from "node:module";
 import { existsSync, readdirSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { notifyUser } from "./lib/notify.ts";
 import { describeError, readText } from "./lib/shared.ts";
+import {
+	buildOpenItemsText,
+	gateClearanceBlock,
+	overdueDebts,
+	parseDebtRegistry,
+	parseStageState,
+} from "./lib/open-items.ts";
 import {
 	countLines,
 	coversFile,
@@ -53,6 +62,40 @@ try {
 	designRootResolver = null;
 }
 
+// 债务登记簿落点解析取自脚本侧 paths.js，公开区优先、内部区回退；取不到即债务类降级略过
+let debtPathDeps = null;
+try {
+	const requireFromExtension = createRequire(import.meta.url);
+	const paths = requireFromExtension("../skills/ddd-methodology/scripts/lib/paths.js");
+	if (paths && typeof paths.artifactReadPath === "function" && typeof paths.DEBT_BOOK_REL === "string") {
+		debtPathDeps = { artifactReadPath: paths.artifactReadPath, debtBookRel: paths.DEBT_BOOK_REL };
+	}
+} catch {
+	debtPathDeps = null;
+}
+
+// 版本比较取自脚本侧 version.js；取不到即超期判定降级略过
+let versionDeps = null;
+try {
+	const requireFromExtension = createRequire(import.meta.url);
+	const version = requireFromExtension("../skills/ddd-methodology/scripts/lib/version.js");
+	if (version && typeof version.parseVersion === "function" && typeof version.compareVersion === "function") {
+		versionDeps = { parseVersion: version.parseVersion, compareVersion: version.compareVersion };
+	}
+} catch {
+	versionDeps = null;
+}
+
+// 通道阶段键解析取自脚本侧 ref-stages.js，与 ref-check 的 C4 同源；取不到即阶段类降级略过
+let stageParser = null;
+try {
+	const requireFromExtension = createRequire(import.meta.url);
+	const refStages = requireFromExtension("../skills/ddd-methodology/scripts/lib/ref-stages.js");
+	if (refStages && typeof refStages.parseChannelStages === "function") stageParser = refStages.parseChannelStages;
+} catch {
+	stageParser = null;
+}
+
 // 设计树根的绝对路径：以项目 ARCHITECTURE 的声明为源，解析实现与脚本侧同源；取不到时用默认值
 function designRootAbs(root) {
 	if (typeof designRootResolver === "function") {
@@ -70,15 +113,25 @@ const GRANULARITY_LINE_LIMIT = 500;
 const RUNTIME_EXCEPTION_MARK = "运行时例外";
 const STATE_FILE = "docs/.ddd-state.json";
 const G5_INT_STAGE = "g5-int";
+// 主技能正文落点锚定包根：通道阶段键全序自其调度模型节的通道表解析，与 ref-check 的 C4 同源
+const SKILL_FILE = fileURLToPath(new URL("../skills/ddd-methodology/SKILL.md", import.meta.url));
+// 三类未完成项俱不可得时的降级形态：任一项解析失败不阻断其余项的采集
+const EMPTY_OPEN_ITEMS = { obligations: null, debts: null, state: null, channelStages: null };
 
 
 export default function (pi: ExtensionAPI) {
 	pi.on("before_agent_start", (event, ctx) => {
-		const obligations = loadOpenObligations(ctx);
-		if (!obligations) return;
+		const collected = collectOpenItems(ctx);
+		const text = buildOpenItemsText({
+			obligations: collected.obligations,
+			debts: collected.debts,
+			state: collected.state,
+			channelStages: collected.channelStages,
+		});
+		if (!text) return;
 		const sections = event.systemPromptOptions?.sections;
 		if (!sections) return;
-		sections[OBLIGATION_SECTION_NAME] = obligations;
+		sections[OPEN_ITEMS_SECTION_NAME] = text;
 	});
 
 	pi.on("tool_call", handleToolCall);
@@ -177,7 +230,7 @@ function nearestDesignPath(cwd, absPath) {
 // ---- H-3 义务覆盖守卫 ----
 
 // 节点文件路径：由声明的设计树根推 docs/board 下的同构路径；不在设计树内返回 null，
-// 源目录内 DESIGN 组织因此不在写入强制覆盖内，该边界见规范守卫表 H-3 行的当前覆盖列
+// 源目录内 DESIGN 组织因此不在写入强制覆盖内，该边界见设计 DESIGN-extensions.md 第二节 H-3 行
 function nodesPathFor(designPath, cwd) {
 	const root = resolve(cwd);
 	const rel = relative(designRootAbs(root), dirname(designPath));
@@ -254,14 +307,17 @@ function checkGateRecordClearance(event, ctx) {
 	const root = resolve(ctx.cwd);
 	const rel = relative(root, resolve(root, rawPath)).split(sep).join("/");
 	if (!rel.startsWith("docs/gates/")) return undefined;
-	const open = collectOpenObligations(root);
-	if (!open || open.length === 0) return undefined;
+	const { obligations, debts } = collectOpenItems(ctx);
+	const overdue = debts ? debts.overdue : [];
+	const summary = gateClearanceBlock(obligations, overdue);
+	if (!summary) return undefined;
+	const detail = Array.isArray(obligations) ? obligations.slice(0, 5) : [];
 	return {
 		block: true,
 		reason: [
-			`[H-4 门禁清零守卫] 任务树存在 ${open.length} 项未闭合义务节点，不得写入门禁记录：${rel}`,
-			...open.slice(0, 5),
-			"按规范「接口先行与冻结」节的义务核销条逐项核销，未完项转债务并具名承接后再过门。",
+			`[H-4 门禁清零守卫] ${summary}，不得写入门禁记录：${rel}`,
+			...detail,
+			"按规范「接口先行与冻结」节的义务核销条逐项核销，未完项转债务并具名承接后再过门；超期未清债务须先清偿或经根会话改期。",
 		].join("\n"),
 	};
 }
@@ -377,18 +433,45 @@ function isDddProject(cwd) {
 	return existsSync(designRootAbs(root));
 }
 
-// ---- 看板注入 ----
+// ---- 未完成项注入 ----
 
-const OBLIGATION_SECTION_NAME = "ddd_open_obligations";
+const OPEN_ITEMS_SECTION_NAME = "ddd_open_items";
 
-// 启动时注入未闭合节点，使子代理不必依赖记忆；任务树未启用或已清空时不注入
-function loadOpenObligations(ctx) {
+// 三类未完成项的一次性采集：义务节点与超期债务共用同一读盘与判定，注入与 H-4 守卫复用同一结果；任一组依赖缺失即该类降级略过
+function collectOpenItems(ctx) {
 	try {
 		const cwd = ctx && ctx.cwd;
-		if (typeof cwd !== "string" || cwd === "") return null;
-		const open = collectOpenObligations(resolve(cwd));
-		if (!open || open.length === 0) return null;
-		return ["任务树未闭合义务节点，逐条核销后方可过门：", ...open].join("\n");
+		if (typeof cwd !== "string" || cwd === "") return EMPTY_OPEN_ITEMS;
+		const root = resolve(cwd);
+		return {
+			obligations: collectOpenObligations(root),
+			debts: collectDebtView(root),
+			state: parseStageState(readText(join(root, STATE_FILE))),
+			channelStages: collectChannelStages(),
+		};
+	} catch {
+		return EMPTY_OPEN_ITEMS;
+	}
+}
+
+// 债务未清项视图：登记簿读盘一次，超期判定在此一次完成；路径或版本依赖缺失即降级
+function collectDebtView(root) {
+	if (!debtPathDeps) return null;
+	const debtPath = debtPathDeps.artifactReadPath(root, debtPathDeps.debtBookRel);
+	if (!debtPath) return null;
+	const registry = parseDebtRegistry(readText(debtPath));
+	if (!registry) return null;
+	const overdue = versionDeps ? overdueDebts(registry, versionDeps.compareVersion, versionDeps.parseVersion) : [];
+	return { ...registry, overdue };
+}
+
+// 通道阶段键全序：读包内主技能正文后交由脚本侧解析实现；解析器缺失或正文不可读即降级
+function collectChannelStages() {
+	if (typeof stageParser !== "function") return null;
+	const text = readText(SKILL_FILE);
+	if (typeof text !== "string") return null;
+	try {
+		return stageParser(text);
 	} catch {
 		return null;
 	}

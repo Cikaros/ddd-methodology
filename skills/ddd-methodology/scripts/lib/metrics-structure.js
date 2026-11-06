@@ -8,7 +8,7 @@
 const { HEALTH_REL, DEBT_BOOK_REL } = require("./paths.js");
 const { num, isBlank } = require("./text.js");
 const { isMissingNumber } = require("./metrics-sources.js");
-const { parseVersion, compareVersion, addSpan } = require("./version.js");
+const { parseVersion, compareVersion, deriveDue } = require("./version.js");
 
 // 度量一：超阈值文件数趋势。取历史末三条，超阈值文件数按源码超限与文档超限之和计；缺字段条目按缺省零处理并标注
 function computeTrend(health) {
@@ -65,11 +65,11 @@ function computeDebt(debts) {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
     if (entry.status !== "open") continue;
     openTotal++;
-    // dueBy 可省：省略时按 registeredAt 加 defaultDueSpan 推导应清版本；推导不出应清版本时不判超期
+    // dueBy 可省：省略时按登记版本加 defaultDueSpan 个补丁步并经 deriveDue 保证严格晚于当前版本；推导不出应清版本时不判超期
     let due = null;
     if (isBlank(entry.dueBy)) {
       const registeredVersion = parseVersion(entry.registeredAt);
-      if (registeredVersion !== null && span !== null) due = addSpan(registeredVersion, span);
+      if (registeredVersion !== null && span !== null) due = deriveDue(registeredVersion, span, current);
     } else {
       due = parseVersion(entry.dueBy);
     }

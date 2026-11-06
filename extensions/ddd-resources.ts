@@ -4,7 +4,7 @@
  * 目标：把注入矩阵落成运行时的两项供给。其一，before_agent_start 内读状态文件取当前节点、读注入矩阵取该节点所在行，
  *   按约束、语言、工具三维解析并去重，写入 `systemPromptOptions.skills`；其二，为宿主的 `resources_discover` 供给包内技能目录路径。
  * 范围：按矩阵裁剪可得技能集与技能路径供给两项，矩阵为唯一规格。
- * 不包含：技能路径发现（宿主按 package.json 声明枚举）、全局规则注入与依赖探测（见 ddd-context.ts）、守卫与看板注入（见 ddd-governance.ts）。
+ * 不包含：技能路径发现（宿主按 package.json 声明枚举）、全局规则注入与依赖探测（见 ddd-context.ts）、守卫与未完成项注入（见 ddd-governance.ts）。
  *
  * 注入三约束：其一，注入是叠加而非替换，只改 `systemPromptOptions.skills`，绝不返回 replacement systemPrompt，否则摧毁 section 机制并使提示缓存失效；
  *   其二，同一 run 内不重复注入——按技能名去重后整列赋值，重复触发结果幂等；其三，矩阵缺失或节点无对应行时退回代理 frontmatter 的 skills，

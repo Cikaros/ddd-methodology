@@ -2,6 +2,16 @@
 
 本文件记录 pi package 形态的版本变更，版本号与仓库根 `package.json` 的 `version` 对应，采用三段式语义化版本；本包经 `pi install` 安装，例如 `pi install git:github.com/Cikaros/ddd-methodology`。方法论规范版本 v1.0 至 v2.21 的演进史已归档至 `docs/internal/history/spec-changelog.md`，属内部档案，不作为公开内容。
 
+## 0.8.10 - 2026-11-06
+
+本轮为未完成项注入的扩面、H-4 门禁清零判据的扩面与债务应清版本推导口径的调整三项。
+
+- **新增**：启动注入由未闭合义务节点一类扩为三类，section 名由 `ddd_open_obligations` 改为 `ddd_open_items`。三类即看板未闭合义务节点、债务未清项与状态文件未完成阶段，聚合逻辑外置为 `extensions/lib/open-items.ts` 的六项纯函数，三类俱空即不注入。债务未清项列未清数与上限、当前版本，逐条列编号、应清版本与承接方，超期项标 `[超期]`；未完成阶段按主技能 `SKILL.md` 通道表的阶段全序减去已完成后的剩余列出。
+- **变更**：H-4 门禁清零守卫的判据由「任务树存在未闭合义务节点」扩为「存在未闭合义务节点或存在超期未清债务」，理由列出超期项编号；义务节点与超期债务共用同一读盘与判定，注入面与守卫面不两处各取一次。债务登记簿路径解析复用脚本侧 `paths.js`，版本比较复用 `version.js`，阶段键解析复用 `ref-stages.js` 的 `parseChannelStages`，三者经 `createRequire` 复用脚本侧实现，任一取不到即该组降级略过，不中断其余两组。
+- **变更**：`ref-stages.js` 抽出并导出纯函数 `parseChannelStages(skillText)`，C4 改调它，判据与外部行为不变。`STRUCTURE.md` 结构树与安装内容明细、收敛度基线、债务登记簿 `currentVersion` 同步更新。
+- **变更**：`dueBy` 推导单位由次段改为补丁段，即版本管理的最小单位。默认取登记版本加 `defaultDueSpan` 个补丁步，且结果须严格晚于当前版本，不满足时直接取当前版本加一个补丁步；`defaultDueSpan` 默认由二改一且单位改称补丁步。推导收敛为共享层 `lib/version.js` 的 `deriveDue` 唯一实现，`debt-check.js` 与 `lib/metrics-structure.js` 同源引用，不两处各写一套。未清项改为条件必填 `dueBy`，省略即报缺口，以免推导结果恒在当前版本之后而使超期判定失去对象；三条未清债务的应清版本按新规由 `v0.10.9` 重算为 `v0.8.11`。新增 `lib/version.test.js` 覆盖补丁推进与推导五态。
+- **变更**：全仓单测由一百七十七例增至一百九十二例。脚本侧 `node --test` 由一百三十三例增至一百三十九例，增量为 `version.test.js` 六例；扩展侧 `bun test` 由四十四例增至五十三例，增量为 `open-items.test.ts` 九例，覆盖债务登记簿正常与损坏、超期三态、阶段剩余、三类聚合与 H-4 两态及理由含编号。
+
 ## 0.8.9 - 2026-11-06
 
 本轮为环境记录消费面与保证面的收口，四笔债务清偿。

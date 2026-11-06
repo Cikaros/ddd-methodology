@@ -2,7 +2,8 @@
  * 目标：把 ref-check 中阶段键这一域的读取与比对外置为单一模块。
  * 范围：C4 阶段键一致性——以主技能调度模型节的通道表为权威源，双向比对节点全集节按通道聚集的节点键，
  *   并校验 guard 单键属于该集合、规范状态文件节以固定句把 doneStages 键集合绑定到该表；
- *   编排脚本的 stageRegistry 属「编排脚本重建」范围，只作非漂移备注，不计入判定。
+ *   编排脚本的 stageRegistry 属「编排脚本重建」范围，只作非漂移备注，不计入判定；
+ *   并导出纯函数 parseChannelStages(skillText)，解析主技能通道表并按通道回传阶段键对象，供校验项与扩展侧共用同一实现。
  * 不包含：引用形态（见 ref-refs.js）、常量集合（见 ref-constants.js）、冻结短语（见 ref-phrases.js）、规范读取面（见 spec-doc.js）、命令行入口。不引入第三方依赖。
  */
 
@@ -29,6 +30,20 @@ function tableRows(section) {
   return rows;
 }
 
+// 通道阶段键：解析主技能正文调度模型节的通道表，表行首格形如「A 主链」，末格为顿号分隔的阶段键，按通道回传
+function parseChannelStages(skillText) {
+  const section = sectionInText(skillText, "调度模型");
+  if (!section) return null;
+  const channels = {};
+  for (const cells of tableRows(section)) {
+    const m = cells[0] && cells[0].match(/^([ABC])\b/);
+    if (!m) continue;
+    const keys = (cells[cells.length - 1] || "").split("、").map((s) => s.trim()).filter(Boolean);
+    if (keys.length) channels[m[1]] = keys;
+  }
+  return Object.keys(channels).length ? channels : null;
+}
+
 function createStageChecks(env) {
   // guardRel 与 workflowRel 由 ref-check 注入，路径只在调用方定义一次
   const { root, relPath, guardRel, workflowRel } = env;
@@ -36,18 +51,9 @@ function createStageChecks(env) {
   function mainSkillSection(title) {
     return sectionInText(readFileText(path.join(root, ...MAIN_SKILL_REL)), title);
   }
-  // 权威阶段键：主技能通道表的阶段键列，按通道回传；表行首格形如「A 主链」
+  // 权威阶段键：主技能通道表的阶段键列，按通道回传；解析实现由顶层 parseChannelStages 提供，本处只负责读取权威源正文
   function readAuthorityStageKeys() {
-    const section = mainSkillSection("调度模型");
-    if (!section) return null;
-    const channels = {};
-    for (const cells of tableRows(section)) {
-      const m = cells[0] && cells[0].match(/^([ABC])\b/);
-      if (!m) continue;
-      const keys = (cells[cells.length - 1] || "").split("、").map((s) => s.trim()).filter(Boolean);
-      if (keys.length) channels[m[1]] = keys;
-    }
-    return Object.keys(channels).length ? channels : null;
+    return parseChannelStages(readFileText(path.join(root, ...MAIN_SKILL_REL)));
   }
   // 节点全集：主技能节点表按通道聚集节点键，通道列为「A」「A 与 B」等，含通道字母即计入
   function readChannelNodes() {
@@ -116,5 +122,6 @@ function createStageChecks(env) {
 
 // 注册表契约：id、简名与所属域随本模块声明；run 只转接本模块工厂的对应判据，装配处不掌握判据内容
 module.exports = {
+  parseChannelStages,
   contracts: [{ id: "C4", name: "阶段键一致性", domain: "stages", run: (ctx) => createStageChecks(ctx).checkStageKeys() }],
 };

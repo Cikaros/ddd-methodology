@@ -4,8 +4,8 @@
  * 范围：下列机械可判定事项——docs/debts.json 存在且 JSON 合法；顶层含 currentVersion、maxOpen、defaultDueSpan 与 debts 数组；
  *   id 在仓库内唯一；每条含 id、desc、registeredAt、owner、status、reason、rootCause、recurrence 且 owner 具名非空；registeredAt 形如 v主.次[.补丁]；
  *   rootCause 取根因分类之一；recurrence 含非负整数 count 与最近一次复发的版本 lastVersion，count 为零时 lastVersion 须为 null，否则形如 v主.次[.补丁]；
- *   dueBy 可省，省略时按 registeredAt 加 defaultDueSpan 推导应清版本，给出时须形如 v主.次[.补丁]；
- *   status 仅取 open 或 closed；未清项数不超 maxOpen；每个未清项的应清版本不早于 currentVersion。
+ *   dueBy 对未清项条件必填、对已清项可省；省略时按 registeredAt 加 defaultDueSpan 个补丁步推导应清版本，且结果须严格晚于 currentVersion，不满足时直接取 currentVersion 加一个补丁步；给出时须形如 v主.次[.补丁]；
+ *   status 仅取 open 或 closed；status 为 open 的条目不省略 dueBy；未清项数不超 maxOpen；每个未清项的应清版本不早于 currentVersion。
  *   并在登记簿合法且当前版本可解析时按当前版本维护债务历史快照（落点由共享层按内部区存在性择址）、以独立段落输出根因复发；该段落不改变末行结论与退出码。
  * 不包含：债务是否真被清偿、desc 与 reason 的合理性、连续两轮超期后的用户升级裁决，交由审计代理与根会话判定。
  * 用法：node debt-check.js <项目根>
@@ -23,8 +23,8 @@ const fs = require("fs");
 // 读取失败回空串而非中断：登记簿读不到时仍走无效 JSON 分支给出结构化结论，消费端不以栈信息判读
 const { readFileText, isBlank } = require("./lib/text.js");
 const { DEFAULT_LIMIT_BYTES, capLines } = require("./lib/truncate.js");
-// 版本标识的解析、比较、加跨度与格式化取共享层，与 metrics-report 共用，避免第三处实现
-const { parseVersion, compareVersion, addSpan, formatVersion } = require("./lib/version.js");
+// 版本标识的解析、比较、应清版本推导与格式化取共享层，与 metrics-report 共用，避免第三处实现
+const { parseVersion, compareVersion, deriveDue, formatVersion } = require("./lib/version.js");
 // 债务历史快照与根因复发检测取共享层，本脚本只负责按登记簿构建摘要并落盘、输出段落
 const { readHistory, summarize, upsertSnapshot, capHistory, saveHistory, detectRecurrence } = require("./lib/debt-history.js");
 // 产物路径取共享层单一常量，登记簿路径不再复写字面量
@@ -38,7 +38,7 @@ const debtsPath = artifactReadPath(root, DEBTS_REL);
 const REQUIRED_TOP = ["currentVersion", "maxOpen", "defaultDueSpan"];
 // 条目数组字段单列：其齐备性另须数组形态判定，故不与三标量字段混列
 const ENTRY_ARRAY_FIELD = "debts";
-// dueBy 可省：省略时由校验脚本按 registeredAt 加 defaultDueSpan 推导，故不入必填清单而列可省清单
+// dueBy 对未清项条件必填、对已清项可省；省略时由校验脚本按 registeredAt 加 defaultDueSpan 个补丁步推导，故不入必填清单而列可省清单
 const REQUIRED_ENTRY = ["id", "desc", "registeredAt", "owner", "status", "reason", "rootCause", "recurrence"];
 const OPTIONAL_ENTRY = ["dueBy"]; // 本文件不直接读取，由 ref-check 的 C14 以文本形态抽取比对，删改须同步该判据
 const STATUSES = ["open", "closed"];
@@ -129,11 +129,12 @@ function check() {
     if (!isBlank(entry.registeredAt) && registered === null) {
       reasons.push(`${DEBTS_REL} ${label} registeredAt 非法（须形如 v主.次[.补丁]）：${JSON.stringify(entry.registeredAt)}`);
     }
-    // dueBy 可省：省略时按 registeredAt 加 defaultDueSpan 推导应清版本，给出时须形如 v主.次[.补丁]
+    // dueBy 对未清项条件必填、对已清项可省；省略时按 registeredAt 加 defaultDueSpan 个补丁步推导应清版本，推导结果严格晚于 currentVersion
     let due = null;
     let derived = null;
     if (isBlank(entry.dueBy)) {
-      if (registered !== null && dueSpan !== null) derived = addSpan(registered, dueSpan);
+      if (registered !== null && dueSpan !== null) derived = deriveDue(registered, dueSpan, current);
+      if (entry.status === "open") reasons.push(`${DEBTS_REL} ${label} 未清项须显式给出 dueBy`);
     } else {
       due = parseVersion(entry.dueBy);
       if (due === null) reasons.push(`${DEBTS_REL} ${label} dueBy 非法（须形如 v主.次[.补丁]）：${JSON.stringify(entry.dueBy)}`);
