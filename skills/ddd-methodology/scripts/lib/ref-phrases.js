@@ -55,4 +55,7 @@ function createPhraseChecks(env) {
   return { checkFrozenPhrases };
 }
 
-module.exports = { createPhraseChecks };
+// 注册表契约：id、简名与所属域随本模块声明；run 只转接本模块工厂的对应判据，装配处不掌握判据内容
+module.exports = {
+  contracts: [{ id: "C8", name: "冻结短语一致性", domain: "phrases", run: (ctx) => createPhraseChecks(ctx).checkFrozenPhrases() }],
+};

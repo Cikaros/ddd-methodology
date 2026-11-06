@@ -18,18 +18,14 @@ const { DEBT_BOOK_REL, artifactCandidates } = require("./paths.js");
 const COVERAGE_RELS = artifactCandidates("docs/check-coverage.json");
 // 登记簿候选路径同形回退：paths.js 的常量服务目标项目，本仓库自身副本在 docs/internal/
 const DEBT_BOOK_RELS = artifactCandidates(DEBT_BOOK_REL);
-const REF_CHECK_REL = "skills/ddd-methodology/scripts/ref-check.js";
 const SCRIPT_NAME_RE = /\.js$/;
-// 校验清单的唯一定义处在 ref-check 的 CHECKS 数组：取每项的编号首格，形如 ["C1", ...
-const CHECK_ID_RE = /^\s*\["(C\d+)"\s*,/gm;
 
 function createCoverageChecks(env) {
-  const { root } = env;
+  const { root, registry } = env;
 
-  // 校验清单的编号集合：读装配脚本，避免本模块另立一份编号权威
+  // 校验清单的编号集合：取装配处装载的注册表，避免本模块另立一份编号权威；注册表即 ref-check 的校验清单唯一来源
   function readCheckIds() {
-    const text = readFileText(path.join(root, ...REF_CHECK_REL.split("/")));
-    return [...text.matchAll(CHECK_ID_RE)].map((m) => m[1]);
+    return registry ? registry.contracts.map((contract) => contract.id) : [];
   }
 
   // 登记簿条目表：编号到条目的映射，供债务存在性、已清偿与根因一致三项断言查询；按回退链逐个候选尝试
@@ -116,4 +112,7 @@ function createCoverageChecks(env) {
   return { checkCheckCoverage };
 }
 
-module.exports = { createCoverageChecks };
+// 注册表契约：id、简名与所属域随本模块声明；run 只转接本模块工厂的对应判据，装配处不掌握判据内容
+module.exports = {
+  contracts: [{ id: "C15", name: "校验项映射一致性", domain: "coverage", run: (ctx) => createCoverageChecks(ctx).checkCheckCoverage() }],
+};

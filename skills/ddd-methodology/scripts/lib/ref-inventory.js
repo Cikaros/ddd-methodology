@@ -86,4 +86,10 @@ function createInventoryChecks(env) {
   return { checkPromptTemplates, checkBaselineKeys };
 }
 
-module.exports = { createInventoryChecks };
+// 注册表契约：id、简名与所属域随本模块声明；run 只转接本模块工厂的对应判据，装配处不掌握判据内容
+module.exports = {
+  contracts: [
+    { id: "C23", name: "提示模板集一致性", domain: "inventory", run: (ctx) => createInventoryChecks(ctx).checkPromptTemplates() },
+    { id: "C24", name: "基线键一致性", domain: "inventory", run: (ctx) => createInventoryChecks(ctx).checkBaselineKeys() },
+  ],
+};

@@ -204,4 +204,7 @@ function createConvergenceChecks(env) {
   return { checkConvergence };
 }
 
-module.exports = { createConvergenceChecks };
+// 注册表契约：id、简名与所属域随本模块声明；run 只转接本模块工厂的对应判据，装配处不掌握判据内容
+module.exports = {
+  contracts: [{ id: "C19", name: "收敛度校验", domain: "convergence", run: (ctx) => createConvergenceChecks(ctx).checkConvergence() }],
+};

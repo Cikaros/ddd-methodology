@@ -83,4 +83,11 @@ function createRefChecks(env) {
   return { checkSemanticRefs, checkBareSectionRefs, checkScriptNames };
 }
 
-module.exports = { createRefChecks };
+// 注册表契约：id、简名与所属域随本模块声明；run 只转接本模块工厂的对应判据，装配处不掌握判据内容
+module.exports = {
+  contracts: [
+    { id: "C1", name: "语义化节引用有效", domain: "refs", run: (ctx) => createRefChecks(ctx).checkSemanticRefs() },
+    { id: "C2", name: "裸章节号引用已清除", domain: "refs", run: (ctx) => createRefChecks(ctx).checkBareSectionRefs() },
+    { id: "C7", name: "脚本名一致性", domain: "refs", run: (ctx) => createRefChecks(ctx).checkScriptNames() },
+  ],
+};

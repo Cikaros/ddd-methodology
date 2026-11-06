@@ -134,4 +134,13 @@ function createEnvChecks(env) {
   return { checkEnvRecord, checkToolPaths, checkCommandTemplates, checkTemplateFrameworks, checkManagerVersions };
 }
 
-module.exports = { createEnvChecks };
+// 注册表契约：id、简名与所属域随本模块声明；run 只转接本模块工厂的对应判据，装配处不掌握判据内容
+module.exports = {
+  contracts: [
+    { id: "C26", name: "环境记录完备性", domain: "env", run: (ctx) => createEnvChecks(ctx).checkEnvRecord() },
+    { id: "C27", name: "可用工具路径实存", domain: "env", run: (ctx) => createEnvChecks(ctx).checkToolPaths() },
+    { id: "C28", name: "命令模板候选集与占位", domain: "env", run: (ctx) => createEnvChecks(ctx).checkCommandTemplates() },
+    { id: "C29", name: "模板框架在探测覆盖面内", domain: "env", run: (ctx) => createEnvChecks(ctx).checkTemplateFrameworks() },
+    { id: "C30", name: "管理器版本键非空", domain: "env", run: (ctx) => createEnvChecks(ctx).checkManagerVersions() },
+  ],
+};
