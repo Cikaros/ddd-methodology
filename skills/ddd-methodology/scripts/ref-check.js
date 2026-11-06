@@ -9,7 +9,7 @@
  * 校验实现按域外置于 ./lib/：规范读取面见 spec-doc.js，引用形态见 ref-refs.js，常量集合见 ref-constants.js，
  *   阶段键见 ref-stages.js，冻结短语见 ref-phrases.js，登记簿字段集合见 ref-debt-fields.js，校验项映射见 ref-coverage.js，
  *   工作区行尾见 ref-line-endings.js，结构树与安装内容明细、命令入口清单与模板章节引用见 ref-structure.js，
- *   提示模板集与基线键见 ref-inventory.js，矩阵与技能清单一致性见 matrix.js（经 ref-external.js 包装），环境记录与命令模板见 ref-env.js，
+ *   提示模板集与基线键见 ref-inventory.js，项目级代理不可迭代面见 ref-agent.js，矩阵与技能清单一致性见 matrix.js（经 ref-external.js 包装），环境记录与命令模板见 ref-env.js，
  *   判据由顶层脚本提供的五项见 ref-external.js，注册表装载与三项自校验见 ref-registry.js；随装脚本枚举见顶层 ./install-manifest-check.js。
  * 清单类校验 C5 与 C11 由 ./roster-check.js 提供，索引表校验 C12 由 ./spec-index-check.js 提供，判定表校验 C10 由 ./decision-tables.js 提供，
  *   三者经 lib/ref-external.js 包装为契约，本脚本不再逐项调用。
