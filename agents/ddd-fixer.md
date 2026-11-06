@@ -5,7 +5,7 @@ advertise: true
 tools: read, write, edit, grep, find, ls, bash, ddd_code_health, ddd_governance_check
 model: <provider/id，由使用者配置>
 thinking: medium
-extensions: ../extensions/ddd-governance.ts
+extensions: ../extensions/ddd-governance.ts, ../extensions/ddd-tools.ts
 systemPromptMode: replace
 inheritProjectContext: true
 inheritSkills: false
