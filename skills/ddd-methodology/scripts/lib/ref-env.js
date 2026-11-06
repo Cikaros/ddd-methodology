@@ -1,16 +1,17 @@
 /**
  * 目标：把环境记录与语言命令模板的可验证面外化为 ref-check 的机械校验——环境记录的存在性与四键结构、标记可用工具的路径实存、
- *   命令模板的候选集形式与占位、模板候选引用的框架与探测覆盖面一致、管理器行的版本键非空。
- * 范围：C26 至 C30 五项，编号续 ref-check 既有清单不作复用；数据源为 <项目根>/docs/.ddd-env.json 与六语言技能 assets/commands.json；
- *   框架探测的覆盖面取自同目录 env-probe.js 的常量声明处（外部测试框架清单与内建框架表），本模块不另立一份，免得两处漂移。
+ *   命令模板的候选集形式与占位、模板候选引用的框架与探测覆盖面一致、管理器行的版本键非空、可用工具的解析来源级别合法。
+ * 范围：C26 至 C30 与 C34 六项，编号续 ref-check 既有清单不作复用；数据源为 <项目根>/docs/.ddd-env.json 与六语言技能 assets/commands.json；
+ *   框架探测的覆盖面取自同目录 env-probe.js 的常量声明处（外部测试框架清单与内建框架表），来源级别值域取自同目录 env-resolve.js 的声明处，本模块不另立一份，免得两处漂移。
  * 不包含：引用形态与脚本名（见 ref-refs.js）、常量集合（见 ref-constants.js）、冻结短语（见 ref-phrases.js）、教训回写映射（见 ref-coverage.js）、命令行入口。不引入第三方依赖。
- * 依据：DESIGN-environment.md 第六、九、十一节；环境记录为四键结构（含第十节补入的 frameworks），命令模板为候选集形式。
+ * 依据：DESIGN-environment.md 第六、九、十一、十三节；环境记录为四键结构（含第十节补入的 frameworks），命令模板为候选集形式，可用工具的 path 须标明四级来源。
  */
 
 const fs = require("fs");
 const path = require("path");
 const { readFileText, drift } = require("./text.js");
 const { FRAMEWORK_COMMANDS, BUILTIN_FRAMEWORKS } = require("./env-probe.js");
+const { SOURCE_LEVELS } = require("./env-resolve.js");
 
 const ENV_REL = "docs/.ddd-env.json";
 // 环境记录四键：缺一即报缺口，与 DESIGN-environment.md 第三节与第十节的结构一致
@@ -131,7 +132,24 @@ function createEnvChecks(env) {
     return found;
   }
 
-  return { checkEnvRecord, checkToolPaths, checkCommandTemplates, checkTemplateFrameworks, checkManagerVersions };
+  // C34 可用工具的 path 须标明来源级别：来源缺失或不在四级之内即报缺陷（设计册第十三节第十项）；
+  // 不可用工具不在此列，因其本就未解析到路径，无来源可言
+  function checkToolSources() {
+    const found = [];
+    const record = readEnvRecord();
+    if (!record || record.__parseError || !record.tools) return found;
+    const allowed = SOURCE_LEVELS.join("、");
+    for (const [name, tool] of Object.entries(record.tools)) {
+      if (!tool || tool.available !== true) continue;
+      if (!SOURCE_LEVELS.includes(tool.source)) {
+        const actual = tool.source === undefined || tool.source === null ? "缺失" : JSON.stringify(tool.source);
+        found.push(drift("C34", ENV_REL, 0, "可用工具的 path 须标明来源级别且取值在四级之内", `source 取 ${allowed} 之一`, `${name}.source 为 ${actual}`));
+      }
+    }
+    return found;
+  }
+
+  return { checkEnvRecord, checkToolPaths, checkCommandTemplates, checkTemplateFrameworks, checkManagerVersions, checkToolSources };
 }
 
 // 注册表契约：id、简名与所属域随本模块声明；run 只转接本模块工厂的对应判据，装配处不掌握判据内容
@@ -142,5 +160,6 @@ module.exports = {
     { id: "C28", name: "命令模板候选集与占位", domain: "env", run: (ctx) => createEnvChecks(ctx).checkCommandTemplates() },
     { id: "C29", name: "模板框架在探测覆盖面内", domain: "env", run: (ctx) => createEnvChecks(ctx).checkTemplateFrameworks() },
     { id: "C30", name: "管理器版本键非空", domain: "env", run: (ctx) => createEnvChecks(ctx).checkManagerVersions() },
+    { id: "C34", name: "工具来源级别合法", domain: "env", run: (ctx) => createEnvChecks(ctx).checkToolSources() },
   ],
 };

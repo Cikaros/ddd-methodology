@@ -1,6 +1,6 @@
 /**
  * 目标：探测本机工具链并落盘为 <项目根>/docs/.ddd-env.json，供后续节点按环境记录组装测试与覆盖率命令，替代写死的调用形态。
- * 范围：校验项目根入参、注入进程与文件两类副作用原语、调用 lib/env-probe.js 的纯函数装配四键记录（probedAt、tools、languages、frameworks；tools 每项六键：普通行含管理器与可用版本清单，运行时提供者行含所提供语言的清单，frameworks 每项含 kind 与可用性三态，见 DESIGN-environment.md 第八节与第十节）、写出机读件并输出人读摘要（含提供者行、校验降级与测试框架三态）。
+ * 范围：校验项目根入参、注入进程与文件两类副作用原语、调用 lib/env-probe.js 的纯函数装配四键记录（probedAt、tools、languages、frameworks；tools 每项七键：path、source 与可用性、版本，加管理器三键，其中 source 取四级优先链所得来源级别，见 DESIGN-environment.md 第八、十、十二节）、写出机读件并输出人读摘要（含提供者行、校验降级、来源分级与测试框架三态）。
  * 不包含：跨机合并既有记录（本机探测结果覆盖旧件，因记录须反映当前机器的工具链）、门禁接入、覆盖率基线、跨机比较。不引入第三方依赖。
  * 用法：node env-probe.js <项目根绝对路径>；只查本机 PATH 与命令输出，不访问网络。
  * 出口：恒 0，探测本身不因工具缺失失败；入参非法时 2。机读件是权威，stdout 摘要仅供人读。
@@ -12,6 +12,7 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const { DEFAULT_VERSION_ARGS, VERSION_ARGS, FRAMEWORK_COMMANDS, probeAll, buildTools, deriveLanguages, deriveFrameworks, buildEnvRecord } = require("./lib/env-probe.js");
 const { collectManagers, enrichTools, versionCheckDowngrades, PROVIDER_LANGUAGES } = require("./lib/env-command.js");
+const { SOURCE_LEVELS } = require("./lib/env-resolve.js");
 
 // 平台扩展名：Windows 先试 PATHEXT 各扩展名、再退无扩展名，使 .cmd/.exe 优先于同名的 POSIX 壳脚本；其余平台只按原样
 function executableExts(env, platform) {
@@ -28,6 +29,11 @@ function envPathDirs(env) {
 // 可执行文件判定：任意读取异常一律回 false，探测不因单条失败而中断
 function isFile(file) {
   try { return fs.statSync(file).isFile(); } catch (e) { return false; }
+}
+
+// 目录列举：brew Cellar 一类按 formula/version 分层的安装根须先展开再试探（见 lib/env-resolve.js）；不可读一律回空清单，该安装根自然跳过
+function listDir(dir) {
+  try { return fs.readdirSync(dir); } catch (e) { return []; }
 }
 
 // 版本查询：以解析到的绝对路径为可执行文件执行版本参数，合并 stdout 与 stderr（java -version 走 stderr）；
@@ -53,9 +59,19 @@ function runProcess(exePath, args, timeout) {
   } catch (e) { return ""; }
 }
 
-// 探测并装配记录：把本机原语注入纯核心，先归一工具事实，再并入版本管理器事实，最后推语言形态，不含落盘
-function probeProject() {
-  const ctx = { pathDirs: envPathDirs(process.env), exts: executableExts(process.env, process.platform), isFile, runVersion, runManager };
+// 探测并装配记录：把本机原语注入纯核心，先按四级优先链归一工具事实，再并入版本管理器事实，最后推语言形态，不含落盘
+function probeProject(root) {
+  const ctx = {
+    root,
+    pathDirs: envPathDirs(process.env),
+    exts: executableExts(process.env, process.platform),
+    platform: process.platform,
+    env: process.env,
+    isFile,
+    listDir,
+    runVersion,
+    runManager,
+  };
   const base = buildTools(probeAll(ctx));
   const tools = enrichTools(base, collectManagers(base, ctx));
   const languages = deriveLanguages(tools);
@@ -72,11 +88,14 @@ function writeRecord(root, record) {
   return file;
 }
 
-// 摘要：按可用与不可用分组列工具，再列各语言可用形态；机读件才是权威，本摘要仅供人读
+// 摘要：按可用与不可用分组列工具，逐级列来源级别，再列各语言可用形态；机读件才是权威，本摘要仅供人读
 function summarize(record) {
   const names = Object.keys(record.tools);
   const ready = names.filter((name) => record.tools[name].available);
   const missing = names.filter((name) => !record.tools[name].available);
+  // 来源分级：四级各自命中多少工具，供使用者一眼看出哪些命令取自项目内部或包管理器安装根，无须逐条翻机读件
+  const levels = names.filter((name) => record.tools[name].available).map((name) => record.tools[name].source);
+  const byLevel = SOURCE_LEVELS.map((level) => `${level} ${levels.filter((item) => item === level).length}`).join("、");
   const languages = Object.entries(record.languages);
   const langReady = languages.filter(([, value]) => value.available).map(([name, value]) => `${name}=${value.runner}`);
   const langMissing = languages.filter(([, value]) => !value.available).map(([name]) => name);
@@ -97,6 +116,7 @@ function summarize(record) {
   return [
     `=== 环境探测：${record.probedAt} ===`,
     `工具可用 ${ready.length}/${names.length}：${ready.join("、") || "无"}`,
+    `来源级别：${byLevel}`,
     `工具不可用 ${missing.length}：${missing.join("、") || "无"}`,
     `版本管理器：${managed.join("；") || "无"}`,
     `运行时提供者：${providers.join("；") || "无"}`,
@@ -116,7 +136,7 @@ function main(argv) {
   let stat;
   try { stat = fs.statSync(root); } catch (e) { stat = null; }
   if (!stat || !stat.isDirectory()) { process.stderr.write(`项目根不存在或非目录：${root}\n`); return 2; }
-  const record = probeProject();
+  const record = probeProject(root);
   const file = writeRecord(root, record);
   process.stdout.write(`${summarize(record)}\n环境记录已写入 ${file}\n`);
   return 0;

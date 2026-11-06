@@ -1,14 +1,14 @@
 /**
- * 目标：为环境探测的多版本记录与命令组装提供无副作用核心——识别版本管理器、取可用版本清单、把工具事实扩为六键，并把命令模板按环境形态与所需版本两级解析为可执行命令（见 DESIGN-environment.md 第八节）；
+ * 目标：为环境探测的多版本记录与命令组装提供无副作用核心——识别版本管理器、取可用版本清单、把工具事实扩为七键，并把命令模板按环境形态与所需版本两级解析为可执行命令（见 DESIGN-environment.md 第八节）；
  *   运行时提供者型管理器（如 uv 提供 python）另记其所提供语言的版本清单，与该管理器自身版本分属两处，不得混记。
  * 范围：版本管理器对照表、通用管理器表、运行时提供者表、语言到运行时行的映射，managerCandidates、detectManager、parseVersionList、managerFact、collectManagers、enrichTools、versionCheckDowngrades 七个多版本记录函数，以及 resolveLanguageManager、managedRow、versionAdjustedRunner、composeCommand、frameworkAvailable、runnerAvailable、candidateMatches、candidateRunner、missingFrameworks、buildFromCandidates、buildCommand 十一个命令组装函数。
- * 不包含：进程调用与文件读写——由 scripts/env-probe.js 注入 isFile 与 runManager 两类副作用原语；亦不含探测主链、记录落盘与命令行入口。复用同目录 env-probe.js 的路径解析原语。不引入第三方依赖。
+ * 不包含：进程调用与文件读写——由 scripts/env-probe.js 注入 isFile、listDir 与 runManager 三类副作用原语；亦不含探测主链、记录落盘与命令行入口。复用同目录 env-resolve.js 的目录级解析原语，可执行文件的位置表与四级优先级不在本模块。不引入第三方依赖。
  * 边界：普通管理器列出命令失败只降级为单一版本文本，不报缺陷；运行时提供者清单不可得则留空，命令组装对所需版本的校验降级为不校验并登记降级，绝不回填管理器自身版本冒充清单；
  *   所需版本未声明时不加版本前缀，只按激活版本执行；不得为取版本改动全局激活状态，切换只以逐命令形态表达。
  * 消费方：scripts/env-probe.js 的装配处与 lib/env-probe.test.js；语言形态优先级表的最终判据归语言技能，本版为缺省序。
  */
 
-const { resolveExecutablePath } = require("./env-probe.js");
+const { resolveExecutablePath } = require("./env-resolve.js");
 
 // 版本管理器对照表（设计册第八节）：键为运行时工具名或其语言别名，值按优先级降序列候选管理器；
 // 每项含命令名、列出命令参数与切换形态模板，切换形态内的 {} 为版本占位，无占位者即不支持逐命令指定版本
@@ -113,7 +113,7 @@ function collectManagers(tools, ctx) {
   return facts;
 }
 
-// 工具事实扩展（纯函数）：在三键上并入 manager、versions、active 三键，六键结构固定；
+// 工具事实扩展（纯函数）：在四键（path、source、version、available）上并入 manager、versions、active 三键，七键结构固定；
 // 普通行 active 恒取 version，使所需版本比对只有一个权威值；运行时提供者行例外——其行内 versions 记所提供语言，
 // 该语言的激活版本未探测故 active 留空，免得拿管理器自身版本冒充激活语言版本而误过「激活与所需一致」的短路
 function enrichTools(tools, facts) {
@@ -122,6 +122,7 @@ function enrichTools(tools, facts) {
     const fact = facts[name] || {};
     enriched[name] = {
       path: tool.path,
+      source: tool.source || null,
       version: tool.version,
       available: tool.available,
       manager: fact.manager || "",
@@ -210,10 +211,14 @@ function frameworkAvailable(record, name) {
   return Boolean(row && row.available);
 }
 
-// 运行器可用性（纯函数）：when.runner 指名的形态须在工具、框架、语言三处任一处可用——故 bats、pwsh、npx、mvn 均可作条件
+// 运行器可用性（纯函数）：when.runner 指名的形态须在工具、框架、语言、语言形态四处任一处可用——
+// 故 bats、pwsh、npx 可作条件，java 的 mvn 亦可作条件：语言形态表本就声明该形态须待 maven 就位才成立（设计册第十节其二对「调用形态可用」的定义）
 function runnerAvailable(record, name) {
-  return [record.tools, record.frameworks, record.languages]
+  const inPool = [record.tools, record.frameworks, record.languages]
     .some((pool) => Boolean(pool && pool[name] && pool[name].available));
+  if (inPool) return true;
+  return Object.values(record.languages || {})
+    .some((form) => Boolean(form && form.available && form.runner === name));
 }
 
 // 候选命中（纯函数）：when 内的 framework 与 runner 均须成立，未给者不设该条件；when 整体缺省即恒成立

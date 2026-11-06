@@ -14,9 +14,14 @@
   ],
   "coverage": [
     {
-      "tool": "kcov",
+      "when": { "framework": "bats", "runner": "bats" },
       "template": "kcov outdir {runner} tests/",
-      "note": "kcov 包裹 bats 运行（reference-test-coverage.md 2.3），outdir 为其 Cobertura 兼容 XML 输出目录（相对路径，按项目调整）。kcov 无硬门禁，--limits 仅着色；阈值由统一解析脚本读取该 XML 判定，详见同目录 coverage-README.md。"
+      "note": "kcov 包裹 bats 运行并输出 Cobertura 兼容 XML 到 outdir（github.com/SimonKagstrom/kcov；reference-runtimes.md 3 节），与 bats 是包裹式配套。kcov 无硬门禁，--limits 仅着色；阈值由统一解析脚本读该 XML 判定，详见同目录 coverage-README.md。"
+    },
+    {
+      "when": { "framework": "shunit2", "runner": "bash" },
+      "template": "kcov outdir {runner} test.sh",
+      "note": "shUnit2 无独立 runner，测试脚本自身 source shunit2 库后即普通可执行脚本，故由 kcov 直接包裹该脚本，同样输出 Cobertura 兼容 XML（github.com/kward/shunit2；reference-runtimes.md 1.7、3 节）。test.sh 为项目测试入口，按实际调整。"
     }
   ]
 }

@@ -14,14 +14,14 @@
   ],
   "coverage": [
     {
-      "tool": "maven",
+      "when": { "runner": "mvn" },
       "template": "{runner} verify",
-      "note": "JaCoCo report 与 check 均绑 verify，故 mvn verify 一并出报告并卡阈值（reference-test-coverage.md 2.6）。选择依据同 test 的 maven 候选。"
+      "note": "JaCoCo 的 report 与 check 两个 goal 均绑 verify 阶段，故 mvn verify 一并出报告并卡阈值（jacoco.org/jacoco/trunk/doc/maven.html；reference-runtimes.md 3 节）。门槛规则片段见同目录 jacoco-rules.xml；条件取调用形态本身，因 Java 侧区分覆盖率配套工具的是构建工具而非框架。JaCoCo 报告为其自有 XML 格式而非 Cobertura 兼容，统一解析脚本读取前须经格式适配。"
     },
     {
-      "tool": "gradle",
+      "when": { "runner": "gradle" },
       "template": "{runner} test jacocoTestReport jacocoTestCoverageVerification",
-      "note": "Gradle 经 jacocoTestReport 出报告、jacocoTestCoverageVerification 卡阈值（reference-test-coverage.md 2.6）。选择依据同 test 的 gradle 候选。"
+      "note": "Gradle 侧 jacocoTestReport 出报告、jacocoTestCoverageVerification 卡阈值（规则经 violationRules 配置），后者不自动依赖 test 任务，故三个任务显式并列（docs.gradle.org/current/userguide/jacoco_plugin.html；reference-runtimes.md 3 节）。"
     }
   ]
 }

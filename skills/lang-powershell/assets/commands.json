@@ -9,9 +9,9 @@
   ],
   "coverage": [
     {
-      "tool": "Pester",
-      "template": "{runner} -Configuration $config",
-      "note": "$config 由同目录 PesterConfig.ps1 构造（reference-test-coverage.md 2.4）。Pester 的 CoveragePercentTarget 为报告目标而非失败条件，属软判据；硬门禁由统一解析脚本读取其 Cobertura 兼容 XML 补齐。"
+      "when": { "framework": "pester", "runner": "pwsh" },
+      "template": "{runner} -Command Invoke-Pester -Configuration $config",
+      "note": "Pester 内置 CodeCoverage 与 Invoke-Pester 同进程，为 Pester 的配套覆盖率工具；$config 由同目录 PesterConfig.ps1 构造，输出格式已取 Cobertura、输出路径为 coverage.xml（pester.dev/docs/usage/code-coverage；reference-runtimes.md 3 节）。CoveragePercentTarget 只是报告目标，硬门禁由统一解析脚本读该 Cobertura 兼容 XML 补齐。"
     }
   ]
 }

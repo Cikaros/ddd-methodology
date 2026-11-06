@@ -14,9 +14,14 @@
   ],
   "coverage": [
     {
-      "tool": "coverage",
-      "template": "{runner} -m coverage run -m pytest",
-      "note": "coverage.py 包裹 pytest 运行（reference-test-coverage.md 2.5）。Cobertura 兼容 XML 由 coveragerc 的 [xml] output 指定，经 coverage xml 产出，供统一解析脚本判定阈值。"
+      "when": { "framework": "pytest" },
+      "template": "{runner} -m pytest --cov --cov-report=xml",
+      "note": "pytest-cov 与 pytest 同进程，是被测框架的配套覆盖率工具：--cov 的被测范围取自 coveragerc 的 [run] source，--cov-report=xml 产出 Cobertura 兼容 XML（pytest-cov.readthedocs.io/en/latest/config.html；reference-runtimes.md 3 节）。阈值取 coveragerc 的 [report] fail_under，或经 --cov-fail-under 覆盖。"
+    },
+    {
+      "when": { "framework": "unittest" },
+      "template": "{runner} -m coverage run -m unittest discover && {runner} -m coverage xml",
+      "note": "stdlib unittest 无覆盖率，由 coverage.py 包裹运行：coverage run 采集、coverage xml 出 Cobertura 兼容 XML（coverage.readthedocs.io/en/latest/commands/index.html；reference-runtimes.md 3 节）。阈值取 coveragerc 的 [report] fail_under，低于即 coverage 以状态码 2 退出。"
     }
   ]
 }

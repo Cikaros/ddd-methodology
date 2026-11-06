@@ -1,13 +1,15 @@
 /**
  * 目标：为环境探测提供无副作用的核心——把「逐命令的探测结果清单」归一为工具事实，再由工具事实按优先级推导各语言的可用命令形态与测试框架事实；
- *   记录结构为 probedAt、tools、languages、frameworks 四键（见 DESIGN-environment.md 第三节与第十节），供 scripts/env-probe.js 装配落盘，并供单测直接调用；工具六键里的管理器三键、命令组装与候选选择另由同目录 env-command.js 承接。
- * 范围：四类工具清单常量、外部测试框架命令清单与内建框架表、版本查询参数表、语言形态优先级表、路径解析与版本串抽取两原语，以及 probeCommand、probeAll、buildTools、deriveLanguages、deriveFrameworks、buildEnvRecord 六个函数。
- * 不包含：进程调用与文件读写——由 scripts/env-probe.js 注入 isFile 与 runVersion 两类副作用原语；版本管理器与命令组装见 lib/env-command.js；亦不含记录落盘、目录遍历与命令行入口。不引入第三方依赖。
- * 边界：探测只查本机 PATH 与命令输出，不访问网络；某项缺失不报缺陷，只记 available 为 false。
+ *   记录结构为 probedAt、tools、languages、frameworks 四键（见 DESIGN-environment.md 第三节与第十节），供 scripts/env-probe.js 装配落盘，并供单测直接调用；
+ *   tools 每项七键，其中 source 为四级解析所得来源级别（见同目录 env-resolve.js），管理器三键、命令组装与候选选择另由同目录 env-command.js 承接。
+ * 范围：四类工具清单常量、外部测试框架命令清单与内建框架表、版本查询参数表、语言形态优先级表、版本串抽取原语与四级解析的调用，以及 probeCommand、probeAll、buildTools、deriveLanguages、deriveFrameworks、buildEnvRecord 六个函数。
+ * 不包含：进程调用与文件读写——由 scripts/env-probe.js 注入 isFile、listDir 与 runVersion 三类副作用原语；可执行文件的位置表与四级解析见 lib/env-resolve.js；版本管理器与命令组装见 lib/env-command.js；亦不含记录落盘、目录遍历与命令行入口。不引入第三方依赖。
+ * 边界：探测只查本机文件系统与命令输出，不访问网络；某项缺失不报缺陷，只记 available 为 false。
+ *   不可用有两态，须可区分：其一四级均不命中，path 为空；其二路径存在但该处不可执行（取不到版本，或经 pwsh 承载者模块不在），path 非空。
  * 消费方：scripts/env-probe.js 的装配处；语言形态优先级表的最终判据归语言技能，本版为缺省序。
  */
 
-const path = require("node:path");
+const { resolveWithSource } = require("./env-resolve.js");
 
 // 四类工具（设计册第二节）：运行时、包与版本管理、语言工具、外壳；数组顺序即探测与记录顺序
 const TOOL_GROUPS = {
@@ -70,18 +72,6 @@ const LANGUAGE_FORMS = {
   rust: [{ when: ["cargo"], runner: "cargo" }],
 };
 
-// 路径解析：在 PATH 目录与平台扩展名两层组合下逐条试探，命中可执行文件即回绝对路径，全无回 null
-function resolveExecutablePath(command, pathDirs, exts, isFile) {
-  for (const dir of pathDirs) {
-    if (!dir) continue;
-    for (const ext of exts) {
-      const candidate = path.join(dir, `${command}${ext}`);
-      if (isFile(candidate)) return candidate;
-    }
-  }
-  return null;
-}
-
 // 版本串抽取：取输出中首个 x.y[.z…] 形态的版本号，抹平各工具版本格式差异；无版本号时回清理后的首行，全空回 null
 function parseVersionOutput(raw) {
   const text = String(raw == null ? "" : raw).trim();
@@ -90,14 +80,14 @@ function parseVersionOutput(raw) {
   return matched ? matched[0] : text.split(/\r?\n/)[0].trim() || null;
 }
 
-// 单命令探测：先解析绝对路径，命中后按版本参数取版本；经 pwsh 承载者须确得模块版本才算可用
+// 单命令探测：先按四级优先链解析路径与来源，命中后按版本参数取版本；取不到版本即该处不可执行，但路径与来源仍回传，
+// 使「四级均不命中」（path 为空）与「路径存在但不可执行」两态在记录里可辨；经 pwsh 承载者须确得模块版本才算可用
 function probeCommand(name, ctx) {
   const target = PWSH_HOSTED.has(name) ? "pwsh" : name;
-  const resolved = resolveExecutablePath(target, ctx.pathDirs, ctx.exts, ctx.isFile);
-  if (!resolved) return { name, path: null, version: null };
-  const version = parseVersionOutput(ctx.runVersion(name, resolved));
-  if (PWSH_HOSTED.has(name) && !version) return { name, path: null, version: null };
-  return { name, path: resolved, version };
+  const resolved = resolveWithSource(target, ctx);
+  if (!resolved.path) return { name, path: null, version: null, source: null, available: false };
+  const version = parseVersionOutput(ctx.runVersion(name, resolved.path));
+  return { name, path: resolved.path, version: version || null, source: resolved.source, available: Boolean(version) };
 }
 
 // 全量探测：按给定命令清单顺序逐条探测，回传结果清单，供 buildTools 消费
@@ -105,15 +95,16 @@ function probeAll(ctx, commands = ALL_COMMANDS) {
   return commands.map((name) => probeCommand(name, ctx));
 }
 
-// 工具事实（纯函数）：以命令名为键，逐项记 path、version、available；未解析到路径者一律记不可用且路径与版本留空
+// 工具事实（纯函数）：以命令名为键，逐项记 path、source、version、available；可用性取自解析结果，故路径在位而取不到版本者记不可用但保留路径与来源
 function buildTools(results) {
   const tools = {};
   for (const result of results) {
-    const available = Boolean(result.path);
+    const resolved = Boolean(result.path);
     tools[result.name] = {
       path: result.path || null,
-      version: available ? result.version || null : null,
-      available,
+      source: resolved ? result.source || null : null,
+      version: result.version || null,
+      available: resolved && Boolean(result.available),
     };
   }
   return tools;
@@ -136,8 +127,8 @@ function deriveLanguages(tools) {
 function deriveFrameworks(tools, languages, results) {
   const frameworks = {};
   for (const result of results) {
-    const available = Boolean(result.path);
-    frameworks[result.name] = { kind: "external", runner: null, path: result.path || null, version: available ? result.version || null : null, available };
+    const available = Boolean(result.path) && Boolean(result.available);
+    frameworks[result.name] = { kind: "external", runner: null, path: result.path || null, source: result.path ? result.source || null : null, version: result.version || null, available };
   }
   for (const [name, spec] of Object.entries(BUILTIN_FRAMEWORKS)) {
     const isPython = spec.runtime === "python";
@@ -151,6 +142,7 @@ function deriveFrameworks(tools, languages, results) {
       kind: "builtin",
       runner: spec.runtime,
       path: available && holder ? holder.path : null,
+      source: available && holder ? holder.source || null : null,
       version: available && holder ? holder.version : null,
       available,
     };
@@ -172,7 +164,6 @@ module.exports = {
   VERSION_ARGS,
   PWSH_HOSTED,
   LANGUAGE_FORMS,
-  resolveExecutablePath,
   parseVersionOutput,
   probeCommand,
   FRAMEWORK_COMMANDS,

@@ -34,9 +34,19 @@
   ],
   "coverage": [
     {
-      "tool": "vitest",
+      "when": { "framework": "jest", "runner": "npx" },
+      "template": "{runner} jest --coverage",
+      "note": "Jest 内置覆盖率与 Jest 同进程，CLI 开关 --coverage（jestjs.io/docs/cli；reference-runtimes.md 3 节）。TS 项目经 ts-jest 或 babel 预设转译后同走本命令；reporter 只留 cobertura 由 coverage.config.mjs 声明，产出 Cobertura 兼容 XML。"
+    },
+    {
+      "when": { "framework": "vitest", "runner": "npx" },
       "template": "{runner} vitest run --coverage",
-      "note": "Vitest 覆盖率（reference-test-coverage.md 2.2）；reporter、阈值与 source map 重映射由 coverage.config.mjs 声明，cobertura 报告供统一解析脚本判定。"
+      "note": "Vitest 原生支持 TS，覆盖率经 @vitest/coverage-v8（默认 provider，需另装）（vitest.dev/guide/coverage；reference-runtimes.md 3 节）；reporter 与 source map 重映射要求由 coverage.config.mjs 声明，产出 Cobertura 兼容 XML。"
+    },
+    {
+      "when": { "framework": "bun:test", "runner": "bun" },
+      "template": "{runner} test --coverage",
+      "note": "bun 自带运行器直接跑 TS 测试而不做类型检查，内置覆盖率开关 --coverage（bun.sh/docs/cli/test；reference-runtimes.md 3 节）。bun 内置报告器只有 text 与 lcov，不产 Cobertura，故该候选的 XML 产出需项目侧另配转换；无外部框架时走内建，不作唯一候选。"
     }
   ]
 }
