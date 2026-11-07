@@ -6,6 +6,7 @@
 
 - `README.md`，本文件，docs 目录的索引。
 - `COMPATIBILITY.md`，本包与宿主 pi 版本对应关系的单一权威，声明已实测覆盖的版本范围。
+- 交付物料三份，即 `DDD-Methodology-宣讲.pptx`、`DDD-Methodology-附件-门禁与工具矩阵.xlsx` 与 `DDD-Methodology-项目白皮书.docx`，面向使用者的宣讲与说明材料，非包运行所需。
 
 ## internal/ —— 面向维护者
 

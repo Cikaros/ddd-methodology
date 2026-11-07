@@ -30,6 +30,9 @@ ddd-methodology/
 ├── docs/  # 仓库文档，非 pi 资源
 │   ├── COMPATIBILITY.md  # 宿主与插件版本范围声明
 │   ├── README.md  # 文档分层说明
+│   ├── DDD-Methodology-宣讲.pptx  # 交付物料，宣讲投影
+│   ├── DDD-Methodology-附件-门禁与工具矩阵.xlsx  # 交付物料，门禁与工具矩阵
+│   ├── DDD-Methodology-项目白皮书.docx  # 交付物料，项目白皮书
 │   └── internal/  # 维护者内部档案，随 .gitignore 排除，不随公开仓库发布
 ├── extensions/  # 官方资源，声明于 pi.extensions
 │   ├── lib/  # 扩展共享纯函数与其单元测试，非扩展入口
