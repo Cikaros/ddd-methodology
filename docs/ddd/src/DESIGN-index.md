@@ -26,7 +26,7 @@ updated: 2026-11-11
 **`setup(ctx)` 行为契约**：
 
 - 命令：遍历 `COMMANDS`，逐个 `ctx.command.transform(editor => editor.add({name, description, execute}))`（§8.3，核心命令由 server 提供）。
-- **M5 意图确认（§9.5 择一）**：阻塞节点（概要 §6.1 ▲：`ddd-intent`/`ddd-arch`/`ddd-wrapup`/`ddd-consolidate`）在推进前调用 `ctx.permission.assert` 取**阻塞式确认**；被拒即中止该步，不静默降级。TUI 侧 `dialog.confirm` 为**备选**原语，本实现择 server `assert`（见 `DESIGN-tui.md`）。
+- **M5 意图确认（§9.5 分职责）**：阻塞节点（概要 §6.1 ▲：`ddd-intent`/`ddd-arch`/`ddd-wrapup`/`ddd-consolidate`）在推进前调用 `ctx.permission.assert` 取**阻塞式确认**（过闸机：可中止/可记忆/远程恒可用）；被拒即中止该步，不静默降级。TUI 侧 `dialog.select/prompt` 只承担**输入采集**（选场景、收四问），与 assert **确认点不重叠**（见 `DESIGN-tui.md`）。
 - 技能：`ctx.skill.transform` 注册 `SKILLS`，`path` 取**包根**相对路径。
 - RPC：`ctx.rpc.register(Ddd, { gates, board })`。
 - hook：`ctx.session.hook("prompt", ...)` 注入随包上下文，**幂等**（以标记串判重，§9.3）。

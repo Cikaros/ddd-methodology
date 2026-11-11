@@ -1,5 +1,5 @@
 {
-  "ts": "2026-11-11T11:10:09.799Z",
+  "ts": "2026-11-11T11:45:21.357Z",
   "designs": [
     {
       "path": "docs/ddd/agents/DESIGN-AGENT-TEMPLATE.md",
@@ -1064,7 +1064,10 @@
       "ids": [
         "UT-src-tui-01",
         "UT-src-tui-02",
-        "UT-src-tui-03"
+        "UT-src-tui-03",
+        "UT-src-tui-04",
+        "UT-src-tui-05",
+        "UT-src-tui-06"
       ]
     },
     {
@@ -1081,7 +1084,7 @@
   "counts": {
     "design": 56,
     "test": 56,
-    "ids": 161,
+    "ids": 164,
     "byLevel": {
       "file": 41,
       "module": 5,

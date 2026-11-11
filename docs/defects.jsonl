@@ -6,3 +6,5 @@
 {"id":"DEF-0002","ts":"2026-11-11T11:09:59.714Z","status":"resolved","severity":"high","title":"scripts 承重承接超越文件级实证（M1/M2/M3/M9/M10）","area":"scripts","ref":"docs/audits/landing-findings.md","note":"补齐 7 件设计与实现"}
 {"id":"DEF-0003","ts":"2026-11-11T11:09:59.771Z","status":"resolved","severity":"high","title":"M5 意图确认阻塞原语未落地","area":"src","ref":"docs/audits/landing-findings.md","note":"改由 permission.assert 承担（§9.5 择一）"}
 {"id":"DEF-0004","ts":"2026-11-11T11:09:59.831Z","status":"resolved","severity":"med","title":"M11 项目对接规范七字段未落地","area":"assets","ref":"docs/audits/landing-findings.md","note":"gates.json 补 scope/readingShape/ext"}
+{"id":"DEF-0005","ts":"2026-11-11T11:45:21.177Z","status":"open","severity":"high","title":"随包 agents/ 真宿主不可发现（宿主 AgentEditor 无 add；未落盘 .opencode/agents）","area":"agents","ref":"docs/audits/e2e-report.md"}
+{"id":"DEF-0006","ts":"2026-11-11T11:45:21.236Z","status":"open","severity":"high","title":"/ddd-init 骨架生成与 Q3 派发（session.create→switchAgent）无文件级设计与实现","area":"src","ref":"docs/audits/e2e-report.md"}

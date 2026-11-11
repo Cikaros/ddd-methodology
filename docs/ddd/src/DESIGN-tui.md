@@ -18,9 +18,18 @@ updated: 2026-11-11
 - **边界内**：`context.keymap.layer`、`context.ui.*`、`context.attention.notify`。
 - **边界外**：任何业务逻辑（不得在 TUI 复制业务，跨端走 RPC）。
 
-## 阻塞式确认的择一（§9.5）
+## 阻塞式确认：两者分职责（§9.5）
 
-「明确意图」的取得确认由 **server part 的 `ctx.permission.assert`** 承担（见 `DESIGN-index.md` 的 M5 行）；本件的 `context.ui.dialog.confirm/prompt/select` 为**备选**原语，本实现**不**同时承担同一确认点（§9.5 要求二者显式择一）。
+§9.5 要求同一确认点**显式择一**。本实现**两个原语都用，但职责分离、确认点不重叠**：
+
+| 原语 | 归属 | 职责（回答什么） | 落点 |
+|---|---|---|---|
+| `context.ui.dialog.select/prompt` | tui（本件） | **采集结构化输入**（选场景、收集四问作答） | `ddd-tui-intent` 交互流程 |
+| `ctx.permission.assert` | server（`DESIGN-index.md`） | **过闸机**：确认「据此推进」（可中止、可记忆、远程恒可用） | 阻塞节点 `ddd-intent/arch/wrapup/consolidate` |
+
+- **不重叠**：dialog 在「输入段」，assert 在「放行段」；同一确认点仍只由一个原语承担 → 不违反 §9.5。
+- **可删边界（Build to Delete）**：dialog 是**增强**（无交互 TUI 时省略），assert 是**机制底线**（绕不过）。
+- dialog 取消（`undefined`）不直接中止流程；是否中止由 assert 的闸机结果决定。
 
 ## 对外暴露接口
 
@@ -40,8 +49,8 @@ updated: 2026-11-11
 |---|---|
 | `context.keymap.layer` | 注册斜杠命令/快捷键（工厂须**纯**） |
 | `context.ui.slot/panel` | 看板与报告面板 |
-| `context.ui.dialog.confirm/prompt/select` | 阻塞式确认（「明确意图」的取得确认） |
-| `context.attention.notify` | 长任务提醒 |
+| `context.ui.dialog.select/prompt` | **采集结构化输入**（选场景、收四问）；非闸机（§§9.5） |
+| `context.attention.notify` | 长任务提醒（`ddd-intent`/`ddd-consolidate` 长流程收尾） |
 | `context.client.rpc(Ddd)` | 调 server 的 `gates`／`board` |
 
 ## 已知约束

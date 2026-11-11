@@ -316,6 +316,18 @@ async function main() {
   group("反证：counterexamples");
   await counterexampleChecks(pluginDir, lib);
 
+  // ============ 7b. TUI part（结构级：§9.5 分职责）============
+  group("TUI：src/tui.tsx（结构级）");
+  {
+    const p = join(pluginDir, "src", "tui.tsx");
+    const t = existsSync(p) ? readFileSync(p, "utf8") : "";
+    check("UT-src-tui-01 tui part 存在且 Plugin.define（id: ddd）", /from\s+["']@opencode\/plugin\/tui["']/.test(t) && /Plugin\.define\(\{[\s\S]*?id:\s*["']ddd["']/.test(t));
+    check("UT-src-tui-04 §9.5 分职责：dialog 仅做输入采集（select/prompt）", /dialog\.(select|prompt)\(/.test(t) && !/dialog\.confirm\(/.test(t));
+    check("UT-src-tui-05 取消语义：dialog 返回 undefined 不直接中止（显式处理）", /undefined/.test(t) && /toast\.show\(/.test(t));
+    check("UT-src-tui-06 keymap 工厂为纯函数形态（layer(() => ({...}))）", /keymap\.layer\(\(\)\s*=>\s*\(\{/.test(t));
+    check("UT-src-tui-02 经 RPC 调 server（client.rpc(Ddd)）", /client\.rpc\(Ddd\)/.test(t));
+  }
+
   // ============ 8. 自测入口自身（退出码语义）============
   group("自测入口：selftest.mjs");
   {
