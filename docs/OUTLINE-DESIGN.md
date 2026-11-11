@@ -494,7 +494,7 @@ ddd-methodology/
 | M4 | 命令改造口 | 使用者无法适配；命令与代理定义耦合 | 入口层与声明式注册表**双层双向对账** |
 | M5 | 意图澄清 | 需求未澄清即推进，实现期无限扩张 | 阻塞式确认（TUI dialog / `permission.assert`） |
 | M6 | 记忆闭环 | 同类的坑反复踩；经验随会话消失 | `memory.jsonl` 记忆条目 + 晋升 + 衰减 |
-| M7 | 看板闭环 | 规划任务被忘；「说了没做」无从判定 | `board.jsonl` + 投影 + 收尾活跃投影为空 |
+| M7 | 看板闭环（**持久多步待办**） | 规划任务被忘、「做一半丢一半」；宿主 `todowrite` 实验性且会话级，跨会话/压缩即丢 | `docs/board/board.jsonl`（append-only、单一真相源）＋ 投影 ＋ 每步注回上下文 ＋ 收尾活跃投影为空（G6） |
 | M8 | 执行规则闭环 | 工具调用无门禁；危险/越界命令无拦 | 规则落点三分（权限配置 / `session.update` / `evaluate` hook）＋ **对接宿主内置扫描器**（fail-closed；不自建命令黑名单，见 §十六） |
 | M9 | 图集重放与巡检 | 关系类缺陷读文本看不出，画成图才显形 | 从设计树与基线重放产出图；产图者不宣判 |
 | M10 | 单点权威与反漂移 | 同一事实被手写多遍，「部分修复」反复发生 | 权威登记 + 扫描复写 |
@@ -552,7 +552,7 @@ ddd-methodology/
 | **「格式与 lint 自动修复」判断式** | 宿主 `formatter` 在 `write`/`edit`/`patch` 后自动格式化；命令文件里的 `` !`cmd` `` 可插入 shell 输出 | `raw/config.md`（Formatter）；`raw/commands.md`（Shell） |
 | **「忽略非受控面」的扫描跳过集**（依赖/产物/缓存） | 宿主 `watcher.ignore` 管文件监控；方法论的自建扫描只需**复用同一清单**，不必各写一份 | `raw/config.md`（Watcher） |
 | **「工具输出截断」** | 宿主 `tool_output.max_lines/max_bytes` | `raw/config.md`（Output） |
-| **「多步待办清单」机制（原看板的任务面之一）** | 宿主 `experimental.todo` 给 `todowrite` 工具；通用待办**不必自建** | `raw/config.md`（Todos） |
+| **「会话内临时清单」UI（不持久）** | 宿主 `experimental.todo` 给 `todowrite`（**实验性、会话级**）；**持久多步跟踪不在此列**（见 M7 看板，自建） | `raw/config.md`（Todos） |
 | **「模型/提供方白名单与预算」** | 宿主 `providers` 配置 + `ctx.provider/model.transform`；方法论不必自建模型治理 | `raw/config.md`（Providers）；`raw/build__plugins__server.md` |
 | **「MCP 服务器增删」** | 宿主 `mcp.servers` 配置 + `ctx.mcp.transform` | `raw/config.md`（MCP） |
 | **「参考资料注入」** | 宿主 `references` 配置（本地目录/Git 仓库）+ `ctx.reference.transform` | `raw/config.md`（References）；`raw/references.md` |

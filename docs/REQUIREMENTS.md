@@ -140,7 +140,7 @@ targetVersion: 2.0.0
 | R30 | 按需装入：`Manifest`（本项目需要哪些组件）＋`Profile`（预设套餐）；停用须在项目配置显式登记，不许静默 | options 键集可校验；停用可读 |
 | R31 | 版本落三处：`package.json` 的 `version`、变更流对应记录、使用者钉版声明（`<包名>@<版本>` 或完整 commit）；**不得回写已发布版本组** | 三处一致可判；post-tag 追加可检 |
 | R32 | 记忆闭环：记忆条目（坑点 `pitfall`／反复出现的步骤 `procedure`）＋门槛晋升＋衰减 | 行契约可检；达门槛的行为可判 |
-| R33 | 看板闭环：任务须带 `acceptance`（缺者不进板）；收尾**活跃投影为空**；Todo 记账**以本项目看板为准** | 无验收判据不进板；收尾可判 |
+| R33 | 看板闭环（**目的＝持久多步待办，防「做一半丢一半」**）：任务须带 `acceptance`（缺者不进板）；状态转移只以新行表达；每步注回上下文；收尾**活跃投影为空**；Todo 记账**以本项目看板为准**（宿主 `todowrite` 实验性/会话级，不足以承担跨会话持久） | 无验收判据不进板；跨会话可续；收尾可判 |
 | R34 | 执行规则闭环：每条执行规则须落宿主**可执行面**（权限规则／`session.update({permissions})`／`evaluate` hook），**不自建命令黑名单** | 每条规则有机械落点；「纸老虎」可检出 |
 | R35 | 图集重放与巡检：图由设计树与配置基线**重放**产出、禁止手改；**产图者不宣判**（审计独立） | 重放一致可检；审计件落 `docs/audits/` |
 | R36 | 缺陷已登记：交付判据是「缺陷已全部登记」，登记册是唯一权威处 | 登记册存在且为唯一处 |
@@ -242,7 +242,7 @@ targetVersion: 2.0.0
 | 「格式与 lint 自动修复」 | 宿主 `formatter` 在 `write`/`edit`/`patch` 后自动格式化 |
 | 「忽略非受控面」的扫描跳过集 | 宿主 `watcher.ignore`；方法论的自建扫描复用同一清单 |
 | 「工具输出截断」 | 宿主 `tool_output.max_lines/max_bytes` |
-| 「多步待办清单」机制 | 宿主 `experimental.todo`（`todowrite` 工具） |
+| 「会话内临时清单」UI（**不持久**） | 宿主 `experimental.todo`（`todowrite`，**实验性、会话级**）。**注意**：持久多步跟踪**不在此列**，见看板 M7 |
 | 「模型/提供方白名单与预算」 | 宿主 `providers` 配置 ＋ `ctx.provider/model.transform` |
 | 「MCP 服务器增删」 | 宿主 `mcp.servers` 配置 ＋ `ctx.mcp.transform` |
 | 「参考资料注入」 | 宿主 `references` 配置 ＋ `ctx.reference.transform` |
