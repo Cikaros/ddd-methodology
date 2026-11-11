@@ -1,0 +1,1 @@
+{"schemaVersion":1,"updated":"2026-11-11","note":"仅记正在进行中的需求。需求转为设计文档后从此件剔除，历史摘要留在 history-requirements.jsonl。","items":[{"id":"new-hermess-redesign","type":"new","name":"hermess-redesign","status":"draft","doc":"docs/requirements/new-hermess-redesign.draft.md","opened":"2026-11-11","targetVersion":"2.0.0","note":"以用户提供的架构概要设计为基线，据参考库 hermess-engineering 与现状 ddd 项目补充；含四项待裁"}]}
