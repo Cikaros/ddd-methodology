@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: agents/ddd-consolidator.md
-status: draft
+status: frozen
 landed: false
 covers: [ddd-consolidator]
 depends: [agents/DESIGN-AGENT-TEMPLATE.md]

@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: assets/role-tools.json
-status: draft
+status: frozen
 landed: false
 covers: [role-tools]
 depends: [src/lib/guard.ts]

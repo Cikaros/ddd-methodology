@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: agents/<role>.md
-status: draft
+status: frozen
 landed: false
 covers: [agent-template]
 depends: [agents/DESIGN.md]

@@ -2,7 +2,7 @@
 doc: unit-tests
 level: file
 target: agents/ddd-consolidator.md
-status: draft
+status: frozen
 landed: false
 depends: [agents/DESIGN-ddd-consolidator.md]
 updated: 2026-11-11

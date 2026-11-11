@@ -2,7 +2,7 @@
 doc: unit-tests
 level: file
 target: agents/<role>.md
-status: draft
+status: frozen
 landed: false
 depends: [agents/DESIGN-AGENT-TEMPLATE.md]
 updated: 2026-11-11

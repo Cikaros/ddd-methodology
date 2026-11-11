@@ -2,7 +2,7 @@
 doc: unit-tests
 level: file
 target: assets/role-tools.json
-status: draft
+status: frozen
 landed: false
 depends: [assets/DESIGN-role-tools.md]
 updated: 2026-11-11

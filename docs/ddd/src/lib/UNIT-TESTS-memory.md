@@ -2,7 +2,7 @@
 doc: unit-tests
 level: file
 target: src/lib/memory.ts
-status: draft
+status: frozen
 landed: false
 depends: [src/lib/DESIGN-memory.md]
 updated: 2026-11-11

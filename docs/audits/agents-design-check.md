@@ -42,5 +42,6 @@ intent-clarifier／architect／designer／design-reviewer／test-designer／impl
 ## 六、读数
 
 - 设计 46 / 测试 46；全局用例编号 **115**，0 重复；覆盖率 0 缺口。
-- **待二次评审（`draft`）13 份**：`agents/**`（6）、`src/lib/DESIGN-memory.md`+`UNIT-TESTS-memory.md`、`assets/DESIGN-role-tools.md`+`UNIT-TESTS-role-tools.md`、以及引用了内存/角色工具的 `src/lib/DESIGN.md`、`src/DESIGN-index.md`、`assets/DESIGN.md`。
-- 其余设计树保持 `frozen`。
+- **已冻结（10 份）**：`agents/**`（6）＋ `src/lib/DESIGN-memory.md`＋`UNIT-TESTS-memory.md`＋`assets/DESIGN-role-tools.md`＋`UNIT-TESTS-role-tools.md`。
+- **仍在审计（`draft` 3 份）**：`src/lib/DESIGN.md`、`src/DESIGN-index.md`、`assets/DESIGN.md`（仅因引用内存/角色工具而改，属"其余设计"审计范围）。
+- 其余设计树保持 `frozen`（frozen 合计 89 份）。

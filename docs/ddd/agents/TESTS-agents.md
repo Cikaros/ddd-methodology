@@ -2,7 +2,7 @@
 doc: tests
 level: module
 target: agents
-status: draft
+status: frozen
 landed: false
 depends: [agents/DESIGN.md]
 updated: 2026-11-11

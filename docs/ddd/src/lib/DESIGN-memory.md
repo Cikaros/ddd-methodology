@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: src/lib/memory.ts
-status: draft
+status: frozen
 landed: false
 covers: [MemoryEntry, computeConfidence, shouldRemind, shouldPromote, decay, projectScope]
 depends: [assets/memory.json]
