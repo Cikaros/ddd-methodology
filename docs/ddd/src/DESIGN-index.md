@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: src/index.ts
-status: frozen
+status: draft
 landed: false
 covers: [Plugin.define, setup]
 depends: [src/lib/registry.ts, src/lib/paths.ts, src/rpc.ts]
@@ -29,12 +29,14 @@ updated: 2026-11-11
 - 技能：`ctx.skill.transform` 注册 `SKILLS`，`path` 取**包根**相对路径。
 - RPC：`ctx.rpc.register(Ddd, { gates, board })`。
 - hook：`ctx.session.hook("prompt", ...)` 注入随包上下文，**幂等**（以标记串判重，§9.3）。
+- **角色工具面强制（Q4）**：`ctx.session.hook("context", ...)` 按 `event.agent` 删除不在 `assets/role-tools.json` 白名单的工具（`delete event.tools[x]`）；同时 `ctx.permission.hook("evaluate", ...)` 做运行时 deny 兜底（fail-safe）。
+- **记忆注入与复发统计（M6）**：`ctx.session.hook("context")` 注入 topN + 候选提示；`ctx.tool.hook("execute.before")` 匹配 `trigger` 计 `occur`；`ctx.event.subscribe(["session.deleted"])` 触发 `decay`。
 - 返回 cleanup：`dispose` 各 registration。
 
 ## 需引入的依赖
 
 - `@opencode/plugin`（宿主）：`Plugin`、`Skill`。
-- `./lib/registry.ts`、`./lib/paths.ts`、`./rpc.ts`。
+- `./lib/registry.ts`、`./lib/paths.ts`、`./lib/router.ts`、`./lib/guard.ts`、`./lib/memory.ts`、`./rpc.ts`。
 
 ## 调用的模块能力及接口
 

@@ -32,7 +32,7 @@ updated: 2026-11-11
 | `ddd-tester` | 四级测试执行与缺陷路由 | `/ddd-test` | 测试树、实现 | 测试报告 + 缺陷路由 | 执行测试 |
 | `ddd-auditor` | 独立对账/反漂移审计 | `/ddd-validate`、评审 | 全仓 | 审计件（`docs/audits/`） | **只读** |
 | `ddd-consolidator` | 冻结即归并（按模块/目录隔离） | `/ddd-consolidate` | 该块产物+变更流切片+冻结契约 | 该块终稿 | 目标块写 |
-| `ddd-curator` | 记忆/坑点归纳（可选） | 记忆闭环 | 会话轨迹 | `memory.jsonl` 条目 | 追加写 |
+| `ddd-curator` | 记忆/坑点归纳 | 记忆闭环（会话末/`/ddd-memo`） | 会话轨迹、既有记忆（只读） | `memory.jsonl` 条目（`record`/`occur`） | 追加写记忆 |
 
 ## 分发机制（命令 → 角色，准确落点）
 
@@ -45,6 +45,20 @@ updated: 2026-11-11
 
 - **嵌套深度**：`experimental.subagent_depth` 默认 1 → **主会话派发、子代理不再派子代理**；这与「按模块隔离、互不通信」一致。
 - **失败回退**：子代理不可用（如权限拒绝）时，命令在本会话执行，但须**在读数上可见**（不得静默降级）。
+
+## 角色工具面强制（Q4：必强制、尽量在工具注册层）
+
+- **宿主事实**：agent 定义**无 `tools` 白名单字段**（字段仅 `model`/`system`/`mode`/`hidden`/`disabled`/`permissions`）。故"注册层直接限制"原生不可得。
+- **求其次但仍是机械的三层**（都不依赖模型服从提示词）：
+  1. **主：请求级工具裁剪** — `session.hook("context")` 按 `event.agent` 执行 `delete event.tools[<name>]`，使不在该角色白名单的工具**根本不出现在该次请求**；模型看不到即不能调。
+  2. **次：角色 `permissions` 的 `deny`** — 在 agent 配置声明 `{action,resource,effect:"deny"}`，执行面直接拒绝。
+  3. **兜底：`permission.hook("evaluate")`** — 运行时 `deny`（fail-safe），覆盖 1/2 漏网。
+- **白名单单点权威**：`assets/role-tools.json`（角色→允许工具集）。`src/lib/guard.ts` 读它实现 1；角色 `permissions` 与 `evaluate` 由 `src/index.ts` 装配。
+- **只读角色**（reviewer/auditor）在三个层次都不得写。
+
+## 分发（Q3：两路并行，均为一等）
+
+静态 md 命令用 frontmatter `agent:`+`subagent:true`；插件命令 handler 用 `session.create`→`switchAgent`→`prompt`。两路并存，按命令形态择一，**不互相降级**。
 
 ## 统一契约与实例
 

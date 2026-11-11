@@ -2,7 +2,7 @@
 doc: design
 level: group
 target: src/lib
-status: frozen
+status: draft
 landed: false
 updated: 2026-11-11
 ---
@@ -22,6 +22,7 @@ updated: 2026-11-11
 | `registry.ts` | 命令/技能清单与自检（`ddd-` 前缀、去重、必有描述） |
 | `router.ts` | 自主注入路由：相位/意图/场景 → 最小切片集；判定可观测 |
 | `guard.ts` | 底线守卫：底线清单 → 机械执法点；无执法点者报错 |
+| `memory.ts` | M6 记忆闭环：置信度/提醒/晋升/衰减/scope（纯函数） |
 | `gates.ts` | 六道门禁判据，入参为项目状态快照；区分 `pass/block/visible/na` |
 | `paths.ts` | 包根 / 项目根解析；随包件与项目件分离 |
 
@@ -34,7 +35,7 @@ updated: 2026-11-11
 
 ## 承重机制承接
 
-M3（落地门禁）经 `gates.ts`；M10（反漂移）经 `registry.ts` 的清单单点；§8.7（路径纪律）经 `paths.ts`；**M13（自主注入与底线守卫）经 `router.ts`（注入路由）＋ `guard.ts`（底线守卫）**。
+M3（落地门禁）经 `gates.ts`；M10（反漂移）经 `registry.ts` 的清单单点；§8.7（路径纪律）经 `paths.ts`；**M13（自主注入与底线守卫）经 `router.ts`（注入路由）＋ `guard.ts`（底线守卫）**；**M6（记忆闭环）经 `memory.ts`（置信度/提醒/晋升/衰减）**。
 
 ## 状态
 

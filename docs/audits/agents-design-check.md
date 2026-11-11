@@ -22,16 +22,25 @@ intent-clarifier／architect／designer／design-reviewer／test-designer／impl
 
 宿主原生：`subagent` 工具、`mode: subagent`、`ctx.agent.transform`、`experimental.subagent_depth`（默认 1）、`permission` 的 `subagent` action。
 
-## 四、留给二次审计的裁量项
+## 四、裁定结果（用户已裁）
 
-| # | 裁量项 | 现状 |
+| # | 裁定 | 落点 |
 |---|---|---|
-| Q1 | 角色是否需要**逐角色文件设计件**，还是「清单＋模板」同构覆盖即可 | 现取后者（避免 10 份同构冗余，M10） |
-| Q2 | `ddd-curator` 是否纳入本版范围 | 现标「可选」 |
-| Q3 | 命令派发是否统一为「md 命令优先、插件命令仅动态」 | 现两路径并存，按命令形态选 |
-| Q4 | 只读角色的强制方式：仅 `permissions` 声明，还是同时由 `guard` 机械兜底 | 现：声明 + 建议走守卫 |
+| Q1 | **清单＋模板同构覆盖**（不逐角色另立完整设计树） | `agents/DESIGN.md` 角色清单 + `DESIGN-AGENT-TEMPLATE.md` |
+| Q2 | **纳入** `ddd-curator`；**M6 内存闭环做详细设计，需二次评审** | `src/lib/DESIGN-memory.md`（新增，含生命周期/置信度/衰减/晋升/注入/待核 V-20…22） |
+| Q3 | **两路并行**（md 命令 与 插件命令 均为一等） | `agents/DESIGN.md`「分发（Q3）」 |
+| Q4 | 宿主**无 agent 级 `tools` 白名单**；采用「`context` hook 按 `event.agent` 请求级裁剪工具 ＋ 角色 `permissions` deny ＋ `evaluate` 兜底」 | `agents/DESIGN.md`「角色工具面强制」＋ `assets/role-tools.json` |
 
-## 五、读数
+## 五、Q4 澄清：什么是「guard 机械兜底」
 
-- 子代理件：6（设计 3 + 测试 3），全部 `draft`。
-- 全局用例编号：105 条，0 重复。
+- 不是另造引擎，而是**组合宿主三个强制面**（均不依赖模型服从提示词）：
+  1. `session.hook("context")` 按 `event.agent` `delete event.tools[x]`（请求级工具裁剪，最接近"注册层限制"）；
+  2. 角色 `permissions` 的 `deny`（执行面拒绝）；
+  3. `permission.hook("evaluate")` 运行时 `deny`（fail-safe）。
+- 白名单单一权威：`assets/role-tools.json`。
+
+## 六、读数
+
+- 设计 46 / 测试 46；全局用例编号 **115**，0 重复；覆盖率 0 缺口。
+- **待二次评审（`draft`）13 份**：`agents/**`（6）、`src/lib/DESIGN-memory.md`+`UNIT-TESTS-memory.md`、`assets/DESIGN-role-tools.md`+`UNIT-TESTS-role-tools.md`、以及引用了内存/角色工具的 `src/lib/DESIGN.md`、`src/DESIGN-index.md`、`assets/DESIGN.md`。
+- 其余设计树保持 `frozen`。

@@ -2,7 +2,7 @@
 doc: design
 level: module
 target: assets
-status: frozen
+status: draft
 landed: false
 updated: 2026-11-11
 ---
@@ -33,6 +33,7 @@ updated: 2026-11-11
 | `bottom-lines.json` | **底线清单**（每条含执法点与 remedy） | `src/lib/guard.ts`、`src/index.ts` |
 | `languages.json` | **语言目录**（受支持语言清单：id／基线指南／机械键／关联工具）；**不是**某项目的取值 | `skills/lang/**`、`assets/lang-<id>.json` |
 | `lang-<id>.json` | 各语言**机械可判取值**（缩进/行宽/引号/严格度等） | 项目 formatter/linter |
+| `role-tools.json` | **角色→工具白名单**（Q4 机械强制输入） | `src/lib/guard.ts`、`src/index.ts` |
 
 > **单点权威**：上表每行的事实只在该件写具体值；其余位置一律引用（M10 反漂移）。
 

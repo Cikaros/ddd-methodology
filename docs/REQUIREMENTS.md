@@ -317,6 +317,10 @@ targetVersion: 2.0.0
 | 11 | 「冻结即归并」立项 | **立项为承重机制 M12**（见设计 §承重机制）；三个触发点＝需求冻结／设计冻结／代码冻结 |
 | 12 | 归并的执行方式 | **按模块/目录切分为子任务（子代理）隔离执行**（上策）；禁止原迭代会话就地归并 |
 | 13 | 归并是否删除变更流 | **不删**；只删产物内联痕迹，`docs/CHANGELOG.jsonl` 为审计资产 |
+| 14 | 子代理角色粒度（Q1） | **清单＋模板同构覆盖**（不逐角色另立完整设计树，避免冗余，M10） |
+| 15 | 记忆闭环（Q2） | **纳入**；M6 详细设计见 `src/lib/DESIGN-memory.md`；**需二次评审**后再冻结 |
+| 16 | 命令→子代理派发（Q3） | **两路并行**：静态 md 命令 `agent:`+`subagent:true`；插件命令 `session.create→switchAgent→prompt` |
+| 17 | 角色工具面强制（Q4） | **宿主无 agent 级 `tools` 白名单**；采用「`context` hook 按 `event.agent` 请求级裁剪工具 ＋ 角色 `permissions` deny ＋ `evaluate` 兜底」；白名单落 `assets/role-tools.json` |
 
 ## 八、验收线索
 
