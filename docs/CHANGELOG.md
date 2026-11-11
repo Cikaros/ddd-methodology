@@ -25,7 +25,7 @@
 - 怎么算做对：README 含方式 C（hosted/HTTPS/SSH、分支/标签/提交哈希、::path:）；远端 v1.0.0 指向最新提交
 - 涉及：README.md
 
-## v1.0.0 · CHG-0004 · fix
+## v1.0.1 · CHG-0004 · fix
 
 - 时间：2026-11-11T13:35:54.897Z
 - 为什么做：修 C-43 同类缺陷：/ddd-init 用 process.execPath 启动 scaffold，真宿主里被当成 opencode 子命令而失败（显示帮助 reload/pair/serve）
