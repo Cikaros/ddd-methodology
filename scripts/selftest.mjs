@@ -510,13 +510,23 @@ async function toolChecks(dir) {
   wf(dfx, rf(dfx, "utf8") + '{"id":"X"}\n', "utf8");
   check("UT-scripts-defects-02 手改（缺字段行）检出", run("defects.mjs", ["check"], tmp).status === 1);
 
-  // drift-check（对真实包根）
+  // drift-check + validate（对真实包根；调用前备份、调用后还原 docs/reports，避免污染本仓）
+  const savedReports = {};
+  for (const f of ["drift-check.json", "validate.json"]) {
+    const p = join(dir, "docs", "reports", f);
+    savedReports[p] = ex(p) ? rf(p, "utf8") : null;
+  }
+  const restoreReports = () => {
+    for (const [p, content] of Object.entries(savedReports)) {
+      try { if (content === null) rmSync(p, { force: true }); else wf(p, content, "utf8"); } catch { /* best-effort */ }
+    }
+  };
+
   const drift = spawnSync(process.execPath, [T("drift-check.mjs"), "--root", dir], { encoding: "utf8" });
   check("UT-scripts-drift-check-02 权威=实物（零复写）", drift.status === 0);
   const dr = ex(join(dir, "docs", "reports", "drift-check.json")) ? JSON.parse(rf(join(dir, "docs", "reports", "drift-check.json"), "utf8")) : null;
   check("UT-scripts-drift-check-03 阈值不内置（专项检查在册且通过）", !!dr && (dr.checks ?? []).some((c) => c.id === "drift.no-inline-thresholds" && c.ok));
 
-  // validate
   const v = run("validate.mjs", [], dir);
   const vr = ex(join(dir, "docs", "reports", "validate.json")) ? JSON.parse(rf(join(dir, "docs", "reports", "validate.json"), "utf8")) : null;
   check("UT-scripts-validate-01 读数形态（六条 + summary）", !!vr && Array.isArray(vr.readings) && vr.readings.length === 6 && !!vr.summary);
@@ -524,6 +534,7 @@ async function toolChecks(dir) {
   check("UT-scripts-validate-03 block 带 remedy", !!vr && vr.readings.filter((r) => r.verdict === "block").every((r) => !!r.remedy));
   check("UT-scripts-validate-04 退出码（无 block → 0）", v.status === 0);
   check("UT-scripts-validate-05 G6 核缺陷登记册（R36）", !!vr && typeof vr.defectsRegister === "boolean");
+  restoreReports();
 }
 
 async function counterexampleChecks(dir, lib) {
