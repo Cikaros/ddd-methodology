@@ -1,0 +1,110 @@
+{
+  "$schema": "internal:commands",
+  "commands": [
+    {
+      "name": "ddd-init",
+      "purpose": "在当前项目根落项目级骨架（根文档三件 + docs/ 结构 + 空图集 + 机器可读快照）",
+      "params": [],
+      "impl": "extension",
+      "blocking": false
+    },
+    {
+      "name": "ddd-intent",
+      "purpose": "明确意图：把需求澄清到可设计、可验收",
+      "params": [],
+      "impl": "extension",
+      "blocking": true
+    },
+    {
+      "name": "ddd-arch",
+      "purpose": "生成或更新 docs/ARCHITECTURE.md 与目录规划",
+      "params": [],
+      "impl": "extension",
+      "blocking": true
+    },
+    {
+      "name": "ddd-design",
+      "purpose": "逐层生成或更新设计树",
+      "params": ["--from-code"],
+      "impl": "extension",
+      "blocking": false
+    },
+    {
+      "name": "ddd-review",
+      "purpose": "冻结前独立交叉评审接口契约",
+      "params": [],
+      "impl": "extension",
+      "blocking": false
+    },
+    {
+      "name": "ddd-test-design",
+      "purpose": "生成或更新测试用例树",
+      "params": [],
+      "impl": "extension",
+      "blocking": false
+    },
+    {
+      "name": "ddd-implement",
+      "purpose": "按冻结契约落代码与单元测试",
+      "params": [],
+      "impl": "extension",
+      "blocking": false
+    },
+    {
+      "name": "ddd-test",
+      "purpose": "执行四级测试并出报告与缺陷路由",
+      "params": [],
+      "impl": "extension",
+      "blocking": false
+    },
+    {
+      "name": "ddd-validate",
+      "purpose": "跑门禁、出报告",
+      "params": [],
+      "impl": "extension",
+      "blocking": false
+    },
+    {
+      "name": "ddd-change",
+      "purpose": "记一条变更流",
+      "params": [],
+      "impl": "extension",
+      "blocking": false
+    },
+    {
+      "name": "ddd-map",
+      "purpose": "重放图集",
+      "params": [],
+      "impl": "extension",
+      "blocking": false
+    },
+    {
+      "name": "ddd-wrapup",
+      "purpose": "收尾：清临时件、剔需求、发布版本；含跨树归并终检",
+      "params": [],
+      "impl": "extension",
+      "blocking": true
+    },
+    {
+      "name": "ddd-consolidate",
+      "purpose": "冻结即归并：按模块/目录隔离重构为最终版（M12）",
+      "params": ["requirements", "design", "code", "all"],
+      "impl": "extension",
+      "blocking": true
+    },
+    {
+      "name": "ddd-board",
+      "purpose": "看板闭环（M7）：查/增/转/证/弃/重挂 持久多步待办任务",
+      "params": ["list", "add", "move", "evidence", "drop", "rehome"],
+      "impl": "extension",
+      "blocking": false
+    },
+    {
+      "name": "ddd-memo",
+      "purpose": "记忆闭环（M6）：查记忆条目、候选提示",
+      "params": ["list"],
+      "impl": "extension",
+      "blocking": false
+    }
+  ]
+}

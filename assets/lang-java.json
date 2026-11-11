@@ -1,0 +1,1 @@
+{ "indent": 4, "indentStyle": "space", "maxLineLength": 100, "braces": "same-line", "importOrder": "google", "strict": true }

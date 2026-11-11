@@ -1,0 +1,13 @@
+{
+  "$schema": "internal:memory",
+  "remindAt": 2,
+  "promoteAt": 5,
+  "consistency": 0.8,
+  "decayPerSession": 1,
+  "injectTopN": 5,
+  "redlines": [
+    "未跑测试不得宣告完成",
+    "交付物为空不得宣告完成",
+    "看板有未落幕项不得宣告收尾"
+  ]
+}

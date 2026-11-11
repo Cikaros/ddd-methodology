@@ -1,0 +1,53 @@
+{
+  "$schema": "internal:gates",
+  "gates": [
+    {
+      "id": "G1",
+      "name": "需求冻结",
+      "executor": "human",
+      "failSemantics": "block",
+      "inNodeSource": true,
+      "criterion": "需求件 status: frozen，裁决记录无未决项"
+    },
+    {
+      "id": "G2",
+      "name": "架构就位",
+      "executor": "human",
+      "failSemantics": "block",
+      "inNodeSource": true,
+      "criterion": "docs/ARCHITECTURE.md 含技术栈、核心依赖、目录结构、环境探查四类内容"
+    },
+    {
+      "id": "G3",
+      "name": "设计树同构",
+      "executor": "machine",
+      "failSemantics": "block",
+      "inNodeSource": true,
+      "criterion": "同构对账零失败；命令注册表双向核对零失败"
+    },
+    {
+      "id": "G4",
+      "name": "测试树覆盖",
+      "executor": "machine",
+      "failSemantics": "block",
+      "inNodeSource": true,
+      "criterion": "有文件级设计的源文件全部有对应用例文档"
+    },
+    {
+      "id": "G5",
+      "name": "落地非空",
+      "executor": "machine",
+      "failSemantics": "block",
+      "inNodeSource": true,
+      "criterion": "判定类表所列各类全通过；交付件存在且大于十字节、schema 合法"
+    },
+    {
+      "id": "G6",
+      "name": "收尾清空",
+      "executor": "machine+human",
+      "failSemantics": "block",
+      "inNodeSource": true,
+      "criterion": "docs/temp.jsonl 登记项均已清理；看板活跃投影为空；版本已落三处"
+    }
+  ]
+}

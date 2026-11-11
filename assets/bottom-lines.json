@@ -1,0 +1,50 @@
+{
+  "$schema": "internal:bottom-lines",
+  "bottomLines": [
+    {
+      "id": "BL-doc-first",
+      "surface": "gate",
+      "action": "design:contract",
+      "resource": "src/**",
+      "effect": "deny",
+      "failSemantics": "block",
+      "remedy": "先改设计件并通过声明面/实物双向对账，再落代码；契约未冻结不得实现。"
+    },
+    {
+      "id": "BL-gate-not-passed",
+      "surface": "permission",
+      "action": "ddd:gate",
+      "resource": "advance",
+      "effect": "deny",
+      "failSemantics": "block",
+      "remedy": "门禁未过不得推进；先补齐阻塞门禁的完成判据，再重跑 /ddd-validate。"
+    },
+    {
+      "id": "BL-consolidate-no-delete",
+      "surface": "permission",
+      "action": "edit",
+      "resource": "docs/CHANGELOG.jsonl",
+      "effect": "deny",
+      "failSemantics": "block",
+      "remedy": "变更流是审计资产；只删产物内联痕迹，不得触碰 CHANGELOG.jsonl，写入仅经唯一工具。"
+    },
+    {
+      "id": "BL-variant-contract",
+      "surface": "gate",
+      "action": "variant:contract",
+      "resource": "docs/variant-contract.json",
+      "effect": "deny",
+      "failSemantics": "block",
+      "remedy": "变体取值越界：只在 docs/variant-contract.json 单点权威内选择封闭枚举值；越界须先扩契约并附代价。"
+    },
+    {
+      "id": "BL-no-hardcoded-visual",
+      "surface": "gate",
+      "action": "variant:token",
+      "resource": "**/*.{css,scss,tsx,vue}",
+      "effect": "deny",
+      "failSemantics": "block",
+      "remedy": "token 值违规：禁止硬编码颜色/间距，改用语义 token；变体切换只在应用 shell 层。"
+    }
+  ]
+}

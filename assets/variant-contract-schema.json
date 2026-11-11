@@ -1,0 +1,47 @@
+{
+  "$schema": "internal:variant-contract-schema",
+  "type": "object",
+  "required": ["dimensions", "forbiddenCombinations"],
+  "properties": {
+    "dimensions": {
+      "type": "array",
+      "description": "五维标准枚举：主题模式/品牌租户/密度/强调色/圆角风格",
+      "items": {
+        "type": "object",
+        "required": ["id", "enum", "allowedTokenLayer", "forbiddenCrossEffects"],
+        "properties": {
+          "id": { "enum": ["theme-mode", "brand-tenant", "density", "accent-color", "radius-style"] },
+          "enum": {
+            "type": "array",
+            "description": "封闭枚举；不得为开放区间",
+            "items": { "type": "string" },
+            "minItems": 2
+          },
+          "allowedTokenLayer": {
+            "description": "该维允许影响的 token 层级（Primitive/Semantic/Component）",
+            "type": "array",
+            "items": { "enum": ["primitive", "semantic", "component"] }
+          },
+          "forbiddenCrossEffects": {
+            "description": "该维禁止交叉影响的范围",
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "minItems": 5,
+      "maxItems": 5
+    },
+    "forbiddenCombinations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["dims", "reason"],
+        "properties": {
+          "dims": { "type": "object" },
+          "reason": { "type": "string" }
+        }
+      }
+    }
+  }
+}

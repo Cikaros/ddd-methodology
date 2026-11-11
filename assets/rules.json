@@ -1,0 +1,38 @@
+{
+  "$schema": "internal:rules",
+  "rules": [
+    {
+      "id": "RL-perm-changelog-immutable",
+      "surface": "permission",
+      "action": "edit",
+      "resource": "docs/CHANGELOG.jsonl",
+      "effect": "deny"
+    },
+    {
+      "id": "RL-perm-changelog-immutable-write",
+      "surface": "permission",
+      "action": "write",
+      "resource": "docs/CHANGELOG.jsonl",
+      "effect": "deny"
+    },
+    {
+      "id": "RL-session-gate-advance",
+      "surface": "session",
+      "action": "ddd:gate",
+      "resource": "advance",
+      "effect": "deny"
+    },
+    {
+      "id": "RL-eval-doc-first",
+      "surface": "evaluate",
+      "action": "edit",
+      "resource": "src/**",
+      "effect": "ask"
+    }
+  ],
+  "blindspots": [
+    "命令串形态交宿主内置 shell 扫描器（fail-closed），方法论不自建黑名单。",
+    "路径越界交宿主 external_directory 与 read/edit 的 resource 匹配。",
+    "显式配置的 deny 是终判，不进入 evaluate hook，无法在其上再加工。"
+  ]
+}

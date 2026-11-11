@@ -1,0 +1,16 @@
+{
+  "$schema": "internal:injection-slices",
+  "slices": [
+    { "id": "core", "source": "skills/ddd-methodology/SKILL.md", "when": {} },
+    { "id": "spec-requirements", "source": "skills/ddd-methodology/references/spec-requirements.md", "when": { "phase": "intent" } },
+    { "id": "spec-design", "source": "skills/ddd-methodology/references/spec-design.md", "when": { "phase": "design" } },
+    { "id": "spec-test", "source": "skills/ddd-methodology/references/spec-test.md", "when": { "phase": "test-design" } },
+    { "id": "spec-test-run", "source": "skills/ddd-methodology/references/spec-test.md", "when": { "phase": "test" } },
+    { "id": "spec-change", "source": "skills/ddd-methodology/references/spec-change.md", "when": { "phase": "change" } },
+    { "id": "spec-change-wrapup", "source": "skills/ddd-methodology/references/spec-change.md", "when": { "phase": "wrapup" } },
+    { "id": "spec-rules", "source": "skills/ddd-methodology/references/spec-rules.md", "when": { "phase": "validate" } },
+    { "id": "frontend-variant-contract", "source": "skills/frontend-variant-contract/SKILL.md", "when": { "phase": "arch", "intent": "frontend" } },
+    { "id": "dev-tools-core", "source": "skills/dev-tools/SKILL.md", "when": { "intent": "backend" } },
+    { "id": "dev-tools-fix", "source": "skills/dev-tools/SKILL.md", "when": { "intent": "bugfix" } }
+  ]
+}

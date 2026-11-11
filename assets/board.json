@@ -1,0 +1,9 @@
+{
+  "priorityDomain": ["P0", "P1", "P2", "P3"],
+  "defaultPriority": "P2",
+  "statusDomain": ["pending", "in_progress", "blocked", "done", "dropped"],
+  "starvationWindow": 8,
+  "starvationLimit": 3,
+  "orphanHours": 24,
+  "maxLineBytes": 8192
+}

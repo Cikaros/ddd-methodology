@@ -1,0 +1,15 @@
+{
+  "$schema": "internal:role-tools",
+  "roles": {
+    "ddd-intent-clarifier": ["read", "grep", "glob"],
+    "ddd-architect": ["read", "grep", "glob", "write", "edit"],
+    "ddd-designer": ["read", "grep", "glob", "write", "edit"],
+    "ddd-design-reviewer": ["read", "grep", "glob"],
+    "ddd-test-designer": ["read", "grep", "glob", "write", "edit"],
+    "ddd-implementer": ["read", "grep", "glob", "write", "edit", "shell"],
+    "ddd-tester": ["read", "grep", "glob", "shell"],
+    "ddd-auditor": ["read", "grep", "glob"],
+    "ddd-consolidator": ["read", "grep", "glob", "write", "edit"],
+    "ddd-curator": ["read", "grep", "glob", "shell"]
+  }
+}

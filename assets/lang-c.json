@@ -1,0 +1,1 @@
+{ "indent": 2, "indentStyle": "space", "maxLineLength": 80, "braces": "k&r", "strict": "c11" }

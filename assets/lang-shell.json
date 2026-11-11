@@ -1,0 +1,1 @@
+{ "indent": 2, "indentStyle": "space", "maxLineLength": 80, "shebang": true, "strict": "set -euo pipefail" }

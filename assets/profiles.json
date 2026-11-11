@@ -1,0 +1,18 @@
+{
+  "$schema": "internal:profiles",
+  "profiles": {
+    "minimal": {
+      "gates": { "G1": true, "G2": true, "G3": true, "G4": false, "G5": false, "G6": false },
+      "skills": ["ddd-methodology"]
+    },
+    "standard": {
+      "gates": { "G1": true, "G2": true, "G3": true, "G4": true, "G5": true, "G6": true },
+      "skills": ["ddd-methodology", "frontend-variant-contract", "lang", "dev-tools"]
+    },
+    "strict": {
+      "gates": { "G1": true, "G2": true, "G3": true, "G4": true, "G5": true, "G6": true },
+      "skills": ["ddd-methodology", "frontend-variant-contract", "lang", "dev-tools"],
+      "rules": true
+    }
+  }
+}
