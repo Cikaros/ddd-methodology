@@ -20,7 +20,13 @@
   ],
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --experimental-strip-types ./scripts/selftest.mjs ."
+    "test": "node --experimental-strip-types ./scripts/selftest.mjs .",
+    "snapshot": "node scripts/snapshot.mjs .",
+    "change": "node scripts/change.mjs",
+    "map": "node scripts/map.mjs .",
+    "validate": "node scripts/validate.mjs .",
+    "drift-check": "node scripts/drift-check.mjs .",
+    "defects": "node scripts/defects.mjs"
   },
   "peerDependencies": {
     "@opencode/plugin": ">=2.2.7"

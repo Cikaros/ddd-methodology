@@ -1,0 +1,1098 @@
+{
+  "ts": "2026-11-11T10:57:57.167Z",
+  "designs": [
+    {
+      "path": "docs/ddd/agents/DESIGN-AGENT-TEMPLATE.md",
+      "level": "file",
+      "target": "agents/<role>.md",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[agent-template]",
+      "depends": "[agents/DESIGN.md]"
+    },
+    {
+      "path": "docs/ddd/agents/DESIGN-ddd-consolidator.md",
+      "level": "file",
+      "target": "agents/ddd-consolidator.md",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[ddd-consolidator]",
+      "depends": "[agents/DESIGN-AGENT-TEMPLATE.md]"
+    },
+    {
+      "path": "docs/ddd/agents/DESIGN.md",
+      "level": "module",
+      "target": "agents",
+      "status": "frozen",
+      "landed": "true"
+    },
+    {
+      "path": "docs/ddd/assets/DESIGN-board.md",
+      "level": "file",
+      "target": "assets/board.json",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[board-config]",
+      "depends": "[src/lib/board.ts]"
+    },
+    {
+      "path": "docs/ddd/assets/DESIGN-bottom-lines.md",
+      "level": "file",
+      "target": "assets/bottom-lines.json",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[bottom-lines]",
+      "depends": "[src/lib/guard.ts]"
+    },
+    {
+      "path": "docs/ddd/assets/DESIGN-commands.md",
+      "level": "file",
+      "target": "assets/commands.json",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[commands-registry]",
+      "depends": "[src/lib/registry.ts]"
+    },
+    {
+      "path": "docs/ddd/assets/DESIGN-counterexamples.md",
+      "level": "file",
+      "target": "assets/counterexamples.json",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[counterexamples]",
+      "depends": "[scripts/selftest.mjs]"
+    },
+    {
+      "path": "docs/ddd/assets/DESIGN-gates.md",
+      "level": "file",
+      "target": "assets/gates.json",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[gates]",
+      "depends": "[src/lib/gates.ts]"
+    },
+    {
+      "path": "docs/ddd/assets/DESIGN-injection-slices.md",
+      "level": "file",
+      "target": "assets/injection-slices.json",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[injection-slices]",
+      "depends": "[src/lib/router.ts]"
+    },
+    {
+      "path": "docs/ddd/assets/DESIGN-languages.md",
+      "level": "file",
+      "target": "assets/languages.json",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[languages-catalog]",
+      "depends": "[skills/lang/DESIGN-SKILL-TEMPLATE.md]"
+    },
+    {
+      "path": "docs/ddd/assets/DESIGN-memory.md",
+      "level": "file",
+      "target": "assets/memory.json",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[memory-thresholds]"
+    },
+    {
+      "path": "docs/ddd/assets/DESIGN-profiles.md",
+      "level": "file",
+      "target": "assets/profiles.json",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[profiles]"
+    },
+    {
+      "path": "docs/ddd/assets/DESIGN-role-tools.md",
+      "level": "file",
+      "target": "assets/role-tools.json",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[role-tools]",
+      "depends": "[src/lib/guard.ts]"
+    },
+    {
+      "path": "docs/ddd/assets/DESIGN-rules.md",
+      "level": "file",
+      "target": "assets/rules.json",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[rules]",
+      "depends": "[src/index.ts]"
+    },
+    {
+      "path": "docs/ddd/assets/DESIGN-variant-contract-schema.md",
+      "level": "file",
+      "target": "assets/variant-contract-schema.json",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[variant-contract-schema]"
+    },
+    {
+      "path": "docs/ddd/assets/DESIGN.md",
+      "level": "module",
+      "target": "assets",
+      "status": "frozen",
+      "landed": "true"
+    },
+    {
+      "path": "docs/ddd/DESIGN.md",
+      "level": "subproject",
+      "target": ".",
+      "status": "frozen",
+      "landed": "true"
+    },
+    {
+      "path": "docs/ddd/scripts/DESIGN-board.md",
+      "level": "file",
+      "target": "scripts/board.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[board-writer]",
+      "depends": "[src/lib/board.ts, assets/board.json]"
+    },
+    {
+      "path": "docs/ddd/scripts/DESIGN-change.md",
+      "level": "file",
+      "target": "scripts/change.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[changelog-writer]",
+      "depends": "[src/lib/paths.ts]"
+    },
+    {
+      "path": "docs/ddd/scripts/DESIGN-defects.md",
+      "level": "file",
+      "target": "scripts/defects.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[defect-register]",
+      "depends": "[src/lib/paths.ts]"
+    },
+    {
+      "path": "docs/ddd/scripts/DESIGN-drift-check.md",
+      "level": "file",
+      "target": "scripts/drift-check.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[drift-scan]",
+      "depends": "[assets/commands.json, src/lib/registry.ts]"
+    },
+    {
+      "path": "docs/ddd/scripts/DESIGN-map.md",
+      "level": "file",
+      "target": "scripts/map.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[map-replay]",
+      "depends": "[scripts/snapshot.mjs]"
+    },
+    {
+      "path": "docs/ddd/scripts/DESIGN-selftest.md",
+      "level": "file",
+      "target": "scripts/selftest.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[selftest]",
+      "depends": "[src/index.ts, src/lib/registry.ts]"
+    },
+    {
+      "path": "docs/ddd/scripts/DESIGN-snapshot.md",
+      "level": "file",
+      "target": "scripts/snapshot.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[design-tree-snapshot]",
+      "depends": "[src/lib/registry.ts]"
+    },
+    {
+      "path": "docs/ddd/scripts/DESIGN-validate.md",
+      "level": "file",
+      "target": "scripts/validate.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[gate-reader]",
+      "depends": "[src/lib/gates.ts, scripts/snapshot.mjs, scripts/change.mjs]"
+    },
+    {
+      "path": "docs/ddd/scripts/DESIGN.md",
+      "level": "module",
+      "target": "scripts",
+      "status": "frozen",
+      "landed": "true"
+    },
+    {
+      "path": "docs/ddd/skills/ddd-methodology/DESIGN-SKILL.md",
+      "level": "file",
+      "target": "skills/ddd-methodology/SKILL.md",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[skill]"
+    },
+    {
+      "path": "docs/ddd/skills/ddd-methodology/DESIGN.md",
+      "level": "group",
+      "target": "skills/ddd-methodology",
+      "status": "frozen",
+      "landed": "true"
+    },
+    {
+      "path": "docs/ddd/skills/ddd-methodology/references/DESIGN-spec-change.md",
+      "level": "file",
+      "target": "skills/ddd-methodology/references/spec-change.md",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[spec-change]"
+    },
+    {
+      "path": "docs/ddd/skills/ddd-methodology/references/DESIGN-spec-design.md",
+      "level": "file",
+      "target": "skills/ddd-methodology/references/spec-design.md",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[spec-design]"
+    },
+    {
+      "path": "docs/ddd/skills/ddd-methodology/references/DESIGN-spec-requirements.md",
+      "level": "file",
+      "target": "skills/ddd-methodology/references/spec-requirements.md",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[spec-requirements]"
+    },
+    {
+      "path": "docs/ddd/skills/ddd-methodology/references/DESIGN-spec-rules.md",
+      "level": "file",
+      "target": "skills/ddd-methodology/references/spec-rules.md",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[spec-rules]"
+    },
+    {
+      "path": "docs/ddd/skills/ddd-methodology/references/DESIGN-spec-test.md",
+      "level": "file",
+      "target": "skills/ddd-methodology/references/spec-test.md",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[spec-test]"
+    },
+    {
+      "path": "docs/ddd/skills/ddd-methodology/references/DESIGN.md",
+      "level": "group",
+      "target": "skills/ddd-methodology/references",
+      "status": "frozen",
+      "landed": "true"
+    },
+    {
+      "path": "docs/ddd/skills/DESIGN.md",
+      "level": "module",
+      "target": "skills",
+      "status": "frozen",
+      "landed": "true"
+    },
+    {
+      "path": "docs/ddd/skills/dev-tools/DESIGN-SKILL.md",
+      "level": "file",
+      "target": "skills/dev-tools/SKILL.md",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[skill]"
+    },
+    {
+      "path": "docs/ddd/skills/dev-tools/DESIGN.md",
+      "level": "group",
+      "target": "skills/dev-tools",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[dev-tools]"
+    },
+    {
+      "path": "docs/ddd/skills/dev-tools/references/DESIGN.md",
+      "level": "group",
+      "target": "skills/dev-tools/references",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[dev-tools-references]"
+    },
+    {
+      "path": "docs/ddd/skills/frontend-variant-contract/DESIGN-SKILL.md",
+      "level": "file",
+      "target": "skills/frontend-variant-contract/SKILL.md",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[frontend-variant-skill]"
+    },
+    {
+      "path": "docs/ddd/skills/frontend-variant-contract/DESIGN.md",
+      "level": "group",
+      "target": "skills/frontend-variant-contract",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[frontend-variant-contract]",
+      "depends": "[assets/variant-contract-schema.json]"
+    },
+    {
+      "path": "docs/ddd/skills/frontend-variant-contract/references/DESIGN.md",
+      "level": "group",
+      "target": "skills/frontend-variant-contract/references",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[frontend-variant-references]"
+    },
+    {
+      "path": "docs/ddd/skills/lang/DESIGN-SKILL-TEMPLATE.md",
+      "level": "file",
+      "target": "skills/lang/<id>/SKILL.md",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[lang-skill-template]",
+      "depends": "[assets/lang-<id>.json]"
+    },
+    {
+      "path": "docs/ddd/skills/lang/DESIGN.md",
+      "level": "group",
+      "target": "skills/lang",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[lang-family]",
+      "depends": "[assets/languages.json]"
+    },
+    {
+      "path": "docs/ddd/skills/lang/references/DESIGN.md",
+      "level": "group",
+      "target": "skills/lang/<id>/references",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[lang-references]"
+    },
+    {
+      "path": "docs/ddd/src/DESIGN-index.md",
+      "level": "file",
+      "target": "src/index.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[Plugin.define, setup]",
+      "depends": "[src/lib/registry.ts, src/lib/paths.ts, src/rpc.ts]"
+    },
+    {
+      "path": "docs/ddd/src/DESIGN-rpc.md",
+      "level": "file",
+      "target": "src/rpc.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[Rpc.define, Ddd]"
+    },
+    {
+      "path": "docs/ddd/src/DESIGN-tui.md",
+      "level": "file",
+      "target": "src/tui.tsx",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[Plugin.define]",
+      "depends": "[src/rpc.ts]"
+    },
+    {
+      "path": "docs/ddd/src/DESIGN.md",
+      "level": "module",
+      "target": "src",
+      "status": "frozen",
+      "landed": "true"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-board.md",
+      "level": "file",
+      "target": "src/lib/board.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[BoardRow, project, canTransition, admit, detectOrphans]",
+      "depends": "[assets/board.json]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-gates.md",
+      "level": "file",
+      "target": "src/lib/gates.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[Verdict, GateReading, ProjectState, gates, summarize, canAdvance]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-guard.md",
+      "level": "file",
+      "target": "src/lib/guard.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[evaluateBottomLines, BottomLine, Enforcement]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-memory.md",
+      "level": "file",
+      "target": "src/lib/memory.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[MemoryEntry, computeConfidence, shouldRemind, shouldPromote, decay, projectScope]",
+      "depends": "[assets/memory.json]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-paths.md",
+      "level": "file",
+      "target": "src/lib/paths.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[packageRoot, projectRoot, packagePath, projectPath, within]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-registry.md",
+      "level": "file",
+      "target": "src/lib/registry.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[COMMANDS, SKILLS, registrations, auditRegistrations]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-router.md",
+      "level": "file",
+      "target": "src/lib/router.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[routeSlices, detectIntent, Phase]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN.md",
+      "level": "group",
+      "target": "src/lib",
+      "status": "frozen",
+      "landed": "true"
+    }
+  ],
+  "tests": [
+    {
+      "path": "docs/ddd/agents/TESTS-agents.md",
+      "target": "agents",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "MT-agents-01",
+        "MT-agents-02",
+        "MT-agents-03",
+        "MT-agents-04",
+        "MT-agents-05",
+        "MT-agents-06"
+      ]
+    },
+    {
+      "path": "docs/ddd/agents/UNIT-TESTS-AGENT-TEMPLATE.md",
+      "target": "agents/<role>.md",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-agents-AGENT-TEMPLATE-01",
+        "UT-agents-AGENT-TEMPLATE-02",
+        "UT-agents-AGENT-TEMPLATE-03",
+        "UT-agents-AGENT-TEMPLATE-04",
+        "UT-agents-AGENT-TEMPLATE-05"
+      ]
+    },
+    {
+      "path": "docs/ddd/agents/UNIT-TESTS-ddd-consolidator.md",
+      "target": "agents/ddd-consolidator.md",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-agents-ddd-consolidator-01",
+        "UT-agents-ddd-consolidator-02",
+        "UT-agents-ddd-consolidator-03",
+        "UT-agents-ddd-consolidator-04"
+      ]
+    },
+    {
+      "path": "docs/ddd/assets/TESTS-assets.md",
+      "target": "assets",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "MT-assets-01",
+        "MT-assets-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/assets/UNIT-TESTS-board.md",
+      "target": "assets/board.json",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-assets-board-01",
+        "UT-assets-board-02",
+        "UT-assets-board-03"
+      ]
+    },
+    {
+      "path": "docs/ddd/assets/UNIT-TESTS-bottom-lines.md",
+      "target": "assets/bottom-lines.json",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-assets-bottom-lines-01",
+        "UT-assets-bottom-lines-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/assets/UNIT-TESTS-commands.md",
+      "target": "assets/commands.json",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-assets-commands-01",
+        "UT-assets-commands-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/assets/UNIT-TESTS-counterexamples.md",
+      "target": "assets/counterexamples.json",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-assets-counterexamples-01",
+        "UT-assets-counterexamples-02",
+        "UT-assets-counterexamples-03"
+      ]
+    },
+    {
+      "path": "docs/ddd/assets/UNIT-TESTS-gates.md",
+      "target": "assets/gates.json",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-assets-gates-01",
+        "UT-assets-gates-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/assets/UNIT-TESTS-injection-slices.md",
+      "target": "assets/injection-slices.json",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-assets-injection-slices-01",
+        "UT-assets-injection-slices-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/assets/UNIT-TESTS-languages.md",
+      "target": "assets/languages.json",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-assets-languages-01",
+        "UT-assets-languages-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/assets/UNIT-TESTS-memory.md",
+      "target": "assets/memory.json",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-assets-memory-01",
+        "UT-assets-memory-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/assets/UNIT-TESTS-profiles.md",
+      "target": "assets/profiles.json",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-assets-profiles-01",
+        "UT-assets-profiles-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/assets/UNIT-TESTS-role-tools.md",
+      "target": "assets/role-tools.json",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-assets-role-tools-01",
+        "UT-assets-role-tools-02",
+        "UT-assets-role-tools-03",
+        "UT-assets-role-tools-04"
+      ]
+    },
+    {
+      "path": "docs/ddd/assets/UNIT-TESTS-rules.md",
+      "target": "assets/rules.json",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-assets-rules-01",
+        "UT-assets-rules-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/assets/UNIT-TESTS-variant-contract-schema.md",
+      "target": "assets/variant-contract-schema.json",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-assets-variant-contract-schema-01",
+        "UT-assets-variant-contract-schema-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/scripts/TESTS-scripts.md",
+      "target": "scripts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "MT-scripts-01",
+        "MT-scripts-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/scripts/UNIT-TESTS-board.md",
+      "target": "scripts/board.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-scripts-board-01",
+        "UT-scripts-board-02",
+        "UT-scripts-board-03",
+        "UT-scripts-board-04",
+        "UT-scripts-board-05",
+        "UT-scripts-board-06"
+      ]
+    },
+    {
+      "path": "docs/ddd/scripts/UNIT-TESTS-change.md",
+      "target": "scripts/change.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-scripts-change-01",
+        "UT-scripts-change-02",
+        "UT-scripts-change-03",
+        "UT-scripts-change-04",
+        "UT-scripts-change-05"
+      ]
+    },
+    {
+      "path": "docs/ddd/scripts/UNIT-TESTS-defects.md",
+      "target": "scripts/defects.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-scripts-defects-01",
+        "UT-scripts-defects-02",
+        "UT-scripts-defects-03",
+        "UT-scripts-defects-04",
+        "UT-scripts-defects-05"
+      ]
+    },
+    {
+      "path": "docs/ddd/scripts/UNIT-TESTS-drift-check.md",
+      "target": "scripts/drift-check.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-scripts-drift-check-01",
+        "UT-scripts-drift-check-02",
+        "UT-scripts-drift-check-03",
+        "UT-scripts-drift-check-04"
+      ]
+    },
+    {
+      "path": "docs/ddd/scripts/UNIT-TESTS-map.md",
+      "target": "scripts/map.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-scripts-map-01",
+        "UT-scripts-map-02",
+        "UT-scripts-map-03",
+        "UT-scripts-map-04"
+      ]
+    },
+    {
+      "path": "docs/ddd/scripts/UNIT-TESTS-selftest.md",
+      "target": "scripts/selftest.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-scripts-selftest-01",
+        "UT-scripts-selftest-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/scripts/UNIT-TESTS-snapshot.md",
+      "target": "scripts/snapshot.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-scripts-snapshot-01",
+        "UT-scripts-snapshot-02",
+        "UT-scripts-snapshot-03",
+        "UT-scripts-snapshot-04"
+      ]
+    },
+    {
+      "path": "docs/ddd/scripts/UNIT-TESTS-validate.md",
+      "target": "scripts/validate.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-scripts-validate-01",
+        "UT-scripts-validate-02",
+        "UT-scripts-validate-03",
+        "UT-scripts-validate-04",
+        "UT-scripts-validate-05"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/ddd-methodology/references/TESTS-references.md",
+      "target": "skills/ddd-methodology/references",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "GT-skills-ddd-methodology-references-01",
+        "GT-skills-ddd-methodology-references-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/ddd-methodology/references/UNIT-TESTS-spec-change.md",
+      "target": "skills/ddd-methodology/references/spec-change.md",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-skills-ddd-methodology-references-spec-change-01",
+        "UT-skills-ddd-methodology-references-spec-change-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/ddd-methodology/references/UNIT-TESTS-spec-design.md",
+      "target": "skills/ddd-methodology/references/spec-design.md",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-skills-ddd-methodology-references-spec-design-01",
+        "UT-skills-ddd-methodology-references-spec-design-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/ddd-methodology/references/UNIT-TESTS-spec-requirements.md",
+      "target": "skills/ddd-methodology/references/spec-requirements.md",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-skills-ddd-methodology-references-spec-requirements-01",
+        "UT-skills-ddd-methodology-references-spec-requirements-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/ddd-methodology/references/UNIT-TESTS-spec-rules.md",
+      "target": "skills/ddd-methodology/references/spec-rules.md",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-skills-ddd-methodology-references-spec-rules-01",
+        "UT-skills-ddd-methodology-references-spec-rules-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/ddd-methodology/references/UNIT-TESTS-spec-test.md",
+      "target": "skills/ddd-methodology/references/spec-test.md",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-skills-ddd-methodology-references-spec-test-01",
+        "UT-skills-ddd-methodology-references-spec-test-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/ddd-methodology/TESTS-ddd-methodology.md",
+      "target": "skills/ddd-methodology",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "GT-skills-ddd-methodology-01",
+        "GT-skills-ddd-methodology-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/ddd-methodology/UNIT-TESTS-SKILL.md",
+      "target": "skills/ddd-methodology/SKILL.md",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-skills-ddd-methodology-SKILL-01",
+        "UT-skills-ddd-methodology-SKILL-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/dev-tools/references/TESTS-references.md",
+      "target": "skills/dev-tools/references",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "GT-skills-dev-tools-references-01",
+        "GT-skills-dev-tools-references-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/dev-tools/TESTS-dev-tools.md",
+      "target": "skills/dev-tools",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "GT-skills-dev-tools-01",
+        "GT-skills-dev-tools-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/dev-tools/UNIT-TESTS-SKILL.md",
+      "target": "skills/dev-tools/SKILL.md",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-skills-dev-tools-SKILL-01",
+        "UT-skills-dev-tools-SKILL-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/frontend-variant-contract/references/TESTS-references.md",
+      "target": "skills/frontend-variant-contract/references",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "GT-skills-frontend-variant-contract-references-01",
+        "GT-skills-frontend-variant-contract-references-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/frontend-variant-contract/TESTS-frontend-variant-contract.md",
+      "target": "skills/frontend-variant-contract",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "GT-skills-frontend-variant-contract-01",
+        "GT-skills-frontend-variant-contract-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/frontend-variant-contract/UNIT-TESTS-SKILL.md",
+      "target": "skills/frontend-variant-contract/SKILL.md",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-skills-frontend-variant-contract-SKILL-01",
+        "UT-skills-frontend-variant-contract-SKILL-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/lang/references/TESTS-references.md",
+      "target": "skills/lang/references",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "GT-skills-lang-references-01",
+        "GT-skills-lang-references-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/lang/TESTS-lang.md",
+      "target": "skills/lang",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "GT-skills-lang-01",
+        "GT-skills-lang-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/lang/UNIT-TESTS-SKILL-TEMPLATE.md",
+      "target": "skills/lang/<id>/SKILL.md",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-skills-lang-SKILL-TEMPLATE-01",
+        "UT-skills-lang-SKILL-TEMPLATE-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/TESTS-skills.md",
+      "target": "skills",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "MT-skills-01",
+        "MT-skills-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/TESTS-lib.md",
+      "target": "src/lib",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "GT-src-lib-01",
+        "GT-src-lib-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-board.md",
+      "target": "src/lib/board.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-src-lib-board-01",
+        "UT-src-lib-board-02",
+        "UT-src-lib-board-03",
+        "UT-src-lib-board-04",
+        "UT-src-lib-board-05",
+        "UT-src-lib-board-06",
+        "UT-src-lib-board-07"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-gates.md",
+      "target": "src/lib/gates.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-src-lib-gates-01",
+        "UT-src-lib-gates-02",
+        "UT-src-lib-gates-03"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-guard.md",
+      "target": "src/lib/guard.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-src-lib-guard-01",
+        "UT-src-lib-guard-02",
+        "UT-src-lib-guard-03"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-memory.md",
+      "target": "src/lib/memory.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-src-lib-memory-01",
+        "UT-src-lib-memory-02",
+        "UT-src-lib-memory-03",
+        "UT-src-lib-memory-04",
+        "UT-src-lib-memory-05",
+        "UT-src-lib-memory-06"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-paths.md",
+      "target": "src/lib/paths.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-src-lib-paths-01",
+        "UT-src-lib-paths-02",
+        "UT-src-lib-paths-03"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-registry.md",
+      "target": "src/lib/registry.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-src-lib-registry-01",
+        "UT-src-lib-registry-02",
+        "UT-src-lib-registry-03"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-router.md",
+      "target": "src/lib/router.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-src-lib-router-01",
+        "UT-src-lib-router-02",
+        "UT-src-lib-router-03"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/TESTS-src.md",
+      "target": "src",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "MT-src-01",
+        "MT-src-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/UNIT-TESTS-index.md",
+      "target": "src/index.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-src-index-01",
+        "UT-src-index-02",
+        "UT-src-index-03"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/UNIT-TESTS-rpc.md",
+      "target": "src/rpc.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-src-rpc-01",
+        "UT-src-rpc-02",
+        "UT-src-rpc-03"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/UNIT-TESTS-tui.md",
+      "target": "src/tui.tsx",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-src-tui-01",
+        "UT-src-tui-02",
+        "UT-src-tui-03"
+      ]
+    },
+    {
+      "path": "docs/ddd/TESTS-subproject.md",
+      "target": ".",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "ST-root-01",
+        "ST-root-02"
+      ]
+    }
+  ],
+  "counts": {
+    "design": 56,
+    "test": 56,
+    "ids": 161,
+    "byLevel": {
+      "file": 41,
+      "module": 5,
+      "subproject": 1,
+      "group": 9
+    }
+  },
+  "gaps": {
+    "missingUnitTests": [],
+    "missingGroupTests": [],
+    "duplicateTargets": [],
+    "duplicateIds": []
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "internal:counterexamples",
+  "counterexamples": [
+    { "id": "CE-0001", "criterion": "UT-src-lib-board-03", "target": "board.admit", "inject": "acceptance 为空", "expectFail": true },
+    { "id": "CE-0002", "criterion": "UT-src-lib-board-03", "target": "board.admit", "inject": "priority 越域 P9", "expectFail": true },
+    { "id": "CE-0003", "criterion": "UT-src-lib-board-04", "target": "board.canTransition", "inject": "in_progress→pending", "expectFail": true },
+    { "id": "CE-0004", "criterion": "UT-src-lib-gates-03", "target": "gates.G1", "inject": "判定对象缺失", "expectFail": true },
+    { "id": "CE-0005", "criterion": "UT-src-lib-guard-03", "target": "guard.assertEnforceable", "inject": "无执法点", "expectFail": true },
+    { "id": "CE-0006", "criterion": "UT-src-lib-registry-03", "target": "registry.auditRegistrations", "inject": "未前缀化/缺描述", "expectFail": true },
+    { "id": "CE-0007", "criterion": "G5", "target": "gates.G5", "inject": "交付件 ≤10 字节", "expectFail": true },
+    { "id": "CE-0008", "criterion": "drift-check", "target": "scripts/drift-check.mjs", "inject": "别处复写权威值", "expectFail": true },
+    { "id": "CE-0009", "criterion": "snapshot", "target": "scripts/snapshot.mjs", "inject": "重复 target", "expectFail": true },
+    { "id": "CE-0010", "criterion": "change", "target": "scripts/change.mjs", "inject": "缺三字段之一", "expectFail": true },
+    { "id": "CE-0011", "criterion": "defects", "target": "scripts/defects.mjs", "inject": "非法行", "expectFail": true },
+    { "id": "CE-0012", "criterion": "board-writer", "target": "scripts/board.mjs", "inject": "seq 非单调（手改）", "expectFail": true }
+  ]
+}

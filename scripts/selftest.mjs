@@ -304,7 +304,15 @@ async function main() {
   group("唯一写入器：board.mjs");
   await boardChecks(pluginDir);
 
-  // ============ 6. 自测入口自身（退出码语义）============
+  // ============ 6. 机械件（snapshot/change/map/drift-check/defects/validate）============
+  group("机械件：snapshot/change/map/drift-check/defects/validate");
+  await toolChecks(pluginDir);
+
+  // ============ 7. 反证（R25：判据在反证下不沉默）============
+  group("反证：counterexamples");
+  await counterexampleChecks(pluginDir, lib);
+
+  // ============ 8. 自测入口自身（退出码语义）============
   group("自测入口：selftest.mjs");
   {
     const { spawnSync } = await import("node:child_process");
@@ -371,6 +379,103 @@ async function boardChecks(dir) {
   run(["add", "--title", "T3", "--acceptance", "x"], tmp2);
   const r7 = run(["reconcile"], tmp2);
   check("UT-scripts-board-05 reqId:null 被列为收尾待办", r7.status === 0 && /reqId:null/.test(r7.stdout));
+}
+
+async function toolChecks(dir) {
+  const { spawnSync } = await import("node:child_process");
+  const { mkdtempSync, writeFileSync: wf, readFileSync: rf, existsSync: ex, mkdirSync } = await import("node:fs");
+  const os = await import("node:os");
+  const T = (name) => join(dir, "scripts", name);
+  const run = (name, args, root) => spawnSync(process.execPath, [T(name), ...args, "--root", root], { encoding: "utf8" });
+  const tmp = mkdtempSync(join(os.tmpdir(), "ddd-tools-"));
+  mkdirSync(join(tmp, "docs", "ddd", "src"), { recursive: true });
+  // 种子：最小设计树（使 snapshot 有判定对象）
+  wf(join(tmp, "docs", "ddd", "DESIGN.md"), "---\ndoc: design\nlevel: subproject\ntarget: .\nstatus: frozen\nlanded: true\n---\n# sub\n", "utf8");
+  wf(join(tmp, "docs", "ddd", "TESTS-subproject.md"), "---\ndoc: tests\nlevel: subproject\ntarget: .\nstatus: frozen\nlanded: true\n---\n# t\n| ST-x-01 | a | b | 已落地 |\n", "utf8");
+  wf(join(tmp, "docs", "ddd", "src", "DESIGN.md"), "---\ndoc: design\nlevel: module\ntarget: src\nstatus: frozen\nlanded: true\n---\n# m\n", "utf8");
+  wf(join(tmp, "docs", "ddd", "src", "TESTS-src.md"), "---\ndoc: tests\nlevel: module\ntarget: src\nstatus: frozen\nlanded: true\n---\n# t\n| MT-x-01 | a | b | 已落地 |\n", "utf8");
+  wf(join(tmp, "docs", "ddd", "src", "DESIGN-a.md"), "---\ndoc: design\nlevel: file\ntarget: src/a.ts\nstatus: frozen\nlanded: true\n---\n# f\n", "utf8");
+  wf(join(tmp, "docs", "ddd", "src", "UNIT-TESTS-a.md"), "---\ndoc: unit-tests\nlevel: file\ntarget: src/a.ts\nstatus: frozen\nlanded: true\n---\n# t\n| UT-src-a-01 | a | b | 已落地 |\n", "utf8");
+
+  // snapshot
+  const s1 = run("snapshot.mjs", [], tmp);
+  const snap = join(tmp, "docs", "reports", "design-tree.json");
+  check("UT-scripts-snapshot-01 快照字段齐备", ex(snap) && ["designs", "tests", "counts", "gaps"].every((k) => k in JSON.parse(rf(snap, "utf8"))));
+  check("UT-scripts-snapshot-02 重放一致（--check 通过）", run("snapshot.mjs", ["--check"], tmp).status === 0);
+  // 手改快照 → --check 失败
+  wf(snap, JSON.stringify({ ...JSON.parse(rf(snap, "utf8")), tampered: true }, null, 2), "utf8");
+  check("UT-scripts-snapshot-02 手改快照被检出", run("snapshot.mjs", ["--check"], tmp).status === 1);
+  // 03 缺口自省：加一件无测试的文件级设计 → gaps.missingUnitTests 报出
+  wf(join(tmp, "docs", "ddd", "src", "DESIGN-b.md"), "---\ndoc: design\nlevel: file\ntarget: src/b.ts\nstatus: frozen\nlanded: true\n---\n# f\n", "utf8");
+  run("snapshot.mjs", [], tmp);
+  const gaps = JSON.parse(rf(snap, "utf8")).gaps;
+  check("UT-scripts-snapshot-03 缺口自省（缺 UNIT-TESTS 入 gaps）", (gaps.missingUnitTests ?? []).some((x) => x.includes("DESIGN-b")));
+  // 04 只读权威：snapshot 不改设计件
+  const before = rf(join(tmp, "docs", "ddd", "src", "DESIGN-a.md"), "utf8");
+  run("snapshot.mjs", [], tmp);
+  check("UT-scripts-snapshot-04 只读权威（设计件字节不变）", rf(join(tmp, "docs", "ddd", "src", "DESIGN-a.md"), "utf8") === before);
+
+  // change
+  check("UT-scripts-change-01 三字段必填（缺一拒写）", run("change.mjs", ["add", "--rationale", "why"], tmp).status === 1);
+  check("UT-scripts-change-01 add 成功", run("change.mjs", ["add", "--rationale", "why", "--out-of-scope", "x", "--expected-signal", "y"], tmp).status === 0);
+  check("UT-scripts-change-02 append-only", rf(join(tmp, "docs", "CHANGELOG.jsonl"), "utf8").trim().split(/\r?\n/).length === 1);
+  check("UT-scripts-change-04 派生一致", run("change.mjs", ["check"], tmp).status === 0);
+  // 03 手改检出：注入非法行 → check 退出 1
+  const chg = join(tmp, "docs", "CHANGELOG.jsonl");
+  wf(chg, rf(chg, "utf8") + "not-json\n", "utf8");
+  check("UT-scripts-change-03 手改（非法行）检出", run("change.mjs", ["check"], tmp).status === 1);
+
+  // map
+  check("UT-scripts-map-01 重放产出", run("map.mjs", ["replay"], tmp).status === 0 && ex(join(tmp, "docs", "maps", "MAPS.md")));
+  check("UT-scripts-map-02 重放一致", run("map.mjs", ["check"], tmp).status === 0);
+  // 04 引用面不可解析：maps.json 放悬空路径 → replay 失败
+  wf(join(tmp, "docs", "maps.json"), JSON.stringify({ add: ["docs/definitely/not/here.md"], override: [], disable: [] }), "utf8");
+  check("UT-scripts-map-04 引用面不可解析 → 失败（R20 判据④）", run("map.mjs", ["replay"], tmp).status === 1);
+  wf(join(tmp, "docs", "maps.json"), JSON.stringify({ add: [], override: [], disable: [] }), "utf8");
+
+  // defects
+  check("UT-scripts-defects-01 行契约（add 赋 DEF id）", run("defects.mjs", ["add", "--title", "bug", "--severity", "med"], tmp).status === 0);
+  check("UT-scripts-defects-03 派生一致", run("defects.mjs", ["check"], tmp).status === 0);
+  // 02 手改检出：注入非法行 → check 退出 1
+  const dfx = join(tmp, "docs", "defects.jsonl");
+  wf(dfx, rf(dfx, "utf8") + '{"id":"X"}\n', "utf8");
+  check("UT-scripts-defects-02 手改（缺字段行）检出", run("defects.mjs", ["check"], tmp).status === 1);
+
+  // drift-check（对真实包根）
+  const drift = spawnSync(process.execPath, [T("drift-check.mjs"), "--root", dir], { encoding: "utf8" });
+  check("UT-scripts-drift-check-02 权威=实物（零复写）", drift.status === 0);
+  const dr = ex(join(dir, "docs", "reports", "drift-check.json")) ? JSON.parse(rf(join(dir, "docs", "reports", "drift-check.json"), "utf8")) : null;
+  check("UT-scripts-drift-check-03 阈值不内置（专项检查在册且通过）", !!dr && (dr.checks ?? []).some((c) => c.id === "drift.no-inline-thresholds" && c.ok));
+
+  // validate
+  const v = run("validate.mjs", [], dir);
+  const vr = ex(join(dir, "docs", "reports", "validate.json")) ? JSON.parse(rf(join(dir, "docs", "reports", "validate.json"), "utf8")) : null;
+  check("UT-scripts-validate-01 读数形态（六条 + summary）", !!vr && Array.isArray(vr.readings) && vr.readings.length === 6 && !!vr.summary);
+  check("UT-scripts-validate-02 na ≠ pass", !!vr && vr.readings.some((r) => r.verdict === "na"));
+  check("UT-scripts-validate-03 block 带 remedy", !!vr && vr.readings.filter((r) => r.verdict === "block").every((r) => !!r.remedy));
+  check("UT-scripts-validate-04 退出码（无 block → 0）", v.status === 0);
+  check("UT-scripts-validate-05 G6 核缺陷登记册（R36）", !!vr && typeof vr.defectsRegister === "boolean");
+}
+
+async function counterexampleChecks(dir, lib) {
+  const { readFileSync } = await import("node:fs");
+  let ce;
+  try { ce = JSON.parse(readFileSync(join(dir, "assets", "counterexamples.json"), "utf8")); } catch { check("UT-assets-counterexamples-01 schema 合法", false); return; }
+  check("UT-assets-counterexamples-01 schema 合法", Array.isArray(ce.counterexamples) && ce.counterexamples.every((c) => c.id && c.criterion && c.inject !== undefined));
+  check("UT-assets-counterexamples-02 成对报告（≥ 机械判据数）", ce.counterexamples.length >= 8);
+
+  // 反证注入：判据在反证下不沉默（R25）
+  let notSilent = 0;
+  const cfg = { priorityDomain: ["P0", "P1", "P2", "P3"], defaultPriority: "P2", statusDomain: ["pending", "in_progress", "blocked", "done", "dropped"], starvationWindow: 8, starvationLimit: 3, orphanHours: 24, maxLineBytes: 8192 };
+  if (lib.board.admit({ kind: "task", ts: "", taskId: "X", acceptance: "" }, [], cfg).ok === false) notSilent++;
+  if (lib.board.admit({ kind: "task", ts: "", taskId: "X", acceptance: "a", priority: "P9" }, [], cfg).ok === false) notSilent++;
+  if (lib.board.canTransition("in_progress", "pending") === false) notSilent++;
+  if (lib.gates.gates.G1({}).verdict === "na") notSilent++;
+  if (lib.guard.assertEnforceable([{ id: "z", effect: "deny", remedy: "" }]).length > 0) notSilent++;
+  if (lib.registry.auditRegistrations({ commands: [{ name: "bad", description: "" }], skills: [] }).length > 0) notSilent++;
+  if (lib.gates.gates.G5({ landings: { items: [{ id: "a", existsBytes: 3, schemaValid: true, whitelisted: true }] } }).verdict === "block") notSilent++;
+  if (lib.board.wrapupVerdict([{ taskId: "A", reqId: "R", title: "", acceptance: "x", priority: "P2", status: "pending", dependsOn: [], seq: 1, ts: "" }], cfg).verdict === "block") notSilent++;
+  check(`UT-assets-counterexamples-03 判据在反证下不沉默（${notSilent}/8）`, notSilent === 8);
 }
 
 function report() {

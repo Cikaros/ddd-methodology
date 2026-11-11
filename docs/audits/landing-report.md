@@ -49,5 +49,5 @@
 ## 六、落地期发现（详见 `docs/audits/landing-findings.md`）
 
 - **F1（已修复）**：15 份目录级设计件正文残留 `draft` 标记（与 `status: frozen` 矛盾）。已按 M12 归并为终稿；body `draft` 15 → 0。
-- **F2（未闭合 · high）**：`scripts` 模块（及子项目级）声明的承重承接 **M1/M2/M9**（＋ M10 复写扫描、门禁读取器）**无文件级设计与实现**；R25、R36 在设计树未被承接。属「声明面 vs 实物面」缺口，待裁决补齐或收窄声明。
+- **F2（已闭合 · 已补齐）**：`scripts` 模块声明的承重承接 **M1/M2/M3/M9/M10** 缺文件级设计与实现。已补齐 7 件设计 + 7 件测试 + 实现（`snapshot/change/validate/map/drift-check/defects.mjs` + `assets/counterexamples.json`），并接线父件与 `package.json`；声明面=实物面。
 

@@ -1,5 +1,5 @@
 {
-  "ts": "2026-11-11T10:36:24.800Z",
+  "ts": "2026-11-11T11:00:06.061Z",
   "readings": [
     {
       "id": "G1",
@@ -28,7 +28,7 @@
     {
       "id": "G5",
       "verdict": "pass",
-      "examined": 4,
+      "examined": 5,
       "unrecognized": 0
     },
     {
@@ -45,7 +45,6 @@
     "na": 2
   },
   "canAdvance": true,
-  "designCount": 49,
-  "testCount": 49,
-  "missingCoverage": 0
+  "defectsRegister": true,
+  "note": "「零 FAIL」与「零缺陷」是两个读数；na ≠ pass"
 }

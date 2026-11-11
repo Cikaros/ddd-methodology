@@ -1,0 +1,34 @@
+{
+  "ts": "2026-11-11T11:00:06.306Z",
+  "checks": [
+    {
+      "id": "drift.commands",
+      "authority": "assets/commands.json",
+      "mirrors": "src/lib/registry.ts#COMMANDS",
+      "ok": true,
+      "findings": []
+    },
+    {
+      "id": "drift.gates-count",
+      "authority": "assets/gates.json",
+      "mirrors": "（条数=6）",
+      "ok": true,
+      "findings": []
+    },
+    {
+      "id": "drift.languages",
+      "authority": "assets/languages.json",
+      "mirrors": "skills/lang/*",
+      "ok": true,
+      "findings": []
+    },
+    {
+      "id": "drift.no-inline-thresholds",
+      "authority": "assets/board.json + assets/memory.json",
+      "mirrors": "src/** + scripts/**",
+      "ok": true,
+      "findings": []
+    }
+  ],
+  "ok": true
+}

@@ -29,6 +29,7 @@ updated: 2026-11-11
 | `rules.json` | 执行规则基线（落权限配置 / `session.update` / `evaluate` 三态） | `src/index.ts` |
 | `memory.json` | 记忆门槛（星级、阈值、衰减率） | 记忆闭环 |
 | `variant-contract-schema.json` | **变体契约的字段结构**（五维、`allowedTokenLayer`/`forbiddenCrossEffects`、禁止组合）；**不是**某项目的取值 | 前端技能 `frontend-variant-contract` |
+| `counterexamples.json` | **反证样本集**（每条机械判据配一件注入式违规样本，R25） | `scripts/selftest.mjs`、`scripts/drift-check.mjs` |
 | `injection-slices.json` | **注入切片映射**（`(phase,intent) → sliceIds`） | `src/lib/router.ts` |
 | `bottom-lines.json` | **底线清单**（每条含执法点与 remedy） | `src/lib/guard.ts`、`src/index.ts` |
 | `languages.json` | **语言目录**（受支持语言清单：id／基线指南／机械键／关联工具）；**不是**某项目的取值 | `skills/lang/**`、`assets/lang-<id>.json` |
