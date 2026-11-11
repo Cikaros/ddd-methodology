@@ -349,6 +349,29 @@ async function main() {
     check("UT-src-tui-02 经 RPC 调 server（client.rpc(Ddd)）", /client\.rpc\(Ddd\)/.test(t));
   }
 
+  // ============ 7b2. §8.7 / C-43 守卫：禁用 process.execPath 启动子进程 ============
+  group("路径纪律：§8.7 / C-43（禁用 process.execPath 启动脚本）");
+  {
+    const roots = ["src", "scripts"];
+    const offenders = [];
+    for (const r of roots) {
+      const dir = join(pluginDir, r);
+      if (!existsSync(dir)) continue;
+      (function walk(d) {
+        for (const e of readdirSync(d, { withFileTypes: true })) {
+          const p = join(d, e.name);
+          if (e.isDirectory()) walk(p);
+          else if (/\.(ts|tsx|mjs)$/.test(e.name)) {
+            const src = readFileSync(p, "utf8");
+            // 关注「用 execPath 作为 spawn 的可执行文件」这一形态
+            if (/spawn\w*\(\s*process\.execPath/.test(src)) offenders.push(p.replace(pluginDir + "\\", "").replace(pluginDir + "/", ""));
+          }
+        }
+      })(dir);
+    }
+    check("UT-src-index-04 §8.7/C-43 禁用 process.execPath 启动脚本（须 node 具名）", offenders.length === 0, offenders.join(", "));
+  }
+
   // ============ 7c. 物化 / 骨架（F5 / F7）============
   group("物化与骨架：materialize.mjs / scaffold.mjs");
   {
@@ -356,7 +379,7 @@ async function main() {
     const { existsSync: ex, readdirSync: rd } = await import("node:fs");
     const os = await import("node:os");
     const tmp = mkTmp("ddd-tools-");
-    const run = (name, args, root) => spawnSync(process.execPath, [join(pluginDir, "scripts", name), ...args, "--root", root], { encoding: "utf8" });
+    const run = (name, args, root) => spawnSync("node", [join(pluginDir, "scripts", name), ...args, "--root", root], { encoding: "utf8" });
 
     // materialize:agents
     const m1 = run("materialize.mjs", ["agents"], tmp);
@@ -388,7 +411,7 @@ async function main() {
     const { writeFileSync: wf, mkdirSync } = await import("node:fs");
     const os = await import("node:os");
     const self = join(pluginDir, "scripts", "selftest.mjs");
-    const bad = spawnSync(process.execPath, [self, join(pluginDir, "__no_such_dir__")], { encoding: "utf8" });
+    const bad = spawnSync("node", [self, join(pluginDir, "__no_such_dir__")], { encoding: "utf8" });
     check("UT-scripts-selftest-02 用法/入口错 → 退出 2", bad.status === 2, `实为 ${bad.status}`);
 
     // 构造一个「能加载但注册面不合格」的临时插件 → 退出 1
@@ -396,7 +419,7 @@ async function main() {
     mkdirSync(join(fake, "src"), { recursive: true });
     wf(join(fake, "package.json"), JSON.stringify({ name: "bad", type: "module", exports: { ".": "./src/index.ts" } }), "utf8");
     wf(join(fake, "src", "index.ts"), "export default { id: 'nope' };\n", "utf8");
-    const fail = spawnSync(process.execPath, [self, fake], { encoding: "utf8" });
+    const fail = spawnSync("node", [self, fake], { encoding: "utf8" });
     check("UT-scripts-selftest-02 注册面不合格 → 退出 1", fail.status === 1, `实为 ${fail.status}`);
     check("UT-scripts-selftest-01 注册面断言（本次运行内的所有 check）", true);
   }
@@ -410,7 +433,7 @@ async function boardChecks(dir) {
   const os = await import("node:os");
   const board = join(dir, "scripts", "board.mjs");
   if (!ex(board)) { check("board.mjs 存在", false); return; }
-  const run = (args, root) => spawnSync(process.execPath, [board, ...args, "--root", root], { encoding: "utf8" });
+  const run = (args, root) => spawnSync("node", [board, ...args, "--root", root], { encoding: "utf8" });
   const tmp = mkTmp("ddd-board-");
   const jsonl = join(tmp, "docs", "board", "board.jsonl");
 
@@ -455,7 +478,7 @@ async function toolChecks(dir) {
   const { writeFileSync: wf, readFileSync: rf, existsSync: ex, mkdirSync } = await import("node:fs");
   const os = await import("node:os");
   const T = (name) => join(dir, "scripts", name);
-  const run = (name, args, root) => spawnSync(process.execPath, [T(name), ...args, "--root", root], { encoding: "utf8" });
+  const run = (name, args, root) => spawnSync("node", [T(name), ...args, "--root", root], { encoding: "utf8" });
   const tmp = mkTmp("ddd-scaffold-");
   mkdirSync(join(tmp, "docs", "ddd", "src"), { recursive: true });
   // 种子：最小设计树（使 snapshot 有判定对象）
@@ -522,7 +545,7 @@ async function toolChecks(dir) {
     }
   };
 
-  const drift = spawnSync(process.execPath, [T("drift-check.mjs"), "--root", dir], { encoding: "utf8" });
+  const drift = spawnSync("node", [T("drift-check.mjs"), "--root", dir], { encoding: "utf8" });
   check("UT-scripts-drift-check-02 权威=实物（零复写）", drift.status === 0);
   const dr = ex(join(dir, "docs", "reports", "drift-check.json")) ? JSON.parse(rf(join(dir, "docs", "reports", "drift-check.json"), "utf8")) : null;
   check("UT-scripts-drift-check-03 阈值不内置（专项检查在册且通过）", !!dr && (dr.checks ?? []).some((c) => c.id === "drift.no-inline-thresholds" && c.ok));

@@ -28,6 +28,9 @@ updated: 2026-11-11
 
 脚本一律以 `node` 具名启动，**不得以宿主进程身份启动**（`process.execPath` 在真宿主里是宿主自身可执行文件）；工具路径取**包根**，不拼项目根（概要设计 §8.7、C-43 教训）。
 
+**机械判据（R25）**：`src/**` 与 `scripts/**` 中，**禁止 `spawn*(process.execPath, …)` 形态**——须写 `spawn*("node", [<脚本>, …])`。
+反证：注入一处 `spawnSync(process.execPath, …)`，`scripts/selftest.mjs` 的 `UT-src-index-04` 判据须报出（不沉默）。
+
 ## 承重机制承接
 
 M1（设计树快照，`snapshot.mjs`）、M2（变更流，`change.mjs` 唯一写入）、M3（落地门禁，`validate.mjs` 读数）、M9（图集重放，`map.mjs`）、M10（反漂移复写扫描，`drift-check.mjs`）、**M7（看板闭环，经 `board.mjs` 唯一写入）**、**R36（缺陷登记册，`defects.mjs` 唯一写入）**、**F5（随包件物化，`materialize.mjs`）**、**F7/R1（项目骨架生成，`scaffold.mjs`）**。

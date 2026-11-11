@@ -12,6 +12,7 @@
     { "id": "CE-0009", "criterion": "snapshot", "target": "scripts/snapshot.mjs", "inject": "重复 target", "expectFail": true },
     { "id": "CE-0010", "criterion": "change", "target": "scripts/change.mjs", "inject": "缺三字段之一", "expectFail": true },
     { "id": "CE-0011", "criterion": "defects", "target": "scripts/defects.mjs", "inject": "非法行", "expectFail": true },
-    { "id": "CE-0012", "criterion": "board-writer", "target": "scripts/board.mjs", "inject": "seq 非单调（手改）", "expectFail": true }
+    { "id": "CE-0012", "criterion": "board-writer", "target": "scripts/board.mjs", "inject": "seq 非单调（手改）", "expectFail": true },
+    { "id": "CE-0013", "criterion": "UT-src-index-04", "target": "src/** + scripts/**", "inject": "spawn*(process.execPath, …)（以宿主进程身份启动）", "expectFail": true }
   ]
 }

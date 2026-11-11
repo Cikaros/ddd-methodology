@@ -74,14 +74,17 @@ writeFileIdempotent("docs/maps.json", JSON.stringify({ add: [], override: [], di
 for (const d of ["docs/requirements", "docs/ddd", "docs/reports", "docs/audits", "docs/maps", "docs/board", "docs/memory"]) ensureDir(d);
 
 // —— 物化随包件（外形/命令），使宿主可发现（F5）——
-const mz = spawnSync(process.execPath, [join(packageRoot, "scripts", "materialize.mjs"), "all", "--root", root], { encoding: "utf8" });
-const matOk = mz.status === 0;
+// §8.7 / C-43：以 `node` 具名启动，不得用 process.execPath（真宿主里那是宿主自身）。
+const mz = spawnSync("node", [join(packageRoot, "scripts", "materialize.mjs"), "all", "--root", root], { encoding: "utf8" });
+const matOk = mz.status === 0 && !mz.error;
 if (mz.stdout) process.stdout.write(mz.stdout);
 if (mz.stderr) process.stderr.write(mz.stderr);
+if (mz.error) console.error(`materialize 启动失败：${mz.error.message}`);
 
 // —— 机器可读快照（若可生成）——
-const snap = spawnSync(process.execPath, [join(packageRoot, "scripts", "snapshot.mjs"), "--root", root], { encoding: "utf8" });
+const snap = spawnSync("node", [join(packageRoot, "scripts", "snapshot.mjs"), "--root", root], { encoding: "utf8" });
 if (snap.stdout) process.stdout.write(snap.stdout);
+if (snap.error) console.error(`snapshot 启动失败：${snap.error.message}`);
 
 console.log(`scaffold：新建 ${created.length}、跳过 ${skipped.length}、差异未覆盖 ${diffs.length}`);
 if (diffs.length) {

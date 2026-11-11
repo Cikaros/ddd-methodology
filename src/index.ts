@@ -103,14 +103,18 @@ function makeHandler(name: string, ctx: any): (input: { sessionID: string; promp
     }
     const directive = `[ddd/${name}] 相位=${phase ?? "n/a"}${role ? ` 角色=${role}` : ""}${spec.blocking ? " 阻塞确认=已取" : ""}。按方法论推进该节点；先读对应设计件与纪律切片，变更一律先改文档再落地。`;
 
-    // F7：/ddd-init 的机械承接——物化随包件 + 落项目骨架（§8.7：node 具名启动、路径取包根）。
+    // F7：/ddd-init 的机械承接——物化随包件 + 落项目骨架。
+    // §8.7 / C-43：**必须以 `node` 具名启动**，不得用 `process.execPath`——后者在真宿主里是
+    // 宿主自身可执行文件（opencode），会把 .mjs 当子命令而失败。
     if (name === "ddd-init" && typeof ctx.session?.prompt === "function") {
       try {
         const { spawnSync } = await import("node:child_process");
         const root = projectRoot(ctx.location);
-        const scaffold = spawnSync(process.execPath, [packagePath("scripts/scaffold.mjs"), "--root", root], { encoding: "utf8" });
+        const scaffold = spawnSync("node", [packagePath("scripts/scaffold.mjs"), "--root", root], { encoding: "utf8" });
         const tail = (scaffold.stdout ?? "").trim().split(/\r?\n/).slice(-3).join(" | ");
-        await ctx.session.prompt({ sessionID, text: `[ddd] 骨架生成：${scaffold.status === 0 ? "完成" : "异常"}（${tail || "无输出"}）` });
+        const err = scaffold.error ? String(scaffold.error.message) : "";
+        const ok = scaffold.status === 0 && !scaffold.error;
+        await ctx.session.prompt({ sessionID, text: `[ddd] 骨架生成：${ok ? "完成" : "异常"}（${tail || err || "无输出"}）` });
       } catch {
         await ctx.session.prompt({ sessionID, text: "[ddd] 骨架生成未能机械执行；请手动运行 scripts/scaffold.mjs。" }).catch(() => {});
       }

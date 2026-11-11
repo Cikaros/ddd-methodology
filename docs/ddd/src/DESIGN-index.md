@@ -52,7 +52,7 @@ updated: 2026-11-11
 | `ctx.session.prompt` | 命令把内容送进会话 |
 | `ctx.permission.assert` | 阻塞式确认（M5；§9.5 分职责，server 侧） |
 | `ctx.session.create` / `ctx.session.switchAgent` | Q3 路 B 子会话派发 |
-| `child_process.spawnSync`（`node` 具名） | 调 `scripts/scaffold.mjs`（F7 骨架生成） |
+| `child_process.spawnSync("node", […])` | 调 `scripts/scaffold.mjs`（F7 骨架生成）；**禁 `process.execPath`**（§8.7/C-43） |
 | `ctx.options` | 读 `profile`／`gates`／`paths`（只读一次，裁定 V-02） |
 
 ## 已知约束

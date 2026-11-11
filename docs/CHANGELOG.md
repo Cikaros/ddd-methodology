@@ -24,3 +24,11 @@
 - 本次不做：不改 package.json 版本号（仍 1.0.0）；不升 1.0.1
 - 怎么算做对：README 含方式 C（hosted/HTTPS/SSH、分支/标签/提交哈希、::path:）；远端 v1.0.0 指向最新提交
 - 涉及：README.md
+
+## v1.0.0 · CHG-0004 · fix
+
+- 时间：2026-11-11T13:35:54.897Z
+- 为什么做：修 C-43 同类缺陷：/ddd-init 用 process.execPath 启动 scaffold，真宿主里被当成 opencode 子命令而失败（显示帮助 reload/pair/serve）
+- 本次不做：不改骨架内容与命令语义；仅改启动方式为 node 具名
+- 怎么算做对：真宿主 /ddd-init 不再报异常且骨架真落盘；离线自测加 §8.7/C-43 守卫判据（UT-src-index-04）防回归
+- 涉及：src/index.ts, scripts/scaffold.mjs, scripts/selftest.mjs, assets/counterexamples.json
