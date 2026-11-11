@@ -26,6 +26,8 @@ updated: 2026-11-11
 **`setup(ctx)` 行为契约**：
 
 - 命令：遍历 `COMMANDS`，逐个 `ctx.command.transform(editor => editor.add({name, description, execute}))`（§8.3，核心命令由 server 提供）。
+- **F7 骨架生成（`ddd-init`）**：`ddd-init` handler 机械调用 `scripts/scaffold.mjs`（物化随包件 + 落 `docs/` 骨架），而不是只发提示词。
+- **Q3 命令→角色派发（路 B）**：有角色的命令在 handler 内 `ctx.session.create({agent})` → `ctx.session.switchAgent` → `ctx.session.prompt`（子会话隔离）；失败则本会话降级执行且**在读数上可见**（不静默降级）。路 A（静态 md 命令 `agent:`+`subagent:true`）由宿主原生派发，两路并行。
 - **M5 意图确认（§9.5 分职责）**：阻塞节点（概要 §6.1 ▲：`ddd-intent`/`ddd-arch`/`ddd-wrapup`/`ddd-consolidate`）在推进前调用 `ctx.permission.assert` 取**阻塞式确认**（过闸机：可中止/可记忆/远程恒可用）；被拒即中止该步，不静默降级。TUI 侧 `dialog.select/prompt` 只承担**输入采集**（选场景、收四问），与 assert **确认点不重叠**（见 `DESIGN-tui.md`）。
 - 技能：`ctx.skill.transform` 注册 `SKILLS`，`path` 取**包根**相对路径。
 - RPC：`ctx.rpc.register(Ddd, { gates, board })`。
@@ -48,7 +50,9 @@ updated: 2026-11-11
 | `ctx.rpc.register` | 注册 RPC 实现 |
 | `ctx.session.hook("prompt")` | 准入注入（幂等） |
 | `ctx.session.prompt` | 命令把内容送进会话 |
-| `ctx.permission.assert` | 阻塞式确认（M5；§9.5 择一，server 侧） |
+| `ctx.permission.assert` | 阻塞式确认（M5；§9.5 分职责，server 侧） |
+| `ctx.session.create` / `ctx.session.switchAgent` | Q3 路 B 子会话派发 |
+| `child_process.spawnSync`（`node` 具名） | 调 `scripts/scaffold.mjs`（F7 骨架生成） |
 | `ctx.options` | 读 `profile`／`gates`／`paths`（只读一次，裁定 V-02） |
 
 ## 已知约束

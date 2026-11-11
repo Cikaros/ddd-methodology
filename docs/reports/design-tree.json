@@ -1,5 +1,5 @@
 {
-  "ts": "2026-11-11T11:45:21.357Z",
+  "ts": "2026-11-11T12:05:29.058Z",
   "designs": [
     {
       "path": "docs/ddd/agents/DESIGN-AGENT-TEMPLATE.md",
@@ -189,6 +189,24 @@
       "landed": "true",
       "covers": "[map-replay]",
       "depends": "[scripts/snapshot.mjs]"
+    },
+    {
+      "path": "docs/ddd/scripts/DESIGN-materialize.md",
+      "level": "file",
+      "target": "scripts/materialize.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[materialize]",
+      "depends": "[src/lib/paths.ts]"
+    },
+    {
+      "path": "docs/ddd/scripts/DESIGN-scaffold.md",
+      "level": "file",
+      "target": "scripts/scaffold.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[scaffold]",
+      "depends": "[scripts/materialize.mjs, assets/languages.json]"
     },
     {
       "path": "docs/ddd/scripts/DESIGN-selftest.md",
@@ -716,6 +734,31 @@
       ]
     },
     {
+      "path": "docs/ddd/scripts/UNIT-TESTS-materialize.md",
+      "target": "scripts/materialize.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-scripts-materialize-01",
+        "UT-scripts-materialize-02",
+        "UT-scripts-materialize-03",
+        "UT-scripts-materialize-04"
+      ]
+    },
+    {
+      "path": "docs/ddd/scripts/UNIT-TESTS-scaffold.md",
+      "target": "scripts/scaffold.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-scripts-scaffold-01",
+        "UT-scripts-scaffold-02",
+        "UT-scripts-scaffold-03",
+        "UT-scripts-scaffold-04",
+        "UT-scripts-scaffold-05"
+      ]
+    },
+    {
       "path": "docs/ddd/scripts/UNIT-TESTS-selftest.md",
       "target": "scripts/selftest.mjs",
       "status": "frozen",
@@ -1082,11 +1125,11 @@
     }
   ],
   "counts": {
-    "design": 56,
-    "test": 56,
-    "ids": 164,
+    "design": 58,
+    "test": 58,
+    "ids": 173,
     "byLevel": {
-      "file": 41,
+      "file": 43,
       "module": 5,
       "subproject": 1,
       "group": 9

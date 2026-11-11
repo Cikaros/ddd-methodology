@@ -11,9 +11,10 @@
  * 退出码：0 全过；1 有失败；2 用法/入口错。
  */
 
-import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, mkdtempSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
+import os from "node:os";
 
 const pluginDir = process.argv[2] ? resolve(process.argv[2]) : resolve(".");
 const verbose = process.argv.includes("--verbose");
@@ -30,22 +31,26 @@ function check(name, cond, detail) {
   if (!cond) failures.push(`[${section}] ${name}${detail ? ` — ${detail}` : ""}`);
 }
 
+// 隔离沙箱：mock ctx.location 指向它，避免命令 handler（如 /ddd-init 会真跑 scaffold）
+// 把骨架写进本仓（自测不得污染权威件）。
+const SBX = mkdtempSync(join(os.tmpdir(), "ddd-selftest-"));
+
 function makeMockCtx(options) {
-  const registrations = { commands: [], skills: [], hooks: {}, rpc: null, cleanups: [], asserts: [] };
+  const registrations = { commands: [], skills: [], hooks: {}, rpc: null, cleanups: [], asserts: [], created: [], switched: [], prompts: [] };
   const storage = new Map();
   const record = (dispose) => Promise.resolve({ dispose: () => Promise.resolve(dispose?.()) });
   const ctx = {
     options: options ?? {},
-    location: { directory: process.cwd() },
+    location: { directory: SBX },
     app: { version: "0.0.0", channel: "test" },
     command: { transform: (cb) => { const e = { add: (d) => registrations.commands.push(d) }; cb(e); return record(); } },
     skill: { transform: (cb) => { const e = { add: (s) => registrations.skills.push(s) }; cb(e); return record(); } },
     session: {
       hook: (n, cb) => { registrations.hooks[n] = cb; return record(); },
-      prompt: async () => {},
+      prompt: async (input) => { registrations.prompts.push(input); },
       instructions: { entry: { put: async () => {}, list: async () => [], remove: async () => {} } },
-      create: async () => ({ id: "ses_mock" }),
-      switchAgent: async () => {},
+      create: async (input) => { registrations.created.push(input); return { id: "ses_child" }; },
+      switchAgent: async (input) => { registrations.switched.push(input); },
       command: async () => {},
     },
     tool: { transform: (cb) => { cb({ add: () => {}, list: () => [], get: () => undefined, update: () => {}, remove: () => {}, namespace: () => {} }); return record(); }, hook: (n, cb) => { registrations.hooks[`tool:${n}`] = cb; return record(); } },
@@ -139,6 +144,9 @@ async function main() {
 
   // M5（§9.5）：阻塞节点推进前取阻塞式确认（server 侧 permission.assert）。
   check("UT-src-index-02 M5 阻塞确认（ddd-intent/arch/wrapup/consolidate 触发 assert）", registrations.asserts.length >= 4 && registrations.asserts.every((a) => /^ddd:/.test(a.action)));
+
+  // Q3 路 B：有角色的命令经 session.create → switchAgent → prompt 派发到子会话。
+  check("UT-src-index-02 Q3 命令→角色派发（session.create + switchAgent）", registrations.created.length >= 5 && registrations.switched.length >= 5 && registrations.created.every((c) => typeof c.agent === "string"));
 
   if (registrations.rpc) {
     try {
@@ -326,6 +334,38 @@ async function main() {
     check("UT-src-tui-05 取消语义：dialog 返回 undefined 不直接中止（显式处理）", /undefined/.test(t) && /toast\.show\(/.test(t));
     check("UT-src-tui-06 keymap 工厂为纯函数形态（layer(() => ({...}))）", /keymap\.layer\(\(\)\s*=>\s*\(\{/.test(t));
     check("UT-src-tui-02 经 RPC 调 server（client.rpc(Ddd)）", /client\.rpc\(Ddd\)/.test(t));
+  }
+
+  // ============ 7c. 物化 / 骨架（F5 / F7）============
+  group("物化与骨架：materialize.mjs / scaffold.mjs");
+  {
+    const { spawnSync } = await import("node:child_process");
+    const { mkdtempSync, existsSync: ex, readdirSync: rd } = await import("node:fs");
+    const os = await import("node:os");
+    const tmp = mkdtempSync(join(os.tmpdir(), "ddd-scaffold-"));
+    const run = (name, args, root) => spawnSync(process.execPath, [join(pluginDir, "scripts", name), ...args, "--root", root], { encoding: "utf8" });
+
+    // materialize:agents
+    const m1 = run("materialize.mjs", ["agents"], tmp);
+    const dst = join(tmp, ".opencode", "agents");
+    const n1 = ex(dst) ? rd(dst).filter((f) => f.endsWith(".md")).length : 0;
+    check("UT-scripts-materialize-01 物化 agents（数量一致）", m1.status === 0 && n1 >= 10, `实为 ${n1}`);
+    check("UT-scripts-materialize-03 包根/项目根分离（写在项目根下）", ex(join(tmp, ".opencode", "agents", "ddd-auditor.md")));
+    const m2 = run("materialize.mjs", ["agents"], tmp);
+    check("UT-scripts-materialize-02 幂等（二次全跳过）", m2.status === 0 && /跳过\s*\d+/.test(m2.stdout));
+
+    // scaffold
+    const s1 = run("scaffold.mjs", [], tmp);
+    check("UT-scripts-scaffold-01 骨架落点齐备（三件 + docs/）", s1.status === 0 && ["AGENTS.md", "README.md", "CONTRIBUTING.md"].every((f) => ex(join(tmp, f))) && ex(join(tmp, "docs", "GLOSSARY.md")));
+    check("UT-scripts-scaffold-04 物化联动（.opencode/agents 齐备）", ex(join(tmp, ".opencode", "agents", "ddd-consolidator.md")));
+    const s2 = run("scaffold.mjs", [], tmp);
+    check("UT-scripts-scaffold-02 幂等（二次不覆盖）", s2.status === 0 && /跳过\s*\d+/.test(s2.stdout));
+    // R12：第四件根文档 → 报错
+    const tmpR = mkdtempSync(join(os.tmpdir(), "ddd-r12-"));
+    const { writeFileSync: wf2 } = await import("node:fs");
+    wf2(join(tmpR, "EXTRA.md"), "x", "utf8");
+    const s3 = run("scaffold.mjs", [], tmpR);
+    check("UT-scripts-scaffold-03 根文档白名单（第四件 → 退出 1，R12）", s3.status === 1);
   }
 
   // ============ 8. 自测入口自身（退出码语义）============

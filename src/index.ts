@@ -77,8 +77,11 @@ function phaseOf(name: string): Phase | undefined {
 }
 
 /**
- * 生成命令 handler。保持薄：写相位信号 + 给会话一条定向 prompt（真正的子代理派发
- * 由 `.opencode/commands/*.md` 的 `agent:`+`subagent:true` 承担，Q3 两路并行）。
+ * 生成命令 handler。
+ * Q3 两路并行（均为一等，不互相降级）：
+ *  - 路 A：静态 md 命令（`.opencode/commands/*.md` 的 `agent:`+`subagent:true`），由宿主原生派发；
+ *  - 路 B：插件命令 handler —— 有角色时 `session.create`（子会话）→ `switchAgent` → `prompt`；
+ *    失败则**在有角色时降级为同会话 prompt，且在读数上可见**（不静默降级，见 agents/DESIGN.md）。
  */
 function makeHandler(name: string, ctx: any): (input: { sessionID: string; prompt?: { text?: string } }) => Promise<void> {
   return async (input) => {
@@ -88,8 +91,8 @@ function makeHandler(name: string, ctx: any): (input: { sessionID: string; promp
     if (phase) await putPhase(ctx, sessionID, phase);
     const spec = COMMAND_ROLE[name] ?? {};
     const role = spec.role;
-    // M5 意图确认（§9.5）：阻塞节点推进前取**阻塞式确认**（server 侧 `permission.assert`，
-    // 与 TUI dialog 二者择一——此处择 server assert；被拒即抛错、中止该步，不静默降级）。
+    // M5 意图确认（§9.5 分职责）：阻塞节点推进前取**阻塞式确认**（server `permission.assert`；
+    // dialog 只做输入采集、不在此放行）；被拒即抛错中止，不静默降级。
     if (spec.blocking && typeof ctx.permission?.assert === "function") {
       await ctx.permission.assert({
         sessionID,
@@ -99,6 +102,37 @@ function makeHandler(name: string, ctx: any): (input: { sessionID: string; promp
       });
     }
     const directive = `[ddd/${name}] 相位=${phase ?? "n/a"}${role ? ` 角色=${role}` : ""}${spec.blocking ? " 阻塞确认=已取" : ""}。按方法论推进该节点；先读对应设计件与纪律切片，变更一律先改文档再落地。`;
+
+    // F7：/ddd-init 的机械承接——物化随包件 + 落项目骨架（§8.7：node 具名启动、路径取包根）。
+    if (name === "ddd-init" && typeof ctx.session?.prompt === "function") {
+      try {
+        const { spawnSync } = await import("node:child_process");
+        const root = projectRoot(ctx.location);
+        const scaffold = spawnSync(process.execPath, [packagePath("scripts/scaffold.mjs"), "--root", root], { encoding: "utf8" });
+        const tail = (scaffold.stdout ?? "").trim().split(/\r?\n/).slice(-3).join(" | ");
+        await ctx.session.prompt({ sessionID, text: `[ddd] 骨架生成：${scaffold.status === 0 ? "完成" : "异常"}（${tail || "无输出"}）` });
+      } catch {
+        await ctx.session.prompt({ sessionID, text: "[ddd] 骨架生成未能机械执行；请手动运行 scripts/scaffold.mjs。" }).catch(() => {});
+      }
+    }
+
+    // Q3 路 B：有角色的命令 → 子会话派发（上下文隔离，防漂移）。
+    if (role && typeof ctx.session?.create === "function" && typeof ctx.session?.switchAgent === "function") {
+      try {
+        const child = await ctx.session.create({ agent: role, title: `ddd/${name}` });
+        const childID = child?.id ?? child?.data?.id;
+        if (childID) {
+          await ctx.session.switchAgent({ sessionID: childID, agent: role });
+          await ctx.session.prompt({ sessionID: childID, text: directive });
+          return;
+        }
+      } catch {
+        // 失败回退：本会话执行，但须在读数上可见（不得静默降级）。
+        await ctx.session.prompt({ sessionID, text: `[ddd] 子代理派发失败（角色 ${role}），本会话降级执行：${directive}` }).catch(() => {});
+        return;
+      }
+    }
+
     try {
       await ctx.session.prompt({ sessionID, text: directive });
     } catch {
