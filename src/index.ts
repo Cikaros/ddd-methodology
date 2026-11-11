@@ -48,12 +48,14 @@ function readJsonl(absPath: string): Record<string, unknown>[] {
 
 interface CommandRole {
   readonly role?: string;
+  /** 阻塞节点（概要 §6.1 ▲）：推进前取阻塞式确认（§9.5，server 侧 `permission.assert`）。 */
+  readonly blocking?: boolean;
 }
 
 const COMMAND_ROLE: Record<string, CommandRole> = {
   "ddd-init": {},
-  "ddd-intent": { role: "ddd-intent-clarifier" },
-  "ddd-arch": { role: "ddd-architect" },
+  "ddd-intent": { role: "ddd-intent-clarifier", blocking: true },
+  "ddd-arch": { role: "ddd-architect", blocking: true },
   "ddd-design": { role: "ddd-designer" },
   "ddd-review": { role: "ddd-design-reviewer" },
   "ddd-test-design": { role: "ddd-test-designer" },
@@ -62,8 +64,8 @@ const COMMAND_ROLE: Record<string, CommandRole> = {
   "ddd-validate": { role: "ddd-auditor" },
   "ddd-change": {},
   "ddd-map": {},
-  "ddd-wrapup": {},
-  "ddd-consolidate": { role: "ddd-consolidator" },
+  "ddd-wrapup": { blocking: true },
+  "ddd-consolidate": { role: "ddd-consolidator", blocking: true },
   "ddd-board": {},
   "ddd-memo": { role: "ddd-curator" },
 };
@@ -84,8 +86,19 @@ function makeHandler(name: string, ctx: any): (input: { sessionID: string; promp
     const sessionID = input?.sessionID ?? "";
     if (!sessionID) return;
     if (phase) await putPhase(ctx, sessionID, phase);
-    const role = COMMAND_ROLE[name]?.role;
-    const directive = `[ddd/${name}] 相位=${phase ?? "n/a"}${role ? ` 角色=${role}` : ""}。按方法论推进该节点；先读对应设计件与纪律切片，变更一律先改文档再落地。`;
+    const spec = COMMAND_ROLE[name] ?? {};
+    const role = spec.role;
+    // M5 意图确认（§9.5）：阻塞节点推进前取**阻塞式确认**（server 侧 `permission.assert`，
+    // 与 TUI dialog 二者择一——此处择 server assert；被拒即抛错、中止该步，不静默降级）。
+    if (spec.blocking && typeof ctx.permission?.assert === "function") {
+      await ctx.permission.assert({
+        sessionID,
+        action: `ddd:${name}`,
+        resources: [name],
+        message: `ddd/${name} 是阻塞节点：请确认在澄清/定稿后再推进（§6.1 ▲）。`,
+      });
+    }
+    const directive = `[ddd/${name}] 相位=${phase ?? "n/a"}${role ? ` 角色=${role}` : ""}${spec.blocking ? " 阻塞确认=已取" : ""}。按方法论推进该节点；先读对应设计件与纪律切片，变更一律先改文档再落地。`;
     try {
       await ctx.session.prompt({ sessionID, text: directive });
     } catch {

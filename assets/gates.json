@@ -3,51 +3,58 @@
   "gates": [
     {
       "id": "G1",
-      "name": "需求冻结",
+      "scope": "判需求件冻结与裁决无未决项；不判需求内容的业务正确性",
       "executor": "human",
+      "readingShape": "{ frozen:boolean, openRulings:number }",
+      "criterion": "需求件 status: frozen，裁决记录无未决项",
       "failSemantics": "block",
-      "inNodeSource": true,
-      "criterion": "需求件 status: frozen，裁决记录无未决项"
+      "inNodeSource": true
     },
     {
       "id": "G2",
-      "name": "架构就位",
+      "scope": "判 ARCHITECTURE.md 四类内容齐备；不判选型优劣",
       "executor": "human",
+      "readingShape": "{ techStack, dependencies, directory, environment }",
+      "criterion": "docs/ARCHITECTURE.md 含技术栈、核心依赖、目录结构、环境探查四类内容",
       "failSemantics": "block",
-      "inNodeSource": true,
-      "criterion": "docs/ARCHITECTURE.md 含技术栈、核心依赖、目录结构、环境探查四类内容"
+      "inNodeSource": true
     },
     {
       "id": "G3",
-      "name": "设计树同构",
+      "scope": "判设计树同构对账与命令注册表双向核对；不判设计内容质量",
       "executor": "machine",
+      "readingShape": "{ isomorphicMismatches:number, commandRegistryMismatches:number }",
+      "criterion": "同构对账零失败；命令注册表双向核对零失败",
       "failSemantics": "block",
-      "inNodeSource": true,
-      "criterion": "同构对账零失败；命令注册表双向核对零失败"
+      "inNodeSource": true
     },
     {
       "id": "G4",
-      "name": "测试树覆盖",
+      "scope": "判文件级设计均有对应用例文档；不判用例质量",
       "executor": "machine",
+      "readingShape": "{ missingCoverage:number }",
+      "criterion": "有文件级设计的源文件全部有对应用例文档",
       "failSemantics": "block",
-      "inNodeSource": true,
-      "criterion": "有文件级设计的源文件全部有对应用例文档"
+      "inNodeSource": true
     },
     {
       "id": "G5",
-      "name": "落地非空",
+      "scope": "判交付件非空/schema 合法/白名单；不判业务正确",
       "executor": "machine",
+      "readingShape": "{ items:[{ id, existsBytes, schemaValid, whitelisted }] }",
+      "criterion": "判定类表所列各类全通过；交付件存在且大于十字节、schema 合法",
       "failSemantics": "block",
-      "inNodeSource": true,
-      "criterion": "判定类表所列各类全通过；交付件存在且大于十字节、schema 合法"
+      "inNodeSource": true
     },
     {
       "id": "G6",
-      "name": "收尾清空",
+      "scope": "判临时件清空/看板活跃投影为空/版本落三处/缺陷册存在；不判修复完成",
       "executor": "machine+human",
+      "readingShape": "{ tempOpen:number, boardActive:number, versionPlaces:number, defectsRegister:boolean }",
+      "criterion": "docs/temp.jsonl 登记项均已清理；看板活跃投影为空；版本已落三处；缺陷登记册存在且为唯一权威处（R36）",
       "failSemantics": "block",
       "inNodeSource": true,
-      "criterion": "docs/temp.jsonl 登记项均已清理；看板活跃投影为空；版本已落三处"
+      "ext": { "defectRegister": "docs/defects.jsonl" }
     }
   ]
 }

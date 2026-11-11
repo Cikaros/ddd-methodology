@@ -31,7 +31,7 @@ function check(name, cond, detail) {
 }
 
 function makeMockCtx(options) {
-  const registrations = { commands: [], skills: [], hooks: {}, rpc: null, cleanups: [] };
+  const registrations = { commands: [], skills: [], hooks: {}, rpc: null, cleanups: [], asserts: [] };
   const storage = new Map();
   const record = (dispose) => Promise.resolve({ dispose: () => Promise.resolve(dispose?.()) });
   const ctx = {
@@ -49,7 +49,7 @@ function makeMockCtx(options) {
       command: async () => {},
     },
     tool: { transform: (cb) => { cb({ add: () => {}, list: () => [], get: () => undefined, update: () => {}, remove: () => {}, namespace: () => {} }); return record(); }, hook: (n, cb) => { registrations.hooks[`tool:${n}`] = cb; return record(); } },
-    permission: { hook: (n, cb) => { registrations.hooks[`permission:${n}`] = cb; return record(); }, assert: async () => {} },
+    permission: { hook: (n, cb) => { registrations.hooks[`permission:${n}`] = cb; return record(); }, assert: async (input) => { registrations.asserts.push(input); } },
     shell: { hook: (n, cb) => { registrations.hooks[`shell:${n}`] = cb; return record(); } },
     rpc: { register: (def, handlers) => { registrations.rpc = { def, handlers }; return Promise.resolve({ dispose: () => Promise.resolve(), events: { emit: async () => {} } }); } },
     storage: { get: async (k) => storage.get(k), set: async (k, v) => void storage.set(k, v), remove: async (k) => void storage.delete(k), scan: async () => [] },
@@ -136,6 +136,9 @@ async function main() {
     catch (e) { cmdRunOk = false; failures.push(`命令 ${c.name} 执行抛错: ${e?.message ?? e}`); }
   }
   check("每条命令可跑通", cmdRunOk);
+
+  // M5（§9.5）：阻塞节点推进前取阻塞式确认（server 侧 permission.assert）。
+  check("UT-src-index-02 M5 阻塞确认（ddd-intent/arch/wrapup/consolidate 触发 assert）", registrations.asserts.length >= 4 && registrations.asserts.every((a) => /^ddd:/.test(a.action)));
 
   if (registrations.rpc) {
     try {
@@ -253,6 +256,7 @@ async function main() {
   check("UT-assets-commands-02 与运行期投影一致（单点权威）", commands && commands.commands.length === lib.registry.COMMANDS.length && commands.commands.every((c, i) => c.name === lib.registry.COMMANDS[i].name));
   const gatesJson = readJson("assets/gates.json");
   check("UT-assets-gates-01 schema 合法（6 道门禁）", gatesJson?.gates?.length === 6);
+  check("UT-assets-gates-02 对接规范七字段 + ext（R28/裁决 3a）", gatesJson.gates.every((g) => ["id", "scope", "executor", "readingShape", "criterion", "failSemantics", "inNodeSource"].every((k) => k in g)));
   const rulesJson = readJson("assets/rules.json");
   check("UT-assets-rules-01 schema 合法", Array.isArray(rulesJson?.rules));
   check("UT-assets-rules-02 每条规则有落点三态之一", rulesJson.rules.every((r) => ["permission", "session", "evaluate"].includes(r.surface)));

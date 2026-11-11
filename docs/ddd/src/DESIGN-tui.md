@@ -18,6 +18,10 @@ updated: 2026-11-11
 - **边界内**：`context.keymap.layer`、`context.ui.*`、`context.attention.notify`。
 - **边界外**：任何业务逻辑（不得在 TUI 复制业务，跨端走 RPC）。
 
+## 阻塞式确认的择一（§9.5）
+
+「明确意图」的取得确认由 **server part 的 `ctx.permission.assert`** 承担（见 `DESIGN-index.md` 的 M5 行）；本件的 `context.ui.dialog.confirm/prompt/select` 为**备选**原语，本实现**不**同时承担同一确认点（§9.5 要求二者显式择一）。
+
 ## 对外暴露接口
 
 | 导出 | 形态 | 说明 |

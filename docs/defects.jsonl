@@ -1,0 +1,8 @@
+{"id":"DEF-0001","ts":"2026-11-11T11:09:59.352Z","status":"open","severity":"med","title":"目录级设计件正文残留 draft 标记（§六.4）","area":"docs/ddd","ref":"docs/audits/landing-findings.md"}
+{"id":"DEF-0002","ts":"2026-11-11T11:09:59.409Z","status":"open","severity":"high","title":"scripts 承重承接超越文件级实证（M1/M2/M3/M9/M10）","area":"scripts","ref":"docs/audits/landing-findings.md"}
+{"id":"DEF-0003","ts":"2026-11-11T11:09:59.516Z","status":"open","severity":"high","title":"M5 意图确认阻塞原语未落地","area":"src","ref":"docs/audits/landing-findings.md"}
+{"id":"DEF-0004","ts":"2026-11-11T11:09:59.571Z","status":"open","severity":"med","title":"M11 项目对接规范七字段未落地","area":"assets","ref":"docs/audits/landing-findings.md"}
+{"id":"DEF-0001","ts":"2026-11-11T11:09:59.658Z","status":"resolved","severity":"med","title":"目录级设计件正文残留 draft 标记（§六.4）","area":"docs/ddd","ref":"docs/audits/landing-findings.md","note":"M12 归并为终稿"}
+{"id":"DEF-0002","ts":"2026-11-11T11:09:59.714Z","status":"resolved","severity":"high","title":"scripts 承重承接超越文件级实证（M1/M2/M3/M9/M10）","area":"scripts","ref":"docs/audits/landing-findings.md","note":"补齐 7 件设计与实现"}
+{"id":"DEF-0003","ts":"2026-11-11T11:09:59.771Z","status":"resolved","severity":"high","title":"M5 意图确认阻塞原语未落地","area":"src","ref":"docs/audits/landing-findings.md","note":"改由 permission.assert 承担（§9.5 择一）"}
+{"id":"DEF-0004","ts":"2026-11-11T11:09:59.831Z","status":"resolved","severity":"med","title":"M11 项目对接规范七字段未落地","area":"assets","ref":"docs/audits/landing-findings.md","note":"gates.json 补 scope/readingShape/ext"}
