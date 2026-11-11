@@ -1,0 +1,33 @@
+{
+  "name": "@cikaros/ddd-methodology",
+  "version": "2.0.0",
+  "description": "分治式设计驱动开发方法论（Hermess 2.0）· OpenCode 插件：文档为唯一权威，代码为其落地",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./tui": "./src/tui.tsx",
+    "./rpc": "./src/rpc.ts"
+  },
+  "files": [
+    "src",
+    "assets",
+    "skills",
+    "agents"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --experimental-strip-types ./scripts/selftest.mjs ."
+  },
+  "peerDependencies": {
+    "@opencode/plugin": ">=2.2.7"
+  },
+  "devDependencies": {
+    "@opencode/plugin": "2.2.7",
+    "typescript": "^5.9.0",
+    "@types/node": "^22.0.0"
+  }
+}
