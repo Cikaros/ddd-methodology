@@ -158,8 +158,16 @@ async function main() {
   // M5（§9.5）：阻塞节点推进前取阻塞式确认（server 侧 permission.assert）。
   check("UT-src-index-02 M5 阻塞确认（ddd-intent/arch/wrapup/consolidate 触发 assert）", registrations.asserts.length >= 4 && registrations.asserts.every((a) => /^ddd:/.test(a.action)));
 
-  // Q3 路 B：有角色的命令经 session.create → switchAgent → prompt 派发到子会话。
-  check("UT-src-index-02 Q3 命令→角色派发（session.create + switchAgent）", registrations.created.length >= 5 && registrations.switched.length >= 5 && registrations.created.every((c) => typeof c.agent === "string"));
+  // Q3 派发（裁决 16）：默认同会话；仅 review/validate/consolidate 建子会话（且带 parentID）。
+  {
+    const dispatchOf = {};
+    for (const c of (readJson("assets/commands.json")?.commands ?? [])) dispatchOf[c.name] = c.dispatch ?? "same";
+    const isolated = Object.entries(dispatchOf).filter(([, d]) => d === "isolated").map(([n]) => n).sort();
+    const expectIsolated = ["ddd-consolidate", "ddd-review", "ddd-validate"];
+    check("UT-src-index-02 Q3 隔离例外恰为 review/validate/consolidate", JSON.stringify(isolated) === JSON.stringify(expectIsolated), isolated.join(","));
+    check("UT-src-index-02 Q3 隔离命令建子会话（session.create + switchAgent）", registrations.created.length === expectIsolated.length && registrations.switched.length === expectIsolated.length && registrations.created.every((c) => typeof c.agent === "string"));
+    check("UT-src-index-02 Q3 子会话带 parentID（非顶层新会话）", registrations.created.every((c) => typeof c.parentID === "string" && c.parentID.length > 0));
+  }
 
   if (registrations.rpc) {
     try {
@@ -302,7 +310,8 @@ async function main() {
   // ============ 4. 内容层契约 ============
   group("内容层契约");
   const designAgents = readFileSync(join(pluginDir, "docs/ddd/agents/DESIGN.md"), "utf8");
-  const roles = [...new Set([...designAgents.matchAll(/`(ddd-[a-z-]+)`/g)].map((m) => m[1]))].filter((r) => r !== "ddd-board");
+  // 仅从「角色清单」表的第一列提取角色（避免把命令名/其它反引号误当角色）。
+  const roles = [...new Set([...designAgents.matchAll(/^\|\s*`(ddd-(?:intent-clarifier|architect|designer|design-reviewer|test-designer|implementer|tester|auditor|consolidator|curator))`\s*\|/gm)].map((m) => m[1]))];
   const readOnly = ["ddd-design-reviewer", "ddd-auditor", "ddd-intent-clarifier"];
   let rolesOk = true;
   for (const r of roles) {

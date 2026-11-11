@@ -78,12 +78,12 @@ function phaseOf(name: string): Phase | undefined {
 
 /**
  * 生成命令 handler。
- * Q3 两路并行（均为一等，不互相降级）：
- *  - 路 A：静态 md 命令（`.opencode/commands/*.md` 的 `agent:`+`subagent:true`），由宿主原生派发；
- *  - 路 B：插件命令 handler —— 有角色时 `session.create`（子会话）→ `switchAgent` → `prompt`；
- *    失败则**在有角色时降级为同会话 prompt，且在读数上可见**（不静默降级，见 agents/DESIGN.md）。
+ * Q3 派发（裁决 16）：
+ *  - 默认 `same`：在**当前会话**内 `ctx.session.prompt` 注入该角色纪律，**不新建会话**；
+ *  - `isolated`（仅 review/validate/consolidate）：经宿主 `subagent` 工具派发**子会话**；
+ *    不可用时**降级为同会话且读数可见**（不静默降级，见 agents/DESIGN.md）。
  */
-function makeHandler(name: string, ctx: any): (input: { sessionID: string; prompt?: { text?: string } }) => Promise<void> {
+function makeHandler(name: string, ctx: any, dispatchOf: Record<string, string>): (input: { sessionID: string; prompt?: { text?: string } }) => Promise<void> {
   return async (input) => {
     const phase = phaseOf(name);
     const sessionID = input?.sessionID ?? "";
@@ -91,6 +91,7 @@ function makeHandler(name: string, ctx: any): (input: { sessionID: string; promp
     if (phase) await putPhase(ctx, sessionID, phase);
     const spec = COMMAND_ROLE[name] ?? {};
     const role = spec.role;
+    const dispatch = dispatchOf[name] ?? "same";
     // M5 意图确认（§9.5 分职责）：阻塞节点推进前取**阻塞式确认**（server `permission.assert`；
     // dialog 只做输入采集、不在此放行）；被拒即抛错中止，不静默降级。
     if (spec.blocking && typeof ctx.permission?.assert === "function") {
@@ -120,10 +121,10 @@ function makeHandler(name: string, ctx: any): (input: { sessionID: string; promp
       }
     }
 
-    // Q3 路 B：有角色的命令 → 子会话派发（上下文隔离，防漂移）。
-    if (role && typeof ctx.session?.create === "function" && typeof ctx.session?.switchAgent === "function") {
+    // Q3 隔离例外：仅 review/validate/consolidate → 子会话派发（独立评审/对账；R44 归并隔离）。
+    if (role && dispatch === "isolated" && typeof ctx.session?.create === "function" && typeof ctx.session?.switchAgent === "function") {
       try {
-        const child = await ctx.session.create({ agent: role, title: `ddd/${name}` });
+        const child = await ctx.session.create({ parentID: sessionID, agent: role, title: `ddd/${name}` });
         const childID = child?.id ?? child?.data?.id;
         if (childID) {
           await ctx.session.switchAgent({ sessionID: childID, agent: role });
@@ -132,11 +133,12 @@ function makeHandler(name: string, ctx: any): (input: { sessionID: string; promp
         }
       } catch {
         // 失败回退：本会话执行，但须在读数上可见（不得静默降级）。
-        await ctx.session.prompt({ sessionID, text: `[ddd] 子代理派发失败（角色 ${role}），本会话降级执行：${directive}` }).catch(() => {});
+        await ctx.session.prompt({ sessionID, text: `[ddd] 子代理隔离派发失败（角色 ${role}），本会话降级执行：${directive}` }).catch(() => {});
         return;
       }
     }
 
+    // 默认（same）：**在当前会话**内执行，不新建会话。
     try {
       await ctx.session.prompt({ sessionID, text: directive });
     } catch {
@@ -214,10 +216,15 @@ export default Plugin.define({
     const registrations: Registration[] = [];
 
     // —— 命令（M4 命令改造口）——
+    // 派发策略单点权威在 assets/commands.json 的 dispatch 字段（M10，裁决 16）。
+    const dispatchOf: Record<string, string> = {};
+    for (const c of ((readJson("assets/commands.json")?.commands as Array<{ name: string; dispatch?: string }>) ?? [])) {
+      if (c?.name) dispatchOf[c.name] = c.dispatch ?? "same";
+    }
     registrations.push(
       await ctx.command.transform((editor: any) => {
         for (const c of COMMANDS) {
-          editor.add({ name: c.name, description: c.description, execute: makeHandler(c.name, ctx) });
+          editor.add({ name: c.name, description: c.description, execute: makeHandler(c.name, ctx, dispatchOf) });
         }
       }),
     );

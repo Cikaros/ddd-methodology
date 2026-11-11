@@ -19,7 +19,7 @@ updated: 2026-11-11
 
 ## 对外暴露接口
 
-JSON：`{ "commands": [ { "name", "purpose", "params", "impl", "blocking" } ] }`
+JSON：`{ "commands": [ { "name", "purpose", "params", "impl", "blocking", "dispatch" } ] }`
 
 | 字段 | 取值 |
 |---|---|
@@ -28,6 +28,7 @@ JSON：`{ "commands": [ { "name", "purpose", "params", "impl", "blocking" } ] }`
 | `params` | 参数取值域，如 `[]` 或 `["--from-code"]` |
 | `impl` | `extension`（由 server part 注册）或 `prompt`（md 入口） |
 | `blocking` | `true` 表示阻塞节点 |
+| `dispatch` | **派发策略**：`same`（默认，同会话执行）／`isolated`（子代理隔离；仅 `ddd-review`／`ddd-validate`／`ddd-consolidate`） |
 
 ## 需引入的依赖
 

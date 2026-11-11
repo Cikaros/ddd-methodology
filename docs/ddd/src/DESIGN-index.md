@@ -27,7 +27,10 @@ updated: 2026-11-11
 
 - 命令：遍历 `COMMANDS`，逐个 `ctx.command.transform(editor => editor.add({name, description, execute}))`（§8.3，核心命令由 server 提供）。
 - **F7 骨架生成（`ddd-init`）**：`ddd-init` handler 机械调用 `scripts/scaffold.mjs`（物化随包件 + 落 `docs/` 骨架），而不是只发提示词。
-- **Q3 命令→角色派发（路 B）**：有角色的命令在 handler 内 `ctx.session.create({agent})` → `ctx.session.switchAgent` → `ctx.session.prompt`（子会话隔离）；失败则本会话降级执行且**在读数上可见**（不静默降级）。路 A（静态 md 命令 `agent:`+`subagent:true`）由宿主原生派发，两路并行。
+- **Q3 命令→角色派发（默认同会话 + 隔离例外）**：策略读 `assets/commands.json` 的 `dispatch`——
+  - `same`（默认，12 条）：在**当前会话**内 `ctx.session.prompt` 注入该角色指令，**不新建会话**；不切该会话的 agent。
+  - `isolated`（仅 `ddd-review`／`ddd-validate`／`ddd-consolidate`）：经宿主 `subagent` 工具派发**子会话**（独立交叉评审／独立对账／R44 归并隔离）。
+  - 隔离派发不可用时**降级为同会话且读数可见**（不静默降级）。
 - **M5 意图确认（§9.5 分职责）**：阻塞节点（概要 §6.1 ▲：`ddd-intent`/`ddd-arch`/`ddd-wrapup`/`ddd-consolidate`）在推进前调用 `ctx.permission.assert` 取**阻塞式确认**（过闸机：可中止/可记忆/远程恒可用）；被拒即中止该步，不静默降级。TUI 侧 `dialog.select/prompt` 只承担**输入采集**（选场景、收四问），与 assert **确认点不重叠**（见 `DESIGN-tui.md`）。
 - 技能：`ctx.skill.transform` 注册 `SKILLS`，`path` 取**包根**相对路径。
 - RPC：`ctx.rpc.register(Ddd, { gates, board })`。
@@ -49,9 +52,9 @@ updated: 2026-11-11
 | `ctx.command.transform / ctx.skill.transform` | 注册面编辑（同步回调，返回 `Registration`） |
 | `ctx.rpc.register` | 注册 RPC 实现 |
 | `ctx.session.hook("prompt")` | 准入注入（幂等） |
-| `ctx.session.prompt` | 命令把内容送进会话 |
+| `ctx.session.prompt` | 命令把内容送进会话（**默认同会话**路径） |
 | `ctx.permission.assert` | 阻塞式确认（M5；§9.5 分职责，server 侧） |
-| `ctx.session.create` / `ctx.session.switchAgent` | Q3 路 B 子会话派发 |
+| `ctx.session.create` / `ctx.session.switchAgent` | Q3 **隔离例外**子会话派发（仅 review/validate/consolidate） |
 | `child_process.spawnSync("node", […])` | 调 `scripts/scaffold.mjs`（F7 骨架生成）；**禁 `process.execPath`**（§8.7/C-43） |
 | `ctx.options` | 读 `profile`／`gates`／`paths`（只读一次，裁定 V-02） |
 

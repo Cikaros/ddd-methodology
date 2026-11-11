@@ -319,7 +319,7 @@ targetVersion: 1.0.0
 | 13 | 归并是否删除变更流 | **不删**；只删产物内联痕迹，`docs/CHANGELOG.jsonl` 为审计资产 |
 | 14 | 子代理角色粒度（Q1） | **清单＋模板同构覆盖**（不逐角色另立完整设计树，避免冗余，M10） |
 | 15 | 记忆闭环（Q2） | **纳入**；M6 详细设计见 `src/lib/DESIGN-memory.md`；**需二次评审**后再冻结 |
-| 16 | 命令→子代理派发（Q3） | **两路并行**：静态 md 命令 `agent:`+`subagent:true`；插件命令 `session.create→switchAgent→prompt` |
+| 16 | 命令→子代理派发（Q3） | **默认同会话**：命令在**当前会话**内执行（不新建会话），角色的纪律以指令注入。**例外（3 条必隔离）**：`ddd-review`（独立交叉评审）、`ddd-validate`（独立对账审计）、`ddd-consolidate`（R44 红线：归并禁止原会话就地完成）。策略单点权威在 `assets/commands.json` 的 `dispatch` 字段（`same`/`isolated`） |
 | 17 | 角色工具面强制（Q4） | **宿主无 agent 级 `tools` 白名单**；采用「`context` hook 按 `event.agent` 请求级裁剪工具 ＋ 角色 `permissions` deny ＋ `evaluate` 兜底」；白名单落 `assets/role-tools.json` |
 
 ## 八、验收线索

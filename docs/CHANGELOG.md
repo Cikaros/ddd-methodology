@@ -32,3 +32,11 @@
 - 本次不做：不改骨架内容与命令语义；仅改启动方式为 node 具名
 - 怎么算做对：真宿主 /ddd-init 不再报异常且骨架真落盘；离线自测加 §8.7/C-43 守卫判据（UT-src-index-04）防回归
 - 涉及：src/index.ts, scripts/scaffold.mjs, scripts/selftest.mjs, assets/counterexamples.json
+
+## v1.0.1 · CHG-0005 · feat
+
+- 时间：2026-11-11T15:09:43.610Z
+- 为什么做：裁决 16 修订：命令派发由「两路并行（带角色即建会话）」改为「默认同会话 + 隔离例外（review/validate/consolidate）」；/ddd-arch 等不再另起会话；隔离例外建子会话时带 parentID
+- 本次不做：不改命令名/参数/门禁语义；Q4 在同会话路径下按当前 agent 生效
+- 怎么算做对：真跑 /ddd-design 不再产生 ddd/ddd-* 子会话；离线自测含「隔离例外恰为 3 条」断言
+- 涉及：assets/commands.json, src/index.ts, docs/OUTLINE-DESIGN.md, docs/REQUIREMENTS.md

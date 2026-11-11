@@ -36,29 +36,31 @@ updated: 2026-11-11
 
 ## 分发机制（命令 → 角色，准确落点）
 
-命令是稳定接口，角色是其可替换实现（M4）。两种派发路径：
+命令是稳定接口，角色是其可替换实现（M4）。**默认同会话**：命令在**当前会话**内执行，以该角色的纪律工作（不新建会话）。**仅隔离例外走子会话**。
 
-| 命令形态 | 派发方式 |
-|---|---|
-| **静态 md 命令**（`.opencode/commands/<name>.md`） | 用 frontmatter **`agent: ddd-<role>`** ＋ **`subagent: true`**，由宿主原生派发 |
-| **插件命令**（`ctx.command.transform`） | handler 内 `ctx.session.create` → `ctx.session.switchAgent({ agent: "ddd-<role>" })` → `ctx.session.prompt`；或 `ctx.session.command` 转发到对应 md 命令 |
+| 策略 | 命令 | 派发方式 |
+|---|---|---|
+| **same（默认）** | 其余 12 条 | 在当前会话内 `ctx.session.prompt` 注入该角色指令；**不建会话** |
+| **isolated（例外）** | `ddd-review`／`ddd-validate`／`ddd-consolidate` | 经宿主 `subagent` 工具（或静态 md 命令 `agent:`＋`subagent:true`）派发子会话 |
 
-- **嵌套深度**：`experimental.subagent_depth` 默认 1 → **主会话派发、子代理不再派子代理**；这与「按模块隔离、互不通信」一致。
-- **失败回退**：子代理不可用（如权限拒绝）时，命令在本会话执行，但须**在读数上可见**（不得静默降级）。
+- **策略单点权威**：`assets/commands.json` 的 `dispatch` 字段（`same`／`isolated`，M10）。
+- **隔离例外的理由**：`ddd-review`／`ddd-validate` 需**独立**（不污染原会话）；`ddd-consolidate` 有 **R44 红线**——归并**禁止在原迭代会话就地完成**。
+- **嵌套深度**：隔离例外受 `experimental.subagent_depth`（默认 1）约束；默认同会话路径不涉嵌套。
+- **失败回退**：隔离派发不可用（如权限拒绝）时，命令在**本会话**执行，但须**在读数上可见**（不得静默降级）。
 
 ## 角色工具面强制（Q4：必强制、尽量在工具注册层）
 
 - **宿主事实**：agent 定义**无 `tools` 白名单字段**（字段仅 `model`/`system`/`mode`/`hidden`/`disabled`/`permissions`）。故"注册层直接限制"原生不可得。
 - **求其次但仍是机械的三层**（都不依赖模型服从提示词）：
-  1. **主：请求级工具裁剪** — `session.hook("context")` 按 `event.agent` 执行 `delete event.tools[<name>]`，使不在该角色白名单的工具**根本不出现在该次请求**；模型看不到即不能调。
+  1. **主：请求级工具裁剪** — `session.hook("context")` 按 `event.agent` 执行 `delete event.tools[<name>]`，使不在该角色白名单的工具**根本不出现在该次请求**；模型看不到即不能调。**注**：同会话命令不切 `agent`，故默认路径下本层按**当前 agent** 生效；隔离路径下按**角色 agent** 生效。
   2. **次：角色 `permissions` 的 `deny`** — 在 agent 配置声明 `{action,resource,effect:"deny"}`，执行面直接拒绝。
   3. **兜底：`permission.hook("evaluate")`** — 运行时 `deny`（fail-safe），覆盖 1/2 漏网。
 - **白名单单点权威**：`assets/role-tools.json`（角色→允许工具集）。`src/lib/guard.ts` 读它实现 1；角色 `permissions` 与 `evaluate` 由 `src/index.ts` 装配。
 - **只读角色**（reviewer/auditor）在三个层次都不得写。
 
-## 分发（Q3：两路并行，均为一等）
+## 分发（Q3：默认同会话 + 隔离例外）
 
-静态 md 命令用 frontmatter `agent:`+`subagent:true`；插件命令 handler 用 `session.create`→`switchAgent`→`prompt`。两路并存，按命令形态择一，**不互相降级**。
+命令默认在**当前会话**执行（不新建会话）；仅 `ddd-review`／`ddd-validate`／`ddd-consolidate` 走子代理隔离。两路并存由 `assets/commands.json` 的 `dispatch` 决定，**不互相降级**。
 
 ## 统一契约与实例
 
