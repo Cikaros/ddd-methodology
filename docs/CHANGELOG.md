@@ -33,7 +33,7 @@
 - 怎么算做对：真宿主 /ddd-init 不再报异常且骨架真落盘；离线自测加 §8.7/C-43 守卫判据（UT-src-index-04）防回归
 - 涉及：src/index.ts, scripts/scaffold.mjs, scripts/selftest.mjs, assets/counterexamples.json
 
-## v1.0.1 · CHG-0005 · feat
+## v1.0.2 · CHG-0005 · feat
 
 - 时间：2026-11-11T15:09:43.610Z
 - 为什么做：裁决 16 修订：命令派发由「两路并行（带角色即建会话）」改为「默认同会话 + 隔离例外（review/validate/consolidate）」；/ddd-arch 等不再另起会话；隔离例外建子会话时带 parentID
