@@ -2,7 +2,7 @@
 doc: design
 level: module
 target: scripts
-status: frozen
+status: draft
 landed: false
 updated: 2026-11-11
 ---
@@ -17,7 +17,7 @@ updated: 2026-11-11
 
 ## 目录规划（分组层）
 
-`scripts/` 为单层目录，无更深分组。文件级见各 `DESIGN-<filename>.md`。
+`scripts/` 为单层目录，无更深分组。文件级见各 `DESIGN-<filename>.md`。现有：`selftest.mjs`（离线自测）、`board.mjs`（看板唯一写入器）。
 
 ## 依赖方向
 
@@ -30,7 +30,7 @@ updated: 2026-11-11
 
 ## 承重机制承接
 
-M1（设计树快照）、M2（变更流）、M3（落地门禁）、M9（图集重放）、M10（反漂移）。
+M1（设计树快照）、M2（变更流）、M3（落地门禁）、M9（图集重放）、M10（反漂移）、**M7（看板闭环，经 `board.mjs` 唯一写入）**。
 
 ## 状态
 
