@@ -1,2 +1,5 @@
 {"id":"TMP-0001","ts":"2026-11-11","type":"audit","path":"docs/audits/landing-report.md","why":"代码落地报告（派生/临时件）；代码冻结裁决后清理"}
 {"id":"TMP-0002","ts":"2026-11-11","type":"audit","path":"docs/audits/design-tree-self-audit.md","why":"设计树全量自审计记录（派生/临时件）；代码冻结裁决后清理"}
+{"id":"TMP-0003","ts":"2026-11-11","type":"audit","path":"docs/audits/landing-findings.md","why":"落地期缺陷登记册（R36 唯一权威处；F2 未闭合）；裁决后清理"}
+{"id":"TMP-0004","ts":"2026-11-11","type":"report","path":"docs/reports/test.json","why":"/ddd-test 读数（派生件）；裁决后清理"}
+{"id":"TMP-0005","ts":"2026-11-11","type":"report","path":"docs/reports/validate.json","why":"/ddd-validate 读数（派生件）；裁决后清理"}

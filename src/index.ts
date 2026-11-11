@@ -272,7 +272,7 @@ export default Plugin.define({
 
           // M13/§19.5 自省：注入自报（可观测）。
           if (Array.isArray(ev.system)) {
-            ev.system.push({ type: "text", text: `[ddd:self] 注入切片 ${route.sliceIds.length} 片（phase=${route.basis.phase ?? "-"} intent=${route.basis.intent ?? "-"}）` } as (typeof ev.system)[number]);
+            ev.system.push({ type: "text", text: `[ddd:self] 注入切片 ${route.sliceIds.length} 片（profile=${profile} phase=${route.basis.phase ?? "-"} intent=${route.basis.intent ?? "-"}）` } as (typeof ev.system)[number]);
           }
         } catch {
           /* context hook 不阻断 */
@@ -409,9 +409,6 @@ export default Plugin.define({
       /* RPC 注册失败不阻断其余装配 */
     }
 
-    // —— 看板命令面：委托唯一写入器 scripts/board.mjs（§8.7：node 具名启动、路径取包根）——
-    void profile;
-
     return async () => {
       ac.abort();
       for (const r of registrations.reverse()) {
@@ -479,9 +476,3 @@ function foldMemory(rows: readonly Record<string, unknown>[]): MemoryEntry[] {
   }
   return [...byId.values()];
 }
-
-export { projectsBoardForTest };
-function projectsBoardForTest(rows: BoardRow[]) {
-  return boardProject(rows);
-}
-export { canAdvance };

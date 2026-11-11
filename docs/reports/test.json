@@ -1,0 +1,26 @@
+{
+  "ts": "2026-11-11T10:37:22.848Z",
+  "layer": "no-model (offline)",
+  "typecheck": {
+    "ok": true,
+    "command": "tsc -p tsconfig.json --noEmit"
+  },
+  "selftest": {
+    "ok": true,
+    "passed": 80,
+    "total": 80,
+    "command": "node --experimental-strip-types scripts/selftest.mjs ."
+  },
+  "layers": {
+    "noModel": {
+      "ok": true
+    },
+    "typecheck": {
+      "ok": true
+    },
+    "realRun": {
+      "ok": null,
+      "note": "端到端需模型：显式指示模型调用工具，非本轮范围"
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "ts": "2026-11-11T10:36:24.800Z",
+  "readings": [
+    {
+      "id": "G1",
+      "verdict": "pass",
+      "examined": 2,
+      "unrecognized": 0
+    },
+    {
+      "id": "G2",
+      "verdict": "na",
+      "examined": 0,
+      "unrecognized": 0
+    },
+    {
+      "id": "G3",
+      "verdict": "pass",
+      "examined": 0,
+      "unrecognized": 0
+    },
+    {
+      "id": "G4",
+      "verdict": "pass",
+      "examined": 1,
+      "unrecognized": 0
+    },
+    {
+      "id": "G5",
+      "verdict": "pass",
+      "examined": 4,
+      "unrecognized": 0
+    },
+    {
+      "id": "G6",
+      "verdict": "na",
+      "examined": 0,
+      "unrecognized": 0
+    }
+  ],
+  "summary": {
+    "pass": 4,
+    "block": 0,
+    "visible": 0,
+    "na": 2
+  },
+  "canAdvance": true,
+  "designCount": 49,
+  "testCount": 49,
+  "missingCoverage": 0
+}
