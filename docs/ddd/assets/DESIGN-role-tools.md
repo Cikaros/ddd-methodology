@@ -3,7 +3,7 @@ doc: design
 level: file
 target: assets/role-tools.json
 status: frozen
-landed: false
+landed: true
 covers: [role-tools]
 depends: [src/lib/guard.ts]
 updated: 2026-11-11

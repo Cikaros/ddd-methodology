@@ -3,7 +3,7 @@ doc: design
 level: file
 target: src/lib/guard.ts
 status: frozen
-landed: false
+landed: true
 covers: [evaluateBottomLines, BottomLine, Enforcement]
 updated: 2026-11-11
 ---

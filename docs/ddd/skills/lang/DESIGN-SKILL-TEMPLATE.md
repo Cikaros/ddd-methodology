@@ -3,7 +3,7 @@ doc: design
 level: file
 target: skills/lang/<id>/SKILL.md
 status: frozen
-landed: false
+landed: true
 covers: [lang-skill-template]
 depends: [assets/lang-<id>.json]
 updated: 2026-11-11

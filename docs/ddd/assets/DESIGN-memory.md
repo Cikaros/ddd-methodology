@@ -3,7 +3,7 @@ doc: design
 level: file
 target: assets/memory.json
 status: frozen
-landed: false
+landed: true
 covers: [memory-thresholds]
 updated: 2026-11-11
 ---

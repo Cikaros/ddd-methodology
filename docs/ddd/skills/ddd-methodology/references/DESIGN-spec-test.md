@@ -3,7 +3,7 @@ doc: design
 level: file
 target: skills/ddd-methodology/references/spec-test.md
 status: frozen
-landed: false
+landed: true
 covers: [spec-test]
 updated: 2026-11-11
 ---

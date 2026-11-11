@@ -3,7 +3,7 @@ doc: design
 level: file
 target: agents/<role>.md
 status: frozen
-landed: false
+landed: true
 covers: [agent-template]
 depends: [agents/DESIGN.md]
 updated: 2026-11-11

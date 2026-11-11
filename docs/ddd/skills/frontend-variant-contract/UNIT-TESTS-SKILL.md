@@ -3,7 +3,7 @@ doc: unit-tests
 level: file
 target: skills/frontend-variant-contract/SKILL.md
 status: frozen
-landed: false
+landed: true
 depends: [skills/frontend-variant-contract/DESIGN-SKILL.md]
 updated: 2026-11-11
 ---
@@ -12,14 +12,14 @@ updated: 2026-11-11
 
 ## 执行件与前置
 
-- 执行件：待实现（对应 `skills/frontend-variant-contract/SKILL.md`）。
+- 执行件：已实现（对应 `skills/frontend-variant-contract/SKILL.md`）。
 - 前置：本件依赖的设计件见 frontmatter `depends`。
 
 ## 用例
 
 | 编号 | 名称 | 期望 | 落地 |
 |---|---|---|---|
-| UT-skills-frontend-variant-contract-SKILL-01 | frontmatter 合法 | name 与 description 存在 | 待落地 |
-| UT-skills-frontend-variant-contract-SKILL-02 | 正文合规 | 只放核心流程；机械阈值不在正文 | 待落地 |
+| UT-skills-frontend-variant-contract-SKILL-01 | frontmatter 合法 | name 与 description 存在 | 已落地 |
+| UT-skills-frontend-variant-contract-SKILL-02 | 正文合规 | 只放核心流程；机械阈值不在正文 | 已落地 |
 
 > 编号全局唯一；未落地报「待落地」而非「缺陷」。

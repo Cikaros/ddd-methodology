@@ -3,7 +3,7 @@ doc: tests
 level: group
 target: skills/frontend-variant-contract
 status: frozen
-landed: false
+landed: true
 depends: [skills/frontend-variant-contract/DESIGN.md]
 updated: 2026-11-11
 ---
@@ -12,14 +12,14 @@ updated: 2026-11-11
 
 ## 执行件与前置
 
-- 执行件：待实现（对应 `skills/frontend-variant-contract`）。
+- 执行件：已实现（对应 `skills/frontend-variant-contract`）。
 - 前置：本件依赖的设计件见 frontmatter `depends`。
 
 ## 用例
 
 | 编号 | 名称 | 期望 | 落地 |
 |---|---|---|---|
-| GT-skills-frontend-variant-contract-01 | 子件覆盖 | 其下每个设计件均有对应测试件 | 待落地 |
-| GT-skills-frontend-variant-contract-02 | 跨件对账 | 声明面与实物/引用可解析，单点权威无复写 | 待落地 |
+| GT-skills-frontend-variant-contract-01 | 子件覆盖 | 其下每个设计件均有对应测试件 | 已落地 |
+| GT-skills-frontend-variant-contract-02 | 跨件对账 | 声明面与实物/引用可解析，单点权威无复写 | 已落地 |
 
 > 编号全局唯一；未落地报「待落地」而非「缺陷」。

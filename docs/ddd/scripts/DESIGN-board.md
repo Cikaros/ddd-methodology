@@ -3,7 +3,7 @@ doc: design
 level: file
 target: scripts/board.mjs
 status: frozen
-landed: false
+landed: true
 covers: [board-writer]
 depends: [src/lib/board.ts, assets/board.json]
 updated: 2026-11-11

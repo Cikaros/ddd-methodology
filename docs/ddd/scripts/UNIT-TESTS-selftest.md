@@ -3,7 +3,7 @@ doc: unit-tests
 level: file
 target: scripts/selftest.mjs
 status: frozen
-landed: false
+landed: true
 depends: [scripts/DESIGN-selftest.md]
 updated: 2026-11-11
 ---
@@ -12,14 +12,14 @@ updated: 2026-11-11
 
 ## 执行件与前置
 
-- 执行件：待实现（对应 `scripts/selftest.mjs`）。
+- 执行件：已实现（对应 `scripts/selftest.mjs`）。
 - 前置：本件依赖的设计件见 frontmatter `depends`。
 
 ## 用例
 
 | 编号 | 名称 | 期望 | 落地 |
 |---|---|---|---|
-| UT-scripts-selftest-01 | 注册面断言 | mock ctx 下断言 setup 注册了什么 | 待落地 |
-| UT-scripts-selftest-02 | 退出码语义 | 全过 0 / 失败 1 / 用法错 2 | 待落地 |
+| UT-scripts-selftest-01 | 注册面断言 | mock ctx 下断言 setup 注册了什么 | 已落地 |
+| UT-scripts-selftest-02 | 退出码语义 | 全过 0 / 失败 1 / 用法错 2 | 已落地 |
 
 > 编号全局唯一；未落地报「待落地」而非「缺陷」。

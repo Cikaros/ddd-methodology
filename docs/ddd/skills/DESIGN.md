@@ -3,7 +3,7 @@ doc: design
 level: module
 target: skills
 status: frozen
-landed: false
+landed: true
 updated: 2026-11-11
 ---
 

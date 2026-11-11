@@ -3,7 +3,7 @@ doc: design
 level: file
 target: skills/dev-tools/SKILL.md
 status: frozen
-landed: false
+landed: true
 covers: [skill]
 updated: 2026-11-11
 ---

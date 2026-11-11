@@ -3,7 +3,7 @@ doc: design
 level: group
 target: skills/lang
 status: frozen
-landed: false
+landed: true
 covers: [lang-family]
 depends: [assets/languages.json]
 updated: 2026-11-11

@@ -3,7 +3,7 @@ doc: design
 level: file
 target: src/lib/board.ts
 status: frozen
-landed: false
+landed: true
 covers: [BoardRow, project, canTransition, admit, detectOrphans]
 depends: [assets/board.json]
 updated: 2026-11-11

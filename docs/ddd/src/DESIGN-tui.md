@@ -3,7 +3,7 @@ doc: design
 level: file
 target: src/tui.tsx
 status: frozen
-landed: false
+landed: true
 covers: [Plugin.define]
 depends: [src/rpc.ts]
 updated: 2026-11-11

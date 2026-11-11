@@ -3,7 +3,7 @@ doc: design
 level: file
 target: src/rpc.ts
 status: frozen
-landed: false
+landed: true
 covers: [Rpc.define, Ddd]
 updated: 2026-11-11
 ---

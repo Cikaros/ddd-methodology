@@ -3,7 +3,7 @@ doc: design
 level: file
 target: assets/rules.json
 status: frozen
-landed: false
+landed: true
 covers: [rules]
 depends: [src/index.ts]
 updated: 2026-11-11

@@ -3,7 +3,7 @@ doc: design
 level: file
 target: src/lib/registry.ts
 status: frozen
-landed: false
+landed: true
 covers: [COMMANDS, SKILLS, registrations, auditRegistrations]
 updated: 2026-11-11
 ---

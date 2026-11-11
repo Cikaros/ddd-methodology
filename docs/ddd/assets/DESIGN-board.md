@@ -3,7 +3,7 @@ doc: design
 level: file
 target: assets/board.json
 status: frozen
-landed: false
+landed: true
 covers: [board-config]
 depends: [src/lib/board.ts]
 updated: 2026-11-11

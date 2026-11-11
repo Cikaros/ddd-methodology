@@ -3,7 +3,7 @@ doc: design
 level: file
 target: assets/languages.json
 status: frozen
-landed: false
+landed: true
 covers: [languages-catalog]
 depends: [skills/lang/DESIGN-SKILL-TEMPLATE.md]
 updated: 2026-11-11

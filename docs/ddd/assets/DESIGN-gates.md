@@ -3,7 +3,7 @@ doc: design
 level: file
 target: assets/gates.json
 status: frozen
-landed: false
+landed: true
 covers: [gates]
 depends: [src/lib/gates.ts]
 updated: 2026-11-11

@@ -3,7 +3,7 @@ doc: design
 level: file
 target: src/lib/router.ts
 status: frozen
-landed: false
+landed: true
 covers: [routeSlices, detectIntent, Phase]
 updated: 2026-11-11
 ---

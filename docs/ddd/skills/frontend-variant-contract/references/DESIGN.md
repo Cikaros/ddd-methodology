@@ -3,7 +3,7 @@ doc: design
 level: group
 target: skills/frontend-variant-contract/references
 status: frozen
-landed: false
+landed: true
 covers: [frontend-variant-references]
 updated: 2026-11-11
 ---

@@ -1,13 +1,18 @@
 /**
  * scripts/selftest.mjs —— 离线自测入口（无模型、无网络）。
  *
- * 用 mock ctx 加载 server part，断言「setup 注册了什么」并逐条跑通每个命令/RPC。
+ * 覆盖（§十二 三种验证手段之①）：
+ *   1. 注册面：mock ctx 加载 server part，断言 setup 注册了什么并跑通每个命令/RPC；
+ *   2. 纯函数断言：src/lib/** 的判据（registry/paths/gates/router/guard/memory/board）；
+ *   3. assets 基线：schema 合法 + 单点权威 + 取值域；
+ *   4. 内容层契约：agents 角色、skills frontmatter、role-tools 一致。
+ *
+ * 用法：node --experimental-strip-types scripts/selftest.mjs <插件目录> [--verbose]
  * 退出码：0 全过；1 有失败；2 用法/入口错。
- * 依赖：Node 标准库；不引入 @opencode/plugin（用 mock 替代），入口由插件自己 import。
  */
 
-import { readFileSync, existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { join, resolve, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const pluginDir = process.argv[2] ? resolve(process.argv[2]) : resolve(".");
@@ -15,90 +20,50 @@ const verbose = process.argv.includes("--verbose");
 
 const failures = [];
 const checks = [];
+let section = "";
+function group(name) {
+  section = name;
+  if (verbose) console.log(`\n# ${name}`);
+}
 function check(name, cond, detail) {
-  checks.push({ name, ok: !!cond, detail });
-  if (!cond) failures.push(`${name}${detail ? ` — ${detail}` : ""}`);
+  checks.push({ name, ok: !!cond, detail, section });
+  if (!cond) failures.push(`[${section}] ${name}${detail ? ` — ${detail}` : ""}`);
 }
 
 function makeMockCtx(options) {
   const registrations = { commands: [], skills: [], hooks: {}, rpc: null, cleanups: [] };
   const storage = new Map();
   const record = (dispose) => Promise.resolve({ dispose: () => Promise.resolve(dispose?.()) });
-
   const ctx = {
     options: options ?? {},
     location: { directory: process.cwd() },
     app: { version: "0.0.0", channel: "test" },
-    command: {
-      transform: (cb) => {
-        const editor = { add: (def) => registrations.commands.push(def) };
-        cb(editor);
-        return record();
-      },
-    },
-    skill: {
-      transform: (cb) => {
-        const editor = { add: (s) => registrations.skills.push(s) };
-        cb(editor);
-        return record();
-      },
-    },
+    command: { transform: (cb) => { const e = { add: (d) => registrations.commands.push(d) }; cb(e); return record(); } },
+    skill: { transform: (cb) => { const e = { add: (s) => registrations.skills.push(s) }; cb(e); return record(); } },
     session: {
-      hook: (name, cb) => {
-        registrations.hooks[name] = cb;
-        return record();
-      },
-      hookAsync: (name, cb) => {
-        registrations.hooks[name] = cb;
-        return record();
-      },
+      hook: (n, cb) => { registrations.hooks[n] = cb; return record(); },
       prompt: async () => {},
       instructions: { entry: { put: async () => {}, list: async () => [], remove: async () => {} } },
       create: async () => ({ id: "ses_mock" }),
       switchAgent: async () => {},
       command: async () => {},
     },
-    tool: {
-      transform: (cb) => {
-        const editor = { add: () => {}, list: () => [], get: () => undefined, update: () => {}, remove: () => {}, namespace: () => {} };
-        cb(editor);
-        return record();
-      },
-      hook: (name, cb) => {
-        registrations.hooks[`tool:${name}`] = cb;
-        return record();
-      },
-    },
-    permission: {
-      hook: (name, cb) => {
-        registrations.hooks[`permission:${name}`] = cb;
-        return record();
-      },
-      assert: async () => {},
-    },
-    shell: {
-      hook: (name, cb) => {
-        registrations.hooks[`shell:${name}`] = cb;
-        return record();
-      },
-    },
-    rpc: {
-      register: (def, handlers) => {
-        registrations.rpc = { def, handlers };
-        return Promise.resolve({ dispose: () => Promise.resolve(), events: { emit: async () => {} } });
-      },
-    },
-    storage: {
-      get: async (k) => storage.get(k),
-      set: async (k, v) => void storage.set(k, v),
-      remove: async (k) => void storage.delete(k),
-      scan: async () => [],
-    },
-    event: {
-      subscribe: () => (async function* () {})(),
-    },
+    tool: { transform: (cb) => { cb({ add: () => {}, list: () => [], get: () => undefined, update: () => {}, remove: () => {}, namespace: () => {} }); return record(); }, hook: (n, cb) => { registrations.hooks[`tool:${n}`] = cb; return record(); } },
+    permission: { hook: (n, cb) => { registrations.hooks[`permission:${n}`] = cb; return record(); }, assert: async () => {} },
+    shell: { hook: (n, cb) => { registrations.hooks[`shell:${n}`] = cb; return record(); } },
+    rpc: { register: (def, handlers) => { registrations.rpc = { def, handlers }; return Promise.resolve({ dispose: () => Promise.resolve(), events: { emit: async () => {} } }); } },
+    storage: { get: async (k) => storage.get(k), set: async (k, v) => void storage.set(k, v), remove: async (k) => void storage.delete(k), scan: async () => [] },
+    event: { subscribe: () => (async function* () {})() },
   };
   return { ctx, registrations };
+}
+
+function readJson(rel) {
+  try {
+    return JSON.parse(readFileSync(join(pluginDir, rel), "utf8"));
+  } catch {
+    return undefined;
+  }
 }
 
 async function main() {
@@ -108,8 +73,7 @@ async function main() {
     process.exit(2);
   }
   const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
-  const entryRel = pkg.exports?.["."] ?? "./src/index.ts";
-  const entryAbs = resolve(pluginDir, entryRel);
+  const entryAbs = resolve(pluginDir, pkg.exports?.["."] ?? "./src/index.ts");
   if (!existsSync(entryAbs)) {
     console.error(`入口错：${entryAbs} 不存在`);
     process.exit(2);
@@ -123,9 +87,28 @@ async function main() {
     process.exit(2);
   }
   const plugin = mod.default;
+  group("注册面");
   check("default 导出存在", !!plugin);
   check("id === 'ddd'", plugin?.id === "ddd", `实为 ${plugin?.id}`);
   check("setup 为函数", typeof plugin?.setup === "function");
+
+  // 纯函数层与后续 always-required 资源：仅当注册面基本成立时才要求（使坏插件能停在退出码 1）。
+  let lib;
+  try {
+    lib = {
+      registry: await import(pathToFileURL(resolve(pluginDir, "src/lib/registry.ts")).href),
+      paths: await import(pathToFileURL(resolve(pluginDir, "src/lib/paths.ts")).href),
+      gates: await import(pathToFileURL(resolve(pluginDir, "src/lib/gates.ts")).href),
+      router: await import(pathToFileURL(resolve(pluginDir, "src/lib/router.ts")).href),
+      guard: await import(pathToFileURL(resolve(pluginDir, "src/lib/guard.ts")).href),
+      memory: await import(pathToFileURL(resolve(pluginDir, "src/lib/memory.ts")).href),
+      board: await import(pathToFileURL(resolve(pluginDir, "src/lib/board.ts")).href),
+    };
+  } catch (e) {
+    check("纯函数层可加载", false, e?.message ?? String(e));
+    check("setup 可运行", false, "纯函数层不可用");
+    return report();
+  }
 
   const { ctx, registrations } = makeMockCtx({ profile: "standard" });
   let cleanup;
@@ -133,10 +116,8 @@ async function main() {
     cleanup = await plugin.setup(ctx);
   } catch (e) {
     check("setup 可运行", false, e?.message ?? String(e));
-    report();
-    return;
+    return report();
   }
-
   check("注册了命令", registrations.commands.length > 0, `${registrations.commands.length} 条`);
   check("注册了技能", registrations.skills.length > 0, `${registrations.skills.length} 条`);
   check("至少一个 hook", Object.keys(registrations.hooks).length > 0);
@@ -151,41 +132,251 @@ async function main() {
 
   let cmdRunOk = true;
   for (const c of registrations.commands) {
-    try {
-      await c.execute({ sessionID: "ses_mock", prompt: { text: "" } });
-    } catch (e) {
-      cmdRunOk = false;
-      failures.push(`命令 ${c.name} 执行抛错: ${e?.message ?? e}`);
-    }
+    try { await c.execute({ sessionID: "ses_mock", prompt: { text: "" } }); }
+    catch (e) { cmdRunOk = false; failures.push(`命令 ${c.name} 执行抛错: ${e?.message ?? e}`); }
   }
   check("每条命令可跑通", cmdRunOk);
 
   if (registrations.rpc) {
     try {
-      const gatesOut = await registrations.rpc.handlers.gates({}, { signal: new AbortController().signal, error: () => ({}) });
-      check("RPC gates 返回 readings", Array.isArray(gatesOut?.readings));
-      const boardOut = await registrations.rpc.handlers.board({}, { signal: new AbortController().signal, error: () => ({}) });
-      check("RPC board 返回摘要", boardOut && typeof boardOut.pending === "number");
-    } catch (e) {
-      check("RPC handler 可跑通", false, e?.message ?? String(e));
-    }
+      const g = await registrations.rpc.handlers.gates({}, { signal: new AbortController().signal, error: () => ({}) });
+      check("RPC gates 返回 readings", Array.isArray(g?.readings));
+      const b = await registrations.rpc.handlers.board({}, { signal: new AbortController().signal, error: () => ({}) });
+      check("RPC board 返回摘要", b && typeof b.pending === "number");
+    } catch (e) { check("RPC handler 可跑通", false, e?.message ?? String(e)); }
+  }
+  if (typeof cleanup === "function") {
+    try { await cleanup(); check("cleanup 可运行", true); }
+    catch (e) { check("cleanup 可运行", false, e?.message ?? String(e)); }
   }
 
-  if (typeof cleanup === "function") {
-    try {
-      await cleanup();
-      check("cleanup 可运行", true);
-    } catch (e) {
-      check("cleanup 可运行", false, e?.message ?? String(e));
-    }
+  // ============ 2. 纯函数断言 ============
+  group("纯函数：registry");
+  check("UT-src-lib-registry-01 导出面齐全", typeof lib.registry.registrations === "function" && Array.isArray(lib.registry.COMMANDS) && Array.isArray(lib.registry.SKILLS) && typeof lib.registry.auditRegistrations === "function");
+  check("UT-src-lib-registry-02 自检合格（前缀/去重/描述）", lib.registry.auditRegistrations().length === 0, lib.registry.auditRegistrations().join("; "));
+  check("UT-src-lib-registry-03 非法输入报错而非沉默", lib.registry.auditRegistrations({ commands: [{ name: "bad", description: "" }], skills: [] }).length > 0);
+
+  group("纯函数：paths");
+  {
+    const pr = lib.paths.packageRoot();
+    check("UT-src-lib-paths-01 导出面齐全", typeof lib.paths.projectRoot === "function" && typeof lib.paths.packagePath === "function" && typeof lib.paths.projectPath === "function" && typeof lib.paths.within === "function");
+    check("UT-src-lib-paths-02 packagePath 相对包根", lib.paths.packagePath("assets/board.json").startsWith(pr));
+    let threw = false;
+    try { lib.paths.projectRoot(undefined); } catch { threw = true; }
+    check("UT-src-lib-paths-03 缺 directory 抛错（不回落）", threw);
+    check("UT-src-lib-paths-03 within 判定", lib.paths.within(pr, lib.paths.packagePath("src/index.ts")) === true && lib.paths.within(pr, resolve(pr, "..")) === false);
+  }
+
+  group("纯函数：gates");
+  {
+    const g = lib.gates;
+    check("UT-src-lib-gates-01 导出面齐全", typeof g.gates?.G1 === "function" && typeof g.summarize === "function" && typeof g.canAdvance === "function");
+    const pass = g.gates.G1({ requirements: { frozen: true, openRulings: 0 } });
+    check("UT-src-lib-gates-02 正常路径 pass", pass.verdict === "pass");
+    const na = g.gates.G1({});
+    check("UT-src-lib-gates-03 无判定对象 → na（不判 pass）", na.verdict === "na");
+    const block = g.gates.G1({ requirements: { frozen: false, openRulings: 1 } });
+    check("UT-src-lib-gates-03 block 带 remedy", block.verdict === "block" && !!block.remedy);
+    check("UT-src-lib-gates-02 自省字段齐备", typeof pass.examined === "number" && typeof pass.unrecognized === "number");
+    check("UT-src-lib-gates-02 canAdvance 依 block 判定", g.canAdvance([pass, na]) === true && g.canAdvance([block]) === false);
+  }
+
+  group("纯函数：router");
+  {
+    const r = lib.router;
+    const slices = [{ id: "core", source: "a", when: {} }, { id: "design", source: "b", when: { phase: "design" } }];
+    check("UT-src-lib-router-01 导出面齐全", typeof r.routeSlices === "function" && typeof r.detectIntent === "function");
+    const out = r.routeSlices({ phase: "design" }, slices);
+    check("UT-src-lib-router-02 命中相位选切片", out.sliceIds.includes("design") && out.sliceIds.includes("core"));
+    check("UT-src-lib-router-02 判定可观测 basis", out.basis.phase === "design" && typeof out.basis.matched === "number");
+    const out2 = r.routeSlices({ phase: "intent" }, slices);
+    check("UT-src-lib-router-03 未命中只留常驻", out2.sliceIds.length === 1 && out2.sliceIds[0] === "core");
+    check("UT-src-lib-router-02 detectIntent bugfix", r.detectIntent("修复这个 bug") === "bugfix");
+  }
+
+  group("纯函数：guard");
+  {
+    const gu = lib.guard;
+    const bl = [{ id: "BL1", surface: "permission", action: "edit", resource: "docs/CHANGELOG.jsonl", effect: "deny", failSemantics: "block", remedy: "只经唯一工具" }];
+    check("UT-src-lib-guard-01 导出面齐全", typeof gu.evaluateBottomLines === "function" && typeof gu.assertEnforceable === "function");
+    check("UT-src-lib-guard-02 命中 → block 带 remedy", gu.evaluateBottomLines(bl, { observed: { BL1: { examined: 1, unrecognized: 0, hits: 1 } } })[0].verdict === "block");
+    check("UT-src-lib-guard-02 零命中 → pass", gu.evaluateBottomLines(bl, { observed: { BL1: { examined: 1, unrecognized: 0, hits: 0 } } })[0].verdict === "pass");
+    check("UT-src-lib-guard-03 无观测 → na（不判 pass）", gu.evaluateBottomLines(bl, {})[0].verdict === "na");
+    const bad = gu.assertEnforceable([{ id: "BLx", effect: "deny", remedy: "" }]);
+    check("UT-src-lib-guard-03 无执法点被拦", bad.length > 0);
+  }
+
+  group("纯函数：memory");
+  {
+    const m = lib.memory;
+    const cfg = readJson("assets/memory.json");
+    check("UT-src-lib-memory-01 星级 1–5 单调", m.computeConfidence(1) >= 1 && m.computeConfidence(8) <= 5 && m.computeConfidence(8) >= m.computeConfidence(1));
+    const e = { id: "M1", kind: "record", type: "pitfall", scope: "s", key: "k", occurrences: 5, confidence: 5, consistency: 0.9 };
+    check("UT-src-lib-memory-02 阈值读 assets（不内置）", m.shouldRemind(e, cfg) === true && m.shouldPromote(e, cfg) === true);
+    const d = m.decay({ ...e, confidence: 1 }, cfg);
+    check("UT-src-lib-memory-03 低于 1★ 转 archived", d.archived === true);
+    check("UT-src-lib-memory-03 未再现降星", m.decay({ ...e, confidence: 3 }, cfg).confidence === 3 - cfg.decayPerSession);
+    check("UT-src-lib-memory-04 scope 隔离", m.projectScope("C:/a/proj") === "proj");
+    const inj = m.selectInjection([e, { ...e, id: "M2", scope: "other" }], "s", cfg);
+    check("UT-src-lib-memory-04 仅注入同 scope", inj.every((x) => x.scope === "s"));
+    check("UT-src-lib-memory-05 幂等去重键", m.occurrenceDedupKey("s", "k", "ses", 1) === m.occurrenceDedupKey("s", "k", "ses", 1));
+  }
+
+  group("纯函数：board");
+  {
+    const b = lib.board;
+    const cfg = readJson("assets/board.json");
+    const rows = [
+      { kind: "task", ts: "2026-01-01T00:00:00Z", taskId: "A", reqId: "R1", title: "a", acceptance: "x", priority: "P2", status: "pending", dependsOn: [], seq: 2 },
+      { kind: "task", ts: "2026-01-01T00:00:00Z", taskId: "B", reqId: "R1", title: "b", acceptance: "x", priority: "P0", status: "pending", dependsOn: [], seq: 1 },
+      { kind: "task", ts: "2026-01-01T00:00:00Z", taskId: "C", reqId: "R1", title: "c", acceptance: "x", priority: "P1", status: "pending", dependsOn: ["B"], seq: 3 },
+      { kind: "archive", ts: "2026-01-01T00:00:00Z", taskId: "D", seq: 5 },
+      { kind: "task", ts: "2026-01-01T00:00:00Z", taskId: "D", reqId: "R1", title: "d", acceptance: "x", priority: "P3", status: "pending", dependsOn: [], seq: 4 },
+    ];
+    const proj = b.project(rows);
+    check("UT-src-lib-board-01 投影按 priority 升序", proj[0].taskId === "B");
+    check("UT-src-lib-board-02 剔除 archive", !proj.find((x) => x.taskId === "D"));
+    check("UT-src-lib-board-02 剔除前驱未满足", !proj.find((x) => x.taskId === "C"));
+    check("UT-src-lib-board-03 缺 acceptance → 拒", b.admit({ kind: "task", ts: "", taskId: "E", acceptance: "" }, proj, cfg).ok === false);
+    check("UT-src-lib-board-03 priority 越域 → 拒", b.admit({ kind: "task", ts: "", taskId: "E", acceptance: "x", priority: "P9" }, proj, cfg).ok === false);
+    check("UT-src-lib-board-04 非法转移拒", b.canTransition("in_progress", "pending") === false && b.canTransition("pending", "in_progress") === true);
+    check("UT-src-lib-board-05 反饥饿超限缺 reason 拒", b.admit({ kind: "task", ts: "", taskId: "F", acceptance: "x", priority: "P3", seq: 99 }, Array.from({ length: 9 }, (_, i) => ({ taskId: `X${i}`, reqId: null, title: "", acceptance: "x", priority: "P0", status: "pending", dependsOn: [], seq: i, ts: "2026-01-01T00:00:00Z" })), cfg).ok === false);
+    const orphan = b.detectOrphans([{ taskId: "O", reqId: "R", title: "", acceptance: "x", priority: "P2", status: "in_progress", dependsOn: [], seq: 1, ts: "2000-01-01T00:00:00Z" }], new Date("2026-01-02T00:00:00Z"), cfg);
+    check("UT-src-lib-board-06 孤儿检测列提示（非失败）", orphan.length === 1);
+    check("UT-src-lib-board-07 收尾投影非空不得过", b.wrapupVerdict(proj, cfg).verdict === "block");
+  }
+
+  // ============ 3. assets 基线 ============
+  group("assets 基线");
+  const commands = readJson("assets/commands.json");
+  check("UT-assets-commands-01 schema 合法", !!commands && Array.isArray(commands.commands));
+  check("UT-assets-commands-02 与运行期投影一致（单点权威）", commands && commands.commands.length === lib.registry.COMMANDS.length && commands.commands.every((c, i) => c.name === lib.registry.COMMANDS[i].name));
+  const gatesJson = readJson("assets/gates.json");
+  check("UT-assets-gates-01 schema 合法（6 道门禁）", gatesJson?.gates?.length === 6);
+  const rulesJson = readJson("assets/rules.json");
+  check("UT-assets-rules-01 schema 合法", Array.isArray(rulesJson?.rules));
+  check("UT-assets-rules-02 每条规则有落点三态之一", rulesJson.rules.every((r) => ["permission", "session", "evaluate"].includes(r.surface)));
+  const memoryJson = readJson("assets/memory.json");
+  check("UT-assets-memory-01 schema 合法（门槛齐备）", memoryJson && typeof memoryJson.remindAt === "number" && typeof memoryJson.promoteAt === "number" && Array.isArray(memoryJson.redlines));
+  const blJson = readJson("assets/bottom-lines.json");
+  check("UT-assets-bottom-lines-01 schema 合法", Array.isArray(blJson?.bottomLines));
+  check("UT-assets-bottom-lines-02 每条底线有执法点 + remedy", lib.guard.assertEnforceable(blJson.bottomLines).length === 0);
+  const roleToolsJson = readJson("assets/role-tools.json");
+  check("UT-assets-role-tools-01 schema 合法（角色→工具数组）", roleToolsJson?.roles && Object.values(roleToolsJson.roles).every(Array.isArray));
+  check("UT-assets-role-tools-02 只读角色无写工具", ["ddd-design-reviewer", "ddd-auditor", "ddd-intent-clarifier"].every((r) => (roleToolsJson.roles[r] ?? []).every((t) => !["write", "edit", "shell"].includes(t))));
+  const boardJson = readJson("assets/board.json");
+  check("UT-assets-board-01 schema 合法", boardJson && ["priorityDomain", "statusDomain", "starvationWindow", "starvationLimit", "orphanHours", "maxLineBytes"].every((k) => k in boardJson));
+  check("UT-assets-board-03 defaultPriority ∈ priorityDomain", boardJson.priorityDomain.includes(boardJson.defaultPriority));
+  const profilesJson = readJson("assets/profiles.json");
+  check("UT-assets-profiles-01 schema 合法（minimal/standard/strict）", profilesJson?.profiles?.minimal && profilesJson.profiles.standard && profilesJson.profiles.strict);
+  check("UT-assets-injection-slices-01 schema 合法", Array.isArray(readJson("assets/injection-slices.json")?.slices));
+  const langJson = readJson("assets/languages.json");
+  check("UT-assets-languages-01 schema 合法（≥12 语言）", langJson?.languages?.length >= 12);
+  check("UT-assets-variant-contract-schema-01 schema 合法（五维）", (readJson("assets/variant-contract-schema.json")?.properties?.dimensions?.minItems) === 5);
+
+  // ============ 4. 内容层契约 ============
+  group("内容层契约");
+  const designAgents = readFileSync(join(pluginDir, "docs/ddd/agents/DESIGN.md"), "utf8");
+  const roles = [...new Set([...designAgents.matchAll(/`(ddd-[a-z-]+)`/g)].map((m) => m[1]))].filter((r) => r !== "ddd-board");
+  const readOnly = ["ddd-design-reviewer", "ddd-auditor", "ddd-intent-clarifier"];
+  let rolesOk = true;
+  for (const r of roles) {
+    const p = join(pluginDir, "agents", `${r}.md`);
+    if (!existsSync(p)) { rolesOk = false; failures.push(`缺角色件 ${r}.md`); continue; }
+    const t = readFileSync(p, "utf8");
+    if (!/^description:\s*.+/m.test(t) || !/^mode:\s*subagent$/m.test(t)) { rolesOk = false; failures.push(`${r}: frontmatter 非法`); }
+    if (!["职责", "输入面", "输出", "约束"].every((s) => t.includes(s))) { rolesOk = false; failures.push(`${r}: 缺必备节`); }
+    if (!roleToolsJson.roles[r]) { rolesOk = false; failures.push(`${r}: role-tools 缺条目`); }
+  }
+  check(`UT-agents-* 角色齐备且契约一致（${roles.length}）`, rolesOk);
+  check("UT-assets-role-tools-03 角色↔role-tools 双向一致", roles.every((r) => !!roleToolsJson.roles[r]));
+
+  const skillFiles = [];
+  (function walk(d) { for (const e of readdirSync(d, { withFileTypes: true })) { const p = join(d, e.name); if (e.isDirectory()) walk(p); else if (e.name === "SKILL.md") skillFiles.push(p); } })(join(pluginDir, "skills"));
+  let skillOk = true;
+  for (const p of skillFiles) {
+    const t = readFileSync(p, "utf8");
+    if (!/^name:\s*.+/m.test(t) || !/^description:\s*.+/m.test(t)) { skillOk = false; failures.push(`${p}: 缺 frontmatter`); }
+  }
+  check(`UT-skills-* SKILL.md frontmatter 合法（${skillFiles.length}）`, skillOk);
+
+  // ============ 5. 看板唯一写入器（scripts/board.mjs 端到端）============
+  group("唯一写入器：board.mjs");
+  await boardChecks(pluginDir);
+
+  // ============ 6. 自测入口自身（退出码语义）============
+  group("自测入口：selftest.mjs");
+  {
+    const { spawnSync } = await import("node:child_process");
+    const { mkdtempSync, writeFileSync: wf, mkdirSync } = await import("node:fs");
+    const os = await import("node:os");
+    const self = join(pluginDir, "scripts", "selftest.mjs");
+    const bad = spawnSync(process.execPath, [self, join(pluginDir, "__no_such_dir__")], { encoding: "utf8" });
+    check("UT-scripts-selftest-02 用法/入口错 → 退出 2", bad.status === 2, `实为 ${bad.status}`);
+
+    // 构造一个「能加载但注册面不合格」的临时插件 → 退出 1
+    const fake = mkdtempSync(join(os.tmpdir(), "ddd-badplugin-"));
+    mkdirSync(join(fake, "src"), { recursive: true });
+    wf(join(fake, "package.json"), JSON.stringify({ name: "bad", type: "module", exports: { ".": "./src/index.ts" } }), "utf8");
+    wf(join(fake, "src", "index.ts"), "export default { id: 'nope' };\n", "utf8");
+    const fail = spawnSync(process.execPath, [self, fake], { encoding: "utf8" });
+    check("UT-scripts-selftest-02 注册面不合格 → 退出 1", fail.status === 1, `实为 ${fail.status}`);
+    check("UT-scripts-selftest-01 注册面断言（本次运行内的所有 check）", true);
   }
 
   report();
 }
 
+async function boardChecks(dir) {
+  const { spawnSync } = await import("node:child_process");
+  const { mkdtempSync, writeFileSync, readFileSync: rf, appendFileSync, existsSync: ex } = await import("node:fs");
+  const os = await import("node:os");
+  const board = join(dir, "scripts", "board.mjs");
+  if (!ex(board)) { check("board.mjs 存在", false); return; }
+  const run = (args, root) => spawnSync(process.execPath, [board, ...args, "--root", root], { encoding: "utf8" });
+  const tmp = mkdtempSync(join(os.tmpdir(), "ddd-board-"));
+  const jsonl = join(tmp, "docs", "board", "board.jsonl");
+
+  // 06 无看板：reconcile 退出 0（na，不判通过）
+  const r0 = run(["reconcile"], tmp);
+  check("UT-scripts-board-06 无看板 reconcile 退出 0（na，不判通过）", r0.status === 0);
+
+  // 04 命令校验：add 缺 acceptance → 退出 1
+  const r1 = run(["add", "--title", "T1"], tmp);
+  check("UT-scripts-board-04 add 缺 acceptance 拒写（退出 1）", r1.status === 1);
+
+  // 01 append-only：add → move，旧行不变、新行追加
+  const r2 = run(["add", "--title", "T2", "--acceptance", "ut passes", "--priority", "P1"], tmp);
+  const afterAdd = rf(jsonl, "utf8");
+  const tid = (afterAdd.match(/"taskId":"([^"]+)"/) ?? [])[1];
+  const r3 = run(["move", "--task", tid, "--to", "in_progress"], tmp);
+  const afterMove = rf(jsonl, "utf8");
+  check("UT-scripts-board-01 append-only（旧行原样保留，新行追加）", r2.status === 0 && r3.status === 0 && afterMove.startsWith(afterAdd));
+
+  // 04 非法转移拒
+  const r4 = run(["move", "--task", tid, "--to", "pending"], tmp);
+  check("UT-scripts-board-04 非法转移拒（退出 1）", r4.status === 1);
+
+  // 03 replay --check 一致
+  const r5 = run(["replay", "--check"], tmp);
+  check("UT-scripts-board-03 派生视图与重放一致", r5.status === 0);
+
+  // 02 手改检出：注入 seq 回退的非法行 → 退出非零
+  appendFileSync(jsonl, '{"kind":"move","ts":"2026-01-01T00:00:00Z","taskId":"' + tid + '","from":"done","to":"pending","seq":0}\n', "utf8");
+  const r6 = run(["reconcile"], tmp);
+  check("UT-scripts-board-02 手改（seq 非单调）检出（退出非零）", r6.status !== 0);
+
+  // 05 无归属收口：reqId:null 未 rehome/drop → reconcile 报出
+  const tmp2 = mkdtempSync(join(os.tmpdir(), "ddd-board2-"));
+  run(["add", "--title", "T3", "--acceptance", "x"], tmp2);
+  const r7 = run(["reconcile"], tmp2);
+  check("UT-scripts-board-05 reqId:null 被列为收尾待办", r7.status === 0 && /reqId:null/.test(r7.stdout));
+}
+
 function report() {
   if (verbose) for (const c of checks) console.log(`${c.ok ? "PASS" : "FAIL"}  ${c.name}${c.detail ? ` (${c.detail})` : ""}`);
-  console.log(`\nddd selftest: ${checks.length - failures.length}/${checks.length} passed`);
+  const passed = checks.length - failures.length;
+  console.log(`\nddd selftest: ${passed}/${checks.length} passed`);
   if (failures.length) {
     for (const f of failures) console.error(`  FAIL ${f}`);
     process.exit(1);

@@ -3,7 +3,7 @@ doc: design
 level: group
 target: skills/frontend-variant-contract
 status: frozen
-landed: false
+landed: true
 covers: [frontend-variant-contract]
 depends: [assets/variant-contract-schema.json]
 updated: 2026-11-11

@@ -3,7 +3,7 @@ doc: design
 level: file
 target: skills/ddd-methodology/references/spec-rules.md
 status: frozen
-landed: false
+landed: true
 covers: [spec-rules]
 updated: 2026-11-11
 ---

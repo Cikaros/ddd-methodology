@@ -3,7 +3,7 @@ doc: design
 level: file
 target: assets/injection-slices.json
 status: frozen
-landed: false
+landed: true
 covers: [injection-slices]
 depends: [src/lib/router.ts]
 updated: 2026-11-11

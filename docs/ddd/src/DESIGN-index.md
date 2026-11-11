@@ -3,7 +3,7 @@ doc: design
 level: file
 target: src/index.ts
 status: frozen
-landed: false
+landed: true
 covers: [Plugin.define, setup]
 depends: [src/lib/registry.ts, src/lib/paths.ts, src/rpc.ts]
 updated: 2026-11-11

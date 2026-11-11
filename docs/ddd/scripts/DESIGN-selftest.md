@@ -3,7 +3,7 @@ doc: design
 level: file
 target: scripts/selftest.mjs
 status: frozen
-landed: false
+landed: true
 covers: [selftest]
 depends: [src/index.ts, src/lib/registry.ts]
 updated: 2026-11-11

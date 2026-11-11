@@ -3,7 +3,7 @@ doc: design
 level: file
 target: assets/bottom-lines.json
 status: frozen
-landed: false
+landed: true
 covers: [bottom-lines]
 depends: [src/lib/guard.ts]
 updated: 2026-11-11

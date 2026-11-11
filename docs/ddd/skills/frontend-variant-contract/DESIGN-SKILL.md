@@ -3,7 +3,7 @@ doc: design
 level: file
 target: skills/frontend-variant-contract/SKILL.md
 status: frozen
-landed: false
+landed: true
 covers: [frontend-variant-skill]
 updated: 2026-11-11
 ---

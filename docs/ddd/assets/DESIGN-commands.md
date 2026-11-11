@@ -3,7 +3,7 @@ doc: design
 level: file
 target: assets/commands.json
 status: frozen
-landed: false
+landed: true
 covers: [commands-registry]
 depends: [src/lib/registry.ts]
 updated: 2026-11-11

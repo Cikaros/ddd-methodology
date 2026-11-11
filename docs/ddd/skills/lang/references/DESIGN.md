@@ -1,9 +1,9 @@
 ---
 doc: design
 level: group
-target: skills/lang/references
+target: skills/lang/<id>/references
 status: frozen
-landed: false
+landed: true
 covers: [lang-references]
 updated: 2026-11-11
 ---
