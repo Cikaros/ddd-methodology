@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: src/lib/board.ts
-status: draft
+status: frozen
 landed: false
 covers: [BoardRow, project, canTransition, admit, detectOrphans]
 depends: [assets/board.json]

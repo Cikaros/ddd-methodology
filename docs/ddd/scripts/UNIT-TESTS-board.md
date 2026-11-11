@@ -2,7 +2,7 @@
 doc: unit-tests
 level: file
 target: scripts/board.mjs
-status: draft
+status: frozen
 landed: false
 depends: [scripts/DESIGN-board.md]
 updated: 2026-11-11

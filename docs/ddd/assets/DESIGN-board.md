@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: assets/board.json
-status: draft
+status: frozen
 landed: false
 covers: [board-config]
 depends: [src/lib/board.ts]

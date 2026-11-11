@@ -2,7 +2,7 @@
 doc: unit-tests
 level: file
 target: assets/board.json
-status: draft
+status: frozen
 landed: false
 depends: [assets/DESIGN-board.md]
 updated: 2026-11-11

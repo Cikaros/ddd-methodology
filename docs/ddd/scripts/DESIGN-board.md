@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: scripts/board.mjs
-status: draft
+status: frozen
 landed: false
 covers: [board-writer]
 depends: [src/lib/board.ts, assets/board.json]
