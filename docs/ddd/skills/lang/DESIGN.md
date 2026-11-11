@@ -2,7 +2,7 @@
 doc: design
 level: group
 target: skills/lang
-status: draft
+status: frozen
 landed: false
 covers: [lang-family]
 depends: [assets/languages.json]

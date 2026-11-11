@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: assets/bottom-lines.json
-status: draft
+status: frozen
 landed: false
 covers: [bottom-lines]
 depends: [src/lib/guard.ts]

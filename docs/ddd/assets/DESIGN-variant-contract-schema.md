@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: assets/variant-contract-schema.json
-status: draft
+status: frozen
 landed: false
 covers: [variant-contract-schema]
 updated: 2026-11-11

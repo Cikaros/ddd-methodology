@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: src/lib/gates.ts
-status: draft
+status: frozen
 landed: false
 covers: [Verdict, GateReading, ProjectState, gates, summarize, canAdvance]
 updated: 2026-11-11

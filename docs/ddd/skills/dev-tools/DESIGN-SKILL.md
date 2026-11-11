@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: skills/dev-tools/SKILL.md
-status: draft
+status: frozen
 landed: false
 covers: [skill]
 updated: 2026-11-11

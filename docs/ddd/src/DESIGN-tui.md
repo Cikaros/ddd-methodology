@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: src/tui.tsx
-status: draft
+status: frozen
 landed: false
 covers: [Plugin.define]
 depends: [src/rpc.ts]

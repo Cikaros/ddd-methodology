@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: scripts/selftest.mjs
-status: draft
+status: frozen
 landed: false
 covers: [selftest]
 depends: [src/index.ts, src/lib/registry.ts]

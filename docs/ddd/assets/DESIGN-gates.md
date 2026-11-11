@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: assets/gates.json
-status: draft
+status: frozen
 landed: false
 covers: [gates]
 depends: [src/lib/gates.ts]

@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: assets/injection-slices.json
-status: draft
+status: frozen
 landed: false
 covers: [injection-slices]
 depends: [src/lib/router.ts]

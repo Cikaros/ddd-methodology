@@ -2,7 +2,7 @@
 doc: design
 level: group
 target: skills/lang/references
-status: draft
+status: frozen
 landed: false
 covers: [lang-references]
 updated: 2026-11-11

@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: agents/ddd-consolidator.md
-status: draft
+status: frozen
 landed: false
 covers: [agent]
 updated: 2026-11-11

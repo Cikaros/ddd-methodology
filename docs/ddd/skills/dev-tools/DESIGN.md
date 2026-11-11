@@ -2,7 +2,7 @@
 doc: design
 level: group
 target: skills/dev-tools
-status: draft
+status: frozen
 landed: false
 covers: [dev-tools]
 updated: 2026-11-11

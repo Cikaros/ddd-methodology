@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: assets/languages.json
-status: draft
+status: frozen
 landed: false
 covers: [languages-catalog]
 depends: [skills/lang/DESIGN-SKILL-TEMPLATE.md]

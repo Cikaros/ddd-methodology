@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: src/index.ts
-status: draft
+status: frozen
 landed: false
 covers: [Plugin.define, setup]
 depends: [src/lib/registry.ts, src/lib/paths.ts, src/rpc.ts]

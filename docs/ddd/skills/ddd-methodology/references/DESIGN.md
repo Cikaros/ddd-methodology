@@ -2,7 +2,7 @@
 doc: design
 level: group
 target: skills/ddd-methodology/references
-status: draft
+status: frozen
 landed: false
 updated: 2026-11-11
 ---

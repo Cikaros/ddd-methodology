@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: src/lib/paths.ts
-status: draft
+status: frozen
 landed: false
 covers: [packageRoot, projectRoot, packagePath, projectPath, within]
 updated: 2026-11-11

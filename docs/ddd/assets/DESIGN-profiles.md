@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: assets/profiles.json
-status: draft
+status: frozen
 landed: false
 covers: [profiles]
 updated: 2026-11-11

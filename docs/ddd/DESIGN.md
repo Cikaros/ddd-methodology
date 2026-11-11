@@ -2,7 +2,7 @@
 doc: design
 level: subproject
 target: .
-status: draft
+status: frozen
 landed: false
 updated: 2026-11-11
 ---

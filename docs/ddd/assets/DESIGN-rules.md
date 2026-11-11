@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: assets/rules.json
-status: draft
+status: frozen
 landed: false
 covers: [rules]
 depends: [src/index.ts]

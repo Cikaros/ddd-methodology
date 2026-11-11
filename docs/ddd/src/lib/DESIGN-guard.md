@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: src/lib/guard.ts
-status: draft
+status: frozen
 landed: false
 covers: [evaluateBottomLines, BottomLine, Enforcement]
 updated: 2026-11-11

@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: skills/ddd-methodology/references/spec-design.md
-status: draft
+status: frozen
 landed: false
 covers: [spec-design]
 updated: 2026-11-11

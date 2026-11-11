@@ -2,7 +2,7 @@
 doc: design
 level: file
 target: assets/commands.json
-status: draft
+status: frozen
 landed: false
 covers: [commands-registry]
 depends: [src/lib/registry.ts]

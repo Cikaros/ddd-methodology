@@ -2,7 +2,7 @@
 doc: design
 level: group
 target: skills/frontend-variant-contract/references
-status: draft
+status: frozen
 landed: false
 covers: [frontend-variant-references]
 updated: 2026-11-11
