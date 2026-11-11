@@ -3,7 +3,7 @@ doc: requirement
 type: new
 name: hermess-redesign
 status: frozen
-targetVersion: 2.0.0
+targetVersion: 1.0.0
 ---
 
 # 需求：基于 OpenCode Plugin 的分治式设计驱动开发方法论
@@ -311,7 +311,7 @@ targetVersion: 2.0.0
 | 5 | 交付 part 面 | **server + tui + rpc 三 part，GUI 不纳入** |
 | 6 | 命令入口主形态 | **静态命令用 `.opencode/commands/*.md`；需读项目状态或挂 hook 的命令用 `ctx.command.transform`** |
 | 7 | 参考库纳入方式 | **只引用，不拷入本仓** |
-| 8 | `reqId` 与版本位 | **沿用 `hermess-redesign`；`targetVersion: 2.0.0`**（宿主更换属全局重构性变更） |
+| 8 | `reqId` 与版本位 | **沿用 `hermess-redesign`；`targetVersion: 1.0.0`**（宿主更换属全局重构性变更） |
 | 9 | 场景三反推件是否可直接 `frozen` | **不可**；只能 `draft`，核对后转正向再冻结 |
 | 10 | 场景二 Todo 记账处 | **本项目看板**（宿主 `todowrite` 仅作临时便签，不产生 `acceptance`） |
 | 11 | 「冻结即归并」立项 | **立项为承重机制 M12**（见设计 §承重机制）；三个触发点＝需求冻结／设计冻结／代码冻结 |

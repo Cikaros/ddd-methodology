@@ -51,9 +51,9 @@
 
 | 落点 | 值 |
 |---|---|
-| ① `package.json` `version` | `2.0.0` |
-| ② 变更流记录 | `CHG-0001`（`version: v2.0.0`） |
-| ③ 使用者钉版声明 | 待使用者项目声明（`@cikaros/ddd-methodology@2.0.0`）；本仓自身以 `package.json` 为权威 |
+| ① `package.json` `version` | `1.0.0` |
+| ② 变更流记录 | `CHG-0001`（`version: v1.0.0`） |
+| ③ 使用者钉版声明 | 待使用者项目声明（`@cikaros/ddd-methodology@1.0.0`）；本仓自身以 `package.json` 为权威 |
 
 ## 五、诚实界定（未做/待核）
 
