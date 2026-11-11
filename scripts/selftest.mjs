@@ -11,7 +11,7 @@
  * 退出码：0 全过；1 有失败；2 用法/入口错。
  */
 
-import { readFileSync, existsSync, readdirSync, mkdtempSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, mkdtempSync, rmSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
 import os from "node:os";
@@ -33,7 +33,20 @@ function check(name, cond, detail) {
 
 // 隔离沙箱：mock ctx.location 指向它，避免命令 handler（如 /ddd-init 会真跑 scaffold）
 // 把骨架写进本仓（自测不得污染权威件）。
-const SBX = mkdtempSync(join(os.tmpdir(), "ddd-selftest-"));
+// 所有临时目录登记于 TMP_DIRS，退出时一律清理（自测不得残留临时文件）。
+const TMP_DIRS = [];
+function mkTmp(prefix) {
+  const d = mkdtempSync(join(os.tmpdir(), prefix));
+  TMP_DIRS.push(d);
+  return d;
+}
+function cleanTmp() {
+  for (const d of TMP_DIRS.splice(0)) {
+    try { rmSync(d, { recursive: true, force: true }); } catch { /* best-effort */ }
+  }
+}
+process.on("exit", cleanTmp);
+const SBX = mkTmp("ddd-selftest-");
 
 function makeMockCtx(options) {
   const registrations = { commands: [], skills: [], hooks: {}, rpc: null, cleanups: [], asserts: [], created: [], switched: [], prompts: [] };
@@ -340,9 +353,9 @@ async function main() {
   group("物化与骨架：materialize.mjs / scaffold.mjs");
   {
     const { spawnSync } = await import("node:child_process");
-    const { mkdtempSync, existsSync: ex, readdirSync: rd } = await import("node:fs");
+    const { existsSync: ex, readdirSync: rd } = await import("node:fs");
     const os = await import("node:os");
-    const tmp = mkdtempSync(join(os.tmpdir(), "ddd-scaffold-"));
+    const tmp = mkTmp("ddd-tools-");
     const run = (name, args, root) => spawnSync(process.execPath, [join(pluginDir, "scripts", name), ...args, "--root", root], { encoding: "utf8" });
 
     // materialize:agents
@@ -361,7 +374,7 @@ async function main() {
     const s2 = run("scaffold.mjs", [], tmp);
     check("UT-scripts-scaffold-02 幂等（二次不覆盖）", s2.status === 0 && /跳过\s*\d+/.test(s2.stdout));
     // R12：第四件根文档 → 报错
-    const tmpR = mkdtempSync(join(os.tmpdir(), "ddd-r12-"));
+    const tmpR = mkTmp("ddd-r12-");
     const { writeFileSync: wf2 } = await import("node:fs");
     wf2(join(tmpR, "EXTRA.md"), "x", "utf8");
     const s3 = run("scaffold.mjs", [], tmpR);
@@ -372,14 +385,14 @@ async function main() {
   group("自测入口：selftest.mjs");
   {
     const { spawnSync } = await import("node:child_process");
-    const { mkdtempSync, writeFileSync: wf, mkdirSync } = await import("node:fs");
+    const { writeFileSync: wf, mkdirSync } = await import("node:fs");
     const os = await import("node:os");
     const self = join(pluginDir, "scripts", "selftest.mjs");
     const bad = spawnSync(process.execPath, [self, join(pluginDir, "__no_such_dir__")], { encoding: "utf8" });
     check("UT-scripts-selftest-02 用法/入口错 → 退出 2", bad.status === 2, `实为 ${bad.status}`);
 
     // 构造一个「能加载但注册面不合格」的临时插件 → 退出 1
-    const fake = mkdtempSync(join(os.tmpdir(), "ddd-badplugin-"));
+    const fake = mkTmp("ddd-badplugin-");
     mkdirSync(join(fake, "src"), { recursive: true });
     wf(join(fake, "package.json"), JSON.stringify({ name: "bad", type: "module", exports: { ".": "./src/index.ts" } }), "utf8");
     wf(join(fake, "src", "index.ts"), "export default { id: 'nope' };\n", "utf8");
@@ -393,12 +406,12 @@ async function main() {
 
 async function boardChecks(dir) {
   const { spawnSync } = await import("node:child_process");
-  const { mkdtempSync, writeFileSync, readFileSync: rf, appendFileSync, existsSync: ex } = await import("node:fs");
+  const { writeFileSync, readFileSync: rf, appendFileSync, existsSync: ex } = await import("node:fs");
   const os = await import("node:os");
   const board = join(dir, "scripts", "board.mjs");
   if (!ex(board)) { check("board.mjs 存在", false); return; }
   const run = (args, root) => spawnSync(process.execPath, [board, ...args, "--root", root], { encoding: "utf8" });
-  const tmp = mkdtempSync(join(os.tmpdir(), "ddd-board-"));
+  const tmp = mkTmp("ddd-board-");
   const jsonl = join(tmp, "docs", "board", "board.jsonl");
 
   // 06 无看板：reconcile 退出 0（na，不判通过）
@@ -431,7 +444,7 @@ async function boardChecks(dir) {
   check("UT-scripts-board-02 手改（seq 非单调）检出（退出非零）", r6.status !== 0);
 
   // 05 无归属收口：reqId:null 未 rehome/drop → reconcile 报出
-  const tmp2 = mkdtempSync(join(os.tmpdir(), "ddd-board2-"));
+  const tmp2 = mkTmp("ddd-board2-");
   run(["add", "--title", "T3", "--acceptance", "x"], tmp2);
   const r7 = run(["reconcile"], tmp2);
   check("UT-scripts-board-05 reqId:null 被列为收尾待办", r7.status === 0 && /reqId:null/.test(r7.stdout));
@@ -439,11 +452,11 @@ async function boardChecks(dir) {
 
 async function toolChecks(dir) {
   const { spawnSync } = await import("node:child_process");
-  const { mkdtempSync, writeFileSync: wf, readFileSync: rf, existsSync: ex, mkdirSync } = await import("node:fs");
+  const { writeFileSync: wf, readFileSync: rf, existsSync: ex, mkdirSync } = await import("node:fs");
   const os = await import("node:os");
   const T = (name) => join(dir, "scripts", name);
   const run = (name, args, root) => spawnSync(process.execPath, [T(name), ...args, "--root", root], { encoding: "utf8" });
-  const tmp = mkdtempSync(join(os.tmpdir(), "ddd-tools-"));
+  const tmp = mkTmp("ddd-scaffold-");
   mkdirSync(join(tmp, "docs", "ddd", "src"), { recursive: true });
   // 种子：最小设计树（使 snapshot 有判定对象）
   wf(join(tmp, "docs", "ddd", "DESIGN.md"), "---\ndoc: design\nlevel: subproject\ntarget: .\nstatus: frozen\nlanded: true\n---\n# sub\n", "utf8");
