@@ -215,6 +215,8 @@ targetVersion: 2.0.0
 
 > 上表是**全集**；三类场景各自只走其中一段（入口与步子见 §一之附）。`--from-code` 只属场景三，且反推件须核对后方可继续。`/ddd-consolidate` 在**需求冻结、设计冻结、代码冻结**三处各触发一次（§六.4）。
 
+> **命令→子代理**（R64）：命令是稳定接口，各节点的具体工作由 `agents/` 的**子代理角色**以子会话承担（上下文隔离）；命令名不变即可替换实现。
+
 ### 6.2 门禁
 
 | 编号 | 门禁 | 执行者 | 通过判据 |
@@ -376,7 +378,7 @@ ddd-methodology/
 │   ├── frontend-variant-contract/  # 前端通用技能：变体契约奠基（第 0 步）
 │   ├── lang/<id>/          # 语言规范技能族（html/css/js/vue/java/python/shell/android/sql/c/cpp/nasm）
 │   └── dev-tools/          # 常用开发工具使用规范（含各语言关联工具）
-├── agents/                 # 模块：随包代理定义（md）；含 ddd-consolidator（mode: subagent）
+├── agents/                 # 模块：随包子代理角色（md，mode: subagent）；角色清单见 docs/ddd/agents/DESIGN.md
 ├── .gitignore              # 项目层：node_modules 等不入版本控制
 ├── .gitattributes          # 项目层：文本统一 LF
 ├── package-lock.json       # 项目层：依赖锁定

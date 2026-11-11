@@ -13,7 +13,7 @@ targetVersion: 2.0.0
 
 本件是本方法论（Hermess 2.0）的**需求基线**，宿主为 **OpenCode**。设计见 `docs/OUTLINE-DESIGN.md`；术语以 `docs/GLOSSARY.md` 为准（由本方法论初始化时生成）。
 
-本件结构：一、定位；二、适用场景；三、目标与非目标；四、需求条目（R1–R63，每条含可判定线索）；五、需求剪裁；六、补充需求；七、裁决记录；八、验收线索。
+本件结构：一、定位；二、适用场景；三、目标与非目标；四、需求条目（R1–R64，每条含可判定线索）；五、需求剪裁；六、补充需求；七、裁决记录；八、验收线索。
 
 ---
 
@@ -122,6 +122,7 @@ targetVersion: 2.0.0
 | R23 | 节点序列：`/ddd-init`／`intent`／`arch`／`design`／`review`／`test-design`／`implement`／`test`／`validate`／`change`／`map`／`wrapup`（另有仅场景三的 `design --from-code`） | 命令名稳定；注册表与命令入口双向对账零失败 |
 | R24 | 六道门禁 G1–G6：需求冻结／架构就位／设计树同构／测试树覆盖／落地非空／收尾清空 | 各门禁的执行者与通过判据明确；退出码可读 |
 | R25 | 判据与反证成对：每条机械判据配一件注入式违规样本，判据在反证下不沉默才算成立 | 反证集与机械判据集双向对账，缺任一侧即失败 |
+| R64 | **开发流程子代理角色**：为各节点定义 `mode: subagent` 的子代理角色（intent-clarifier／architect／designer／design-reviewer／test-designer／implementer／tester／auditor／consolidator／curator），角色清单为单一权威；命令为稳定接口、代理为实现；子代理上下文隔离防漂移 | 每角色有定义且 `mode: subagent`；命令→角色派发可读；输入面显式受限 |
 
 ### 庚、需求与变更
 
