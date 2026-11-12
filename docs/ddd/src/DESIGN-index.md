@@ -34,7 +34,9 @@ updated: 2026-11-11
 - **M5 意图确认（§9.5 分职责）**：阻塞节点（概要 §6.1 ▲：`ddd-intent`/`ddd-arch`/`ddd-wrapup`/`ddd-consolidate`）在推进前调用 `ctx.permission.assert` 取**阻塞式确认**（过闸机：可中止/可记忆/远程恒可用）；被拒即中止该步，不静默降级。TUI 侧 `dialog.select/prompt` 只承担**输入采集**（选场景、收四问），与 assert **确认点不重叠**（见 `DESIGN-tui.md`）。
 - 技能：`ctx.skill.transform` 注册 `SKILLS`，`path` 取**包根**相对路径。
 - RPC：`ctx.rpc.register(Ddd, { gates, board })`。
-- hook：`ctx.session.hook("prompt", ...)` 注入随包上下文，**幂等**（以标记串判重，§9.3）。
+- hook：`ctx.session.hook("prompt", ...)` **只做意图探测**（写 `ctx.storage` 的 `ddd:intent`），**不改用户消息正文**；纪律与切片经 `ctx.session.instructions.entry.put`（**键控** `ddd.discipline`／`ddd.phase`，渲染 `<context key>`，不占轮次、用户不可见）+ `ctx.session.hook("context", ...)` 注入。
+  - **键名约束（宿主）**：`^[a-z0-9][a-z0-9._-]*$`——**不含冒号**（`ddd.discipline` 合法，`ddd:discipline` 会被拒收）。
+  - 幂等靠**键控**（同键重复写＝更新/替换），**不再用正文哨兵** `<!--ddd:core-->`。
 - **角色工具面强制（Q4）**：`ctx.session.hook("context", ...)` 按 `event.agent` 删除不在 `assets/role-tools.json` 白名单的工具（`delete event.tools[x]`）；同时 `ctx.permission.hook("evaluate", ...)` 做运行时 deny 兜底（fail-safe）。
 - **记忆注入与复发统计（M6）**：`ctx.session.hook("context")` 注入 topN + 候选提示；`ctx.tool.hook("execute.before")` 匹配 `trigger` 计 `occur`；`ctx.event.subscribe(["session.deleted"])` 触发 `decay`。
 - **看板（M7）**：`/ddd-board list|add|move|evidence|drop|rehome` 由 `COMMANDS` 注册；`ctx.session.hook("context")` 注入看板摘要（待办/进行/阻塞）；`ctx.tool.hook("execute.after")` 自动挂 `evidence`；G6 要求活跃投影为空。
@@ -51,7 +53,8 @@ updated: 2026-11-11
 |---|---|
 | `ctx.command.transform / ctx.skill.transform` | 注册面编辑（同步回调，返回 `Registration`） |
 | `ctx.rpc.register` | 注册 RPC 实现 |
-| `ctx.session.hook("prompt")` | 准入注入（幂等） |
+| `ctx.session.hook("prompt")` | 意图探测（写 `ddd:intent`）；**不注入、不改消息正文** |
+| `ctx.session.instructions.entry.put` | 纪律/切片**键控**注入（`ddd:discipline`/`ddd:<sliceId>`；渲染 `<context key>`；不占轮次） |
 | `ctx.session.prompt` | 命令把内容送进会话（**默认同会话**路径） |
 | `ctx.permission.assert` | 阻塞式确认（M5；§9.5 分职责，server 侧） |
 | `ctx.session.create` / `ctx.session.switchAgent` | Q3 **隔离例外**子会话派发（仅 review/validate/consolidate） |

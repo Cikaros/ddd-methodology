@@ -40,3 +40,11 @@
 - 本次不做：不改命令名/参数/门禁语义；Q4 在同会话路径下按当前 agent 生效
 - 怎么算做对：真跑 /ddd-design 不再产生 ddd/ddd-* 子会话；离线自测含「隔离例外恰为 3 条」断言
 - 涉及：assets/commands.json, src/index.ts, docs/OUTLINE-DESIGN.md, docs/REQUIREMENTS.md
+
+## v1.0.3 · CHG-0006 · fix
+
+- 时间：2026-11-12T06:10:06.440Z
+- 为什么做：M13 注入载体修正：纪律由「写主体正文+哨兵」改为 instructions.entry 键控注入（key=ddd.discipline，渲染 <context key>、不占轮次、用户不可见）；prompt hook 只做意图探测。修：键名冒号违反宿主正则、entry 可用时仍重复走 system 兜底
+- 本次不做：切片/看板/记忆仍走 context hook 的 event.system（每请求动态）；不改其内容
+- 怎么算做对：真跑：instructions.entries 含 ddd.discipline；模型在 <context key=ddd.discipline> 块内看到纪律；用户消息正文无哨兵/纪律；离线自测含键名正则与「只注入一处」断言
+- 涉及：src/index.ts, docs/OUTLINE-DESIGN.md, docs/ddd/src/DESIGN-index.md

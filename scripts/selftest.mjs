@@ -49,7 +49,7 @@ process.on("exit", cleanTmp);
 const SBX = mkTmp("ddd-selftest-");
 
 function makeMockCtx(options) {
-  const registrations = { commands: [], skills: [], hooks: {}, rpc: null, cleanups: [], asserts: [], created: [], switched: [], prompts: [] };
+  const registrations = { commands: [], skills: [], hooks: {}, rpc: null, cleanups: [], asserts: [], created: [], switched: [], prompts: [], entries: [] };
   const storage = new Map();
   const record = (dispose) => Promise.resolve({ dispose: () => Promise.resolve(dispose?.()) });
   const ctx = {
@@ -61,7 +61,7 @@ function makeMockCtx(options) {
     session: {
       hook: (n, cb) => { registrations.hooks[n] = cb; return record(); },
       prompt: async (input) => { registrations.prompts.push(input); },
-      instructions: { entry: { put: async () => {}, list: async () => [], remove: async () => {} } },
+      instructions: { entry: { put: async (input) => { registrations.entries.push(input); }, list: async () => [], remove: async () => {} } },
       create: async (input) => { registrations.created.push(input); return { id: "ses_child" }; },
       switchAgent: async (input) => { registrations.switched.push(input); },
       command: async () => {},
@@ -157,6 +157,36 @@ async function main() {
 
   // M5（§9.5）：阻塞节点推进前取阻塞式确认（server 侧 permission.assert）。
   check("UT-src-index-02 M5 阻塞确认（ddd-intent/arch/wrapup/consolidate 触发 assert）", registrations.asserts.length >= 4 && registrations.asserts.every((a) => /^ddd:/.test(a.action)));
+
+  // M13 注入载体（裁决：纪律走 instructions.entry 键控，不写用户消息正文）。
+  {
+    const promptHook = registrations.hooks["prompt"];
+    let promptUntouched = false;
+    if (typeof promptHook === "function") {
+      const ev = { sessionID: "ses_mock", prompt: { text: "用户原始输入" } };
+      await promptHook(ev);
+      promptUntouched = ev.prompt.text === "用户原始输入";
+    }
+    check("UT-src-index-05 prompt hook 不注入、不改用户消息正文", promptUntouched);
+
+    const ctxHook = registrations.hooks["context"];
+    let sysHasDiscipline = false;
+    if (typeof ctxHook === "function") {
+      const ev = { sessionID: "ses_mock", agent: "build", tools: {}, system: [] };
+      await ctxHook(ev);
+      sysHasDiscipline = ev.system.some((p) => typeof p.text === "string" && p.text.includes("文档为唯一权威"));
+    }
+    const coreEntry = registrations.entries.find((e) => e.key === "ddd.discipline");
+    check("UT-src-index-05 纪律经 instructions.entry 键控注入（key=ddd.discipline）", !!coreEntry && typeof coreEntry.value === "string" && coreEntry.value.includes("文档为唯一权威"));
+    // 恰好一处：entry 可用时不得再走 system 兜底（防重复注入）。
+    check("UT-src-index-05 纪律只注入一处（entry 可用时 system 不重复）", !!coreEntry && sysHasDiscipline === false);
+
+    const srcIndex = readFileSync(join(pluginDir, "src", "index.ts"), "utf8");
+    check("UT-src-index-05 已退役正文哨兵 <!--ddd:core-->（不再写 ev.prompt.text）", !/prompt\.text\s*=/.test(srcIndex) && !/<!--ddd:core-->/.test(srcIndex));
+    // instructions.entry 的 key 约束（宿主）：^[a-z0-9][a-z0-9._-]*$ → 不含冒号。
+    const entryKeys = [...srcIndex.matchAll(/instructions[^;]*?entry[^;]*?put\(\{[^}]*key:\s*"([^"]+)"/g)].map((m) => m[1]);
+    check("UT-src-index-05 instructions.entry 键名合法（无冒号，匹配宿主正则）", entryKeys.length > 0 && entryKeys.every((k) => /^[a-z0-9][a-z0-9._-]*$/.test(k)), entryKeys.join(","));
+  }
 
   // Q3 派发（裁决 16）：默认同会话；仅 review/validate/consolidate 建子会话（且带 parentID）。
   {

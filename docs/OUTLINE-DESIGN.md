@@ -431,8 +431,8 @@ ddd-methodology/
 
 | 钩子 / 事件 | 时机 | 动作 | 能否阻塞 |
 |---|---|---|---|
-| `session.hook("prompt")` | 用户 prompt 准入 | 注入随包上下文；脱敏；**幂等** | 否（无类型化拒绝 API） |
-| `session.hook("context")` | 每次模型请求前 | 注入看板摘要/坑点索引；`delete event.tools.X`；改 `event.options` | 否（只影响本次出站请求） |
+| `session.hook("prompt")` | 用户 prompt 准入 | **意图探测**（写 `ddd:intent` 到 `ctx.storage`）；**不注入**（不写 `ev.prompt.text`）；幂等 | 否（无类型化拒绝 API） |
+| `session.hook("context")` | 每次模型请求前 | 注入切片/看板摘要/坑点索引；`delete event.tools.X`；改 `event.options` | 否（只影响本次出站请求） |
 | `tool.hook("execute.before")` | 工具执行前 | 参数规范化/脱敏；替换 `event.input` | 否（拦走权限层） |
 | `tool.hook("execute.after")` | 工具成功/失败后 | 审计、打标、挂验收证据 | 否 |
 | `permission.hook("evaluate")` | 规则评估后、执行/弹窗前 | 企业策略/LLM 二次判断；置 effect/message；**fail-safe**；**在此自写留痕** | **是（置 deny）** |
@@ -614,7 +614,7 @@ ddd-methodology/
 | 补-9 | **审批风控**：LLM 二次判断、按路径/命令的企业策略 | `permission.hook("evaluate")`（fail-safe） | 危险动作在弹窗前被拦或升级 |
 | 补-10 | **离线自测面**：注册面可被 mock `ctx` 断言 | 随包 `selftest`（`node dist/lib/selftest.mjs <插件目录>`） | 无模型、无网络可回归 |
 | 补-11 | **上游漂移自省**：宿主文档/类型版本与结论绑定 | 哈希 manifest + reviewed 基线 | 宿主升级即知哪些结论需重读 |
-| 补-12 | **随包上下文注入**：把「关键纪律 + 随附片段」注入准入/请求 | `session.hook("prompt")`（幂等）与 `session.hook("context")` | 不写提示词的硬约束照旧（§三.7），注入只承担不可机械判定者 |
+| 补-12 | **随包上下文注入**：把「关键纪律 + 随附片段」注入准入/请求 | `ctx.session.instructions.entry.put`（**键控**、渲染 `<context key>`、不占轮次）＋ `session.hook("context")`（切片/看板/记忆）；`session.hook("prompt")` 只做意图探测 | 不写提示词的硬约束照旧（§三.7），注入只承担不可机械判定者；注入**不混入用户消息正文** |
 | 补-17 | **冻结即归并**：三类冻结各触发一次最终版优化转换，剔内联痕迹、重构为终稿 | `/ddd-consolidate`（server part 注册）＋ `agents/ddd-consolidator`（`mode: subagent`）；经 `subagent` 工具按模块/目录隔离 | 冻结件无内联痕迹（`CHG-####`/「本次修订」/`draft`）；归并前后契约逐字对账；归并留一条变更流 |
 | 补-18 | **前端变体契约（第 0 步）**：UI 生成前枚举合法变化空间 | `skills/frontend-variant-contract/`；`docs/variant-contract.json`（单点权威）；`theme-config` 重放生成；变体审计＝项目登记门禁 | 五维封闭枚举；`allowedTokenLayer`/`forbiddenCrossEffects`；入口仅 shell |
 | 补-19 | **自主注入（零手动提示）** | `src/lib/router.ts` ＋ `session.hook("context")`/`instructions.entry`；切片表 `assets/injection-slices.json` | 不输入 skill 名也注入；幂等、不占轮次 |
@@ -698,9 +698,12 @@ ddd-methodology/
 
 ### 19.3 注入（幂等、不占轮次、渐进式）
 
-- **键控**写入：`Id = ddd:<sliceId>`；同键重复写是**更新**，不重复注入；不产生对话轮。
+- **纪律走键控**：核心纪律用 `ctx.session.instructions.entry.put({ key: "ddd.discipline", value })`（渲染为 `<context key="ddd.discipline">` 块）——用户不可见、不占对话轮、**不混入用户消息正文**；同键重复写是**更新**（替换），天然幂等，**无需正文哨兵**。
+  - **键名约束（宿主）**：`^[a-z0-9][a-z0-9._-]*$`——**不含冒号**。故用 `ddd.discipline`／`ddd.phase`，**不要**写 `ddd:discipline`（含冒号会被 API 拒收而静默失效）。
+  - 键名用 `ddd.discipline` 而非 `ddd.core`，避免与切片 id `core`（渲染为 `[ddd:core]` 的 system 行）混淆（M10）。
+- **切片/看板/记忆走 `context` hook**：`session.hook("context")` 每请求重算相位/意图 → 推 `event.system`（`[ddd:<sliceId>]`／`[ddd:board]`／`[ddd:mem]`／`[ddd:self]`）。这些是**每请求动态**内容，不入 `instructions.entry`。
 - **最小切片**：只注入当前相位必需者；全文留 `skills/**/references/` 按需读（渐进式披露）。
-- **幂等键**：跨重试/并发用 `sessionID+sliceId`；`ctx.storage` 存去重游标。
+- **prompt hook 不注入**：`session.hook("prompt")` 只做**意图探测**（写 `ctx.storage` 的 `ddd:intent`），供 `context` hook 选片；**不改用户消息正文**（`ev.prompt.text` 保持原样）。
 
 ### 19.4 底线（guard，`src/lib/guard.ts` + `assets/bottom-lines.json`）
 

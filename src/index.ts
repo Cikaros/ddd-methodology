@@ -22,7 +22,9 @@ import { Ddd } from "./rpc.ts";
 type Json = Record<string, unknown>;
 type Registration = { dispose: () => Promise<void> | void };
 
-const MARKER = "<!--ddd:core-->";
+/** 核心纪律正文（单点）。经 `instructions.entry` 键控注入（key = `ddd.discipline`）。 */
+const CORE_DISCIPLINE =
+  "[ddd] 关键纪律：文档为唯一权威（先改文档再落地）；变更须落 CHANGELOG 三字段；执行规则必落可执行面；持久多步待办走看板（带 acceptance）。";
 
 function readJson(rel: string): Json | undefined {
   try {
@@ -149,12 +151,13 @@ function makeHandler(name: string, ctx: any, dispatchOf: Record<string, string>)
 
 async function putPhase(ctx: any, sessionID: string, phase: Phase): Promise<void> {
   try {
-    await ctx.storage.set(`ddd:phase:${sessionID}`, phase);
+    await ctx.storage.set(`ddd.phase.${sessionID}`, phase);
   } catch {
     /* storage 可选 */
   }
   try {
-    await ctx.session.instructions?.entry?.put({ sessionID, key: "ddd:phase", value: phase });
+    // 键名约束（宿主）：`^[a-z0-9][a-z0-9._-]*$`——不含冒号，故用 `ddd.phase`。
+    await ctx.session.instructions?.entry?.put({ sessionID, key: "ddd.phase", value: phase });
   } catch {
     /* instructions.entry 为实验性；不可用即降级 */
   }
@@ -245,7 +248,7 @@ export default Plugin.define({
       }),
     );
 
-    // —— M13 注入层：prompt 准入（幂等）——
+    // —— M13 注入层：prompt 准入只做**意图探测**（不注入、不改用户消息正文）——
     registrations.push(
       await ctx.session.hook("prompt", async (ev: any) => {
         try {
@@ -253,21 +256,43 @@ export default Plugin.define({
           const text: string = ev.prompt?.text ?? "";
           const intent = detectIntent(text, []);
           await ctx.storage.set(`ddd:intent:${sessionID}`, intent);
-          if (!text.includes(MARKER)) {
-            const header = `${MARKER}\n[ddd] 关键纪律：文档为唯一权威（先改文档再落地）；变更须落 CHANGELOG 三字段；执行规则必落可执行面；持久多步待办走看板（带 acceptance）。`;
-            ev.prompt.text = `${header}\n${text}`;
-          }
+          // 纪律经 instructions.entry 键控注入（见下），此处**不改** ev.prompt.text。
         } catch {
           /* prompt hook 非阻断 */
         }
       }),
     );
 
+    // —— M13 注入层：核心纪律经 instructions.entry **键控**注入（不占轮次、用户不可见、同键更新即幂等）——
+    // 注意：instructions.entry 需 sessionID；在 context hook（每次请求前）按当前会话键控写入。
+    // 纪律正文单点：CORE_DISCIPLINE。
+
     // —— M13 注入层 + M6 记忆 + M7 看板 + Q4 角色工具裁剪：context（每次请求前）——
     registrations.push(
       await ctx.session.hook("context", async (ev: any) => {
         try {
           const sessionID: string = ev.sessionID;
+          // M13：核心纪律经 instructions.entry **键控**注入（同键写＝更新，天然幂等、不占轮次、用户不可见）。
+          // 键名约束（宿主）：`^[a-z0-9][a-z0-9._-]*$`——**不含冒号**，故用 `ddd.discipline`。
+          // 每会话只写一次（避免每步重复“更新/公告”）；键控本身保证幂等。
+          // 只有 entry 面**不可用**时才回退到 system 兜底——不得两处都注入（防重复）。
+          let coreViaEntry = false;
+          if (typeof ctx.session?.instructions?.entry?.put === "function") {
+            try {
+              const seen = await ctx.storage.get(`ddd.core.set.${sessionID}`);
+              if (!seen) {
+                await ctx.session.instructions.entry.put({ sessionID, key: "ddd.discipline", value: CORE_DISCIPLINE });
+                await ctx.storage.set(`ddd.core.set.${sessionID}`, true);
+              }
+              coreViaEntry = true;
+            } catch {
+              coreViaEntry = false; /* entry 写失败 → 走 system 兜底 */
+            }
+          }
+          // 兜底：仅当 instructions.entry 面不可用时，纪律经 event.system 注入（每请求一次，不入用户消息正文）。
+          if (!coreViaEntry && Array.isArray(ev.system)) {
+            ev.system.push({ type: "text", text: CORE_DISCIPLINE } as (typeof ev.system)[number]);
+          }
           // Q4：请求级工具裁剪（主强制）。只读角色不得写。
           const agent: string = String(ev.agent ?? "");
           const allow = roleTools[agent];

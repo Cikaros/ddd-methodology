@@ -1,7 +1,7 @@
 <!-- 派生视图，由 scripts/defects.mjs replay 生成；禁手改 -->
 # 已知问题（known-issues）
 
-open=0 / total=8
+open=0 / total=11
 
 | id | severity | status | area | title |
 |---|---|---|---|---|
@@ -13,3 +13,6 @@ open=0 / total=8
 | DEF-0006 | high | resolved | src | /ddd-init 骨架生成与 Q3 派发（session.create→switchAgent）无文件级设计与实现 |
 | DEF-0007 | high | resolved | src | src/index.ts 用 process.execPath 启动 scaffold（真宿主里是 opencode 自身）→ /ddd-init 报「异常」 |
 | DEF-0008 | med | resolved | scripts | scripts/scaffold.mjs 同样以 process.execPath 启动 materialize/snapshot |
+| DEF-0009 | high | resolved | src | instructions.entry 键名含冒号（ddd:phase/ddd:discipline）违反宿主键正则 ^[a-z0-9][a-z0-9._-]* → 纪律未写入 |
+| DEF-0010 | med | resolved | src | 纪律注入重复：entry 可用时仍走 system 兜底（快照 seen=undefined 判断错） |
+| DEF-0011 | med | resolved | src | 纪律经 prompt hook 注入用户消息正文（区别于 §19.3 键控/不占轮次）；退役 <!--ddd:core--> 哨兵 |
