@@ -16,6 +16,7 @@ import { evaluateBottomLines, assertEnforceable, type BottomLine } from "./lib/g
 import { selectInjection, countCandidates, projectScope, matchesTrigger, type MemoryEntry, type MemoryConfig } from "./lib/memory.ts";
 import { project as boardProject, summarize as boardSummary, type BoardRow, type BoardConfig } from "./lib/board.ts";
 import { applyEncodingPrefix } from "./lib/shell-encoding.ts";
+import { needsUtf8Bom, withUtf8Bom } from "./lib/powershell-bom.ts";
 import { gates as gateFns, summarize as gateSummary, canAdvance } from "./lib/gates.ts";
 import type { GateReading } from "./lib/gates.ts";
 import { Ddd } from "./rpc.ts";
@@ -368,6 +369,19 @@ export default Plugin.define({
     registrations.push(
       await ctx.tool.hook("execute.before", async (ev: any) => {
         try {
+          // 环境适配：.ps1 源码 BOM（PS 5.1 无 BOM 即按 GBK 解码 → 中文乱）。拦 write/edit 的写入内容。
+          if (options.powershellUtf8 !== false && ev?.input && typeof ev.input === "object") {
+            try {
+              const inp = ev.input as { path?: string; content?: string; newString?: string };
+              if (ev.tool === "write" && needsUtf8Bom(inp.path, inp.content)) {
+                inp.content = withUtf8Bom(inp.content as string);
+              } else if (ev.tool === "edit" && needsUtf8Bom(inp.path, inp.newString)) {
+                inp.newString = withUtf8Bom(inp.newString as string);
+              }
+            } catch {
+              /* ignore */
+            }
+          }
           const root = projectRoot(ctx.location);
           const raw = readJsonl(projectPath(root, "docs/memory/memory.jsonl"));
           const entries = foldMemory(raw);

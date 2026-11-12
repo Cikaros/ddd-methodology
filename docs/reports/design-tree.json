@@ -1,5 +1,5 @@
 {
-  "ts": "2026-11-12T06:48:30.778Z",
+  "ts": "2026-11-12T07:48:05.538Z",
   "designs": [
     {
       "path": "docs/ddd/agents/DESIGN-AGENT-TEMPLATE.md",
@@ -469,6 +469,15 @@
       "status": "frozen",
       "landed": "true",
       "covers": "[packageRoot, projectRoot, packagePath, projectPath, within]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-powershell-bom.md",
+      "level": "file",
+      "target": "src/lib/powershell-bom.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[needsUtf8Bom, withUtf8Bom, hasUtf8Bom]",
+      "depends": "[assets/commands.json]"
     },
     {
       "path": "docs/ddd/src/lib/DESIGN-registry.md",
@@ -1077,6 +1086,19 @@
       ]
     },
     {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-powershell-bom.md",
+      "target": "src/lib/powershell-bom.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-src-lib-powershell-bom-01",
+        "UT-src-lib-powershell-bom-02",
+        "UT-src-lib-powershell-bom-03",
+        "UT-src-lib-powershell-bom-04",
+        "UT-src-lib-powershell-bom-05"
+      ]
+    },
+    {
       "path": "docs/ddd/src/lib/UNIT-TESTS-registry.md",
       "target": "src/lib/registry.ts",
       "status": "frozen",
@@ -1170,11 +1192,11 @@
     }
   ],
   "counts": {
-    "design": 60,
-    "test": 60,
-    "ids": 184,
+    "design": 61,
+    "test": 61,
+    "ids": 189,
     "byLevel": {
-      "file": 45,
+      "file": 46,
       "module": 5,
       "subproject": 1,
       "group": 9

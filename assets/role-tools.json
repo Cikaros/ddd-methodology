@@ -10,6 +10,8 @@
     "ddd-tester": ["read", "grep", "glob", "shell"],
     "ddd-auditor": ["read", "grep", "glob"],
     "ddd-consolidator": ["read", "grep", "glob", "write", "edit"],
-    "ddd-curator": ["read", "grep", "glob", "shell"]
+    "ddd-curator": ["read", "grep", "glob", "shell"],
+    "ddd-vision-reader": ["read", "glob", "grep", "write", "edit"],
+    "ddd-ui-diff": ["read", "glob", "grep"]
   }
 }

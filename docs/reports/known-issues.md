@@ -1,7 +1,7 @@
 <!-- 派生视图，由 scripts/defects.mjs replay 生成；禁手改 -->
 # 已知问题（known-issues）
 
-open=0 / total=13
+open=0 / total=14
 
 | id | severity | status | area | title |
 |---|---|---|---|---|
@@ -18,3 +18,4 @@ open=0 / total=13
 | DEF-0011 | med | resolved | src | 纪律经 prompt hook 注入用户消息正文（区别于 §19.3 键控/不占轮次）；退役 <!--ddd:core--> 哨兵 |
 | DEF-0012 | med | resolved | docs/maps | 发布 v1.0.4 携带陈旧派生件 MAPS.md（内嵌 snapshot 摘要 58/58/173，实际 59/59/179）；发布流程漏跑 map replay |
 | DEF-0013 | med | resolved | scripts | 派生报告含 wall-clock ts 且每次刷新 → 违反「可复算」，令 npm run release 永远脏工作区 |
+| DEF-0014 | high | resolved | src | 第二个乱码根因：PS 5.1 读 .ps1 源码无 BOM 即按 GBK 解码；UTF-8 无 BOM 且含中文的脚本常量/语法皆错（chcp/OutputEncoding 均无效） |

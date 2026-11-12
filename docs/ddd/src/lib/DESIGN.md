@@ -25,6 +25,7 @@ updated: 2026-11-11
 | `memory.ts` | M6 记忆闭环：置信度/提醒/晋升/衰减/scope（纯函数） |
 | `board.ts` | M7 看板：投影/准入/状态转移/孤儿检测（持久多步待办） |
 | `shell-encoding.ts` | PowerShell 输出编码适配（UTF-8 前缀；环境适配、可关） |
+| `powershell-bom.ts` | .ps1 源码 BOM 适配（UTF-8 BOM；环境适配、可关） |
 | `gates.ts` | 六道门禁判据，入参为项目状态快照；区分 `pass/block/visible/na` |
 | `paths.ts` | 包根 / 项目根解析；随包件与项目件分离 |
 
@@ -37,7 +38,7 @@ updated: 2026-11-11
 
 ## 承重机制承接
 
-M3（落地门禁）经 `gates.ts`；M10（反漂移）经 `registry.ts` 的清单单点；§8.7（路径纪律）经 `paths.ts`；**M13（自主注入与底线守卫）经 `router.ts`（注入路由）＋ `guard.ts`（底线守卫）**；**M6（记忆闭环）经 `memory.ts`（置信度/提醒/晋升/衰减）**；**M7（看板闭环）经 `board.ts`（投影/准入/转移/孤儿）**。
+M3（落地门禁）经 `gates.ts`；M10（反漂移）经 `registry.ts` 的清单单点；§8.7（路径纪律）经 `paths.ts`；**M13（自主注入与底线守卫）经 `router.ts`（注入路由）＋ `guard.ts`（底线守卫）**；**M6（记忆闭环）经 `memory.ts`（置信度/提醒/晋升/衰减）**；**M7（看板闭环）经 `board.ts`（投影/准入/转移/孤儿）**；**Windows 编码环境适配经 `shell-encoding.ts`（控制台输出）＋ `powershell-bom.ts`（.ps1 源码）**。
 
 ## 状态
 

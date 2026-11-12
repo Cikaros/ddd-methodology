@@ -33,6 +33,8 @@ updated: 2026-11-11
 | `ddd-auditor` | 独立对账/反漂移审计 | `/ddd-validate`、评审 | 全仓 | 审计件（`docs/audits/`） | **只读** |
 | `ddd-consolidator` | 冻结即归并（按模块/目录隔离） | `/ddd-consolidate` | 该块产物+变更流切片+冻结契约 | 该块终稿 | 目标块写 |
 | `ddd-curator` | 记忆/坑点归纳 | 记忆闭环（会话末/`/ddd-memo`） | 会话轨迹、既有记忆（只读） | `memory.jsonl` 条目（`record`/`occur`） | 追加写记忆 |
+| `ddd-vision-reader` | **视觉设计稿读取**（多模态模型） | `/ddd-design`（前端）／`/ddd-review` | 设计稿图片 | 结构化视觉规格（项目件） | **只读** + 写规格件 |
+| `ddd-ui-diff` | **设计稿↔实现对照**（低成本模型） | `/ddd-review`／`/ddd-test` | 视觉规格、实现代码 | 差异清单 | **只读** |
 
 ## 分发机制（命令 → 角色，准确落点）
 

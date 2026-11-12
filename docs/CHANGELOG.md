@@ -72,3 +72,19 @@
 - 本次不做：不改报告字段与判定逻辑；仅改写入策略
 - 怎么算做对：npm run release 通过且工作区干净；同输入连跑两次报告逐字节相同；UT-scripts-report-io-01..05 通过
 - 涉及：scripts/report-io.mjs, scripts/snapshot.mjs, scripts/drift-check.mjs, scripts/validate.mjs
+
+## v1.0.7 · CHG-0010 · fix
+
+- 时间：2026-11-12T07:48:43.131Z
+- 为什么做：环境适配（第二个根因）：PS 5.1 读 .ps1 源码无 BOM 即按 GBK 解码 → 中文脚本语法/常量皆错。新增 powershell-bom.ts + 写钩子补 BOM；并写明配置约定（Set-Content -Encoding utf8BOM）
+- 本次不做：不覆盖 shell/外部进程直接落盘的 .ps1（属约定层）；不改 .ps1 以外扩展名
+- 怎么算做对：真跑：write 建含中文 .ps1 落盘带 BOM；经宿主 shell 执行输出正确中文；纯函数断言通过
+- 涉及：src/lib/powershell-bom.ts, src/index.ts, skills/dev-tools/references/shell.md
+
+## v1.0.7 · CHG-0011 · feat
+
+- 时间：2026-11-12T07:48:43.168Z
+- 为什么做：新增两个多模态协作子代理 ddd-vision-reader（视觉高思维，读设计稿）/ ddd-ui-diff（低成本，对照差异），纳入 ddd；角色为 agent 模板同构实例，可各配 model#variant
+- 本次不做：不新增承重机制、不改门禁；技能仅补「设计稿对照」可选步骤
+- 怎么算做对：真跑：主会话派发两子代理完成「读图→对照」，抓出真实差异；角色清单/role-tools/契约自测通过
+- 涉及：agents/ddd-vision-reader.md, agents/ddd-ui-diff.md, assets/role-tools.json, skills/frontend-variant-contract/SKILL.md

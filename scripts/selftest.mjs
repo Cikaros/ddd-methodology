@@ -122,6 +122,7 @@ async function main() {
       memory: await import(pathToFileURL(resolve(pluginDir, "src/lib/memory.ts")).href),
       board: await import(pathToFileURL(resolve(pluginDir, "src/lib/board.ts")).href),
       shellEncoding: await import(pathToFileURL(resolve(pluginDir, "src/lib/shell-encoding.ts")).href),
+      powershellBom: await import(pathToFileURL(resolve(pluginDir, "src/lib/powershell-bom.ts")).href),
     };
   } catch (e) {
     check("纯函数层可加载", false, e?.message ?? String(e));
@@ -327,6 +328,18 @@ async function main() {
     check("UT-src-lib-shell-encoding-02 PowerShell 注入前缀且保留原命令", injected.includes("echo hi") && injected.startsWith("[Console]::OutputEncoding"));
   }
 
+  group("纯函数：powershell-bom");
+  {
+    const pb = lib.powershellBom;
+    check("UT-src-lib-powershell-bom-01 导出面齐全", typeof pb.isPowerShellScript === "function" && typeof pb.hasUtf8Bom === "function" && typeof pb.needsUtf8Bom === "function" && typeof pb.withUtf8Bom === "function");
+    check("UT-src-lib-powershell-bom-02 仅 .ps1", pb.isPowerShellScript("a.ps1") === true && pb.isPowerShellScript("A.PS1") === true && pb.isPowerShellScript("a.js") === false && pb.isPowerShellScript("a.json") === false && pb.isPowerShellScript("a") === false);
+    check("UT-src-lib-powershell-bom-03 含非 ASCII 才需", pb.needsUtf8Bom("a.ps1", "Write-Output 'ascii'") === false && pb.needsUtf8Bom("a.ps1", "Write-Output '中文'") === true);
+    check("UT-src-lib-powershell-bom-03 非 .ps1 不处理", pb.needsUtf8Bom("a.js", "const s='中文'") === false);
+    const withBom = pb.withUtf8Bom("中文");
+    check("UT-src-lib-powershell-bom-05 加 BOM 形态（首字符 U+FEFF）", withBom.charCodeAt(0) === 0xfeff && withBom.length === "中文".length + 1);
+    check("UT-src-lib-powershell-bom-04 幂等（已有 BOM 不再加）", pb.withUtf8Bom(withBom) === withBom && pb.hasUtf8Bom(withBom) === true && pb.needsUtf8Bom("a.ps1", withBom) === false);
+  }
+
   // ============ 3. assets 基线 ============
   group("assets 基线");
   const commands = readJson("assets/commands.json");
@@ -345,7 +358,7 @@ async function main() {
   check("UT-assets-bottom-lines-02 每条底线有执法点 + remedy", lib.guard.assertEnforceable(blJson.bottomLines).length === 0);
   const roleToolsJson = readJson("assets/role-tools.json");
   check("UT-assets-role-tools-01 schema 合法（角色→工具数组）", roleToolsJson?.roles && Object.values(roleToolsJson.roles).every(Array.isArray));
-  check("UT-assets-role-tools-02 只读角色无写工具", ["ddd-design-reviewer", "ddd-auditor", "ddd-intent-clarifier"].every((r) => (roleToolsJson.roles[r] ?? []).every((t) => !["write", "edit", "shell"].includes(t))));
+  check("UT-assets-role-tools-02 只读角色无写工具", ["ddd-design-reviewer", "ddd-auditor", "ddd-intent-clarifier", "ddd-ui-diff"].every((r) => (roleToolsJson.roles[r] ?? []).every((t) => !["write", "edit", "shell"].includes(t))));
   const boardJson = readJson("assets/board.json");
   check("UT-assets-board-01 schema 合法", boardJson && ["priorityDomain", "statusDomain", "starvationWindow", "starvationLimit", "orphanHours", "maxLineBytes"].every((k) => k in boardJson));
   check("UT-assets-board-03 defaultPriority ∈ priorityDomain", boardJson.priorityDomain.includes(boardJson.defaultPriority));
@@ -360,8 +373,8 @@ async function main() {
   group("内容层契约");
   const designAgents = readFileSync(join(pluginDir, "docs/ddd/agents/DESIGN.md"), "utf8");
   // 仅从「角色清单」表的第一列提取角色（避免把命令名/其它反引号误当角色）。
-  const roles = [...new Set([...designAgents.matchAll(/^\|\s*`(ddd-(?:intent-clarifier|architect|designer|design-reviewer|test-designer|implementer|tester|auditor|consolidator|curator))`\s*\|/gm)].map((m) => m[1]))];
-  const readOnly = ["ddd-design-reviewer", "ddd-auditor", "ddd-intent-clarifier"];
+  const roles = [...new Set([...designAgents.matchAll(/^\|\s*`(ddd-[a-z][a-z-]*)`\s*\|/gm)].map((m) => m[1]))];
+  const readOnly = ["ddd-design-reviewer", "ddd-auditor", "ddd-intent-clarifier", "ddd-ui-diff"];
   let rolesOk = true;
   for (const r of roles) {
     const p = join(pluginDir, "agents", `${r}.md`);

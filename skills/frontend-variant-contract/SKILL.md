@@ -23,6 +23,19 @@ description: 变体契约奠基（第 0 步）：UI 生成前把「合法变化�
 - 组件直接读主题 / 接受 `data-theme` 分支 → 违反入口唯一。
 - 把 token 层级（Primitive/Semantic/Component）上升为 ddd 全局机制——它只是**技能内部知识**。
 
+## 设计稿对照（可选，多模态子代理）
+
+若实现需对齐**设计稿图片**，用两个子代理配合（各配不同模型；开箱可用）：
+
+| 子代理 | 模型 | 作用 |
+|---|---|---|
+| `ddd-vision-reader` | 多模态（默认 `scnet/DeepSeek-V4.1-Flash-1017#high`，备选 `GLM-5.3-Flash`） | 读设计稿图 → 结构化视觉规格（项目件） |
+| `ddd-ui-diff` | 低成本（默认 `DeepSeek-V4.1-Flash#low`） | 读规格 + 实现代码 → 差异清单 |
+
+- **前提**：视觉子代理的模型**须支持图片输入**（`input` 含 `image`）；纯文本模型读不了图。
+- **规格落项目件**（可对账，遵循「文档为唯一权威」），不靠口头比对。
+- 由 `/ddd-review`（前端）或 `/ddd-test` 触发。
+
 ## 与 ddd 的对齐
 
 - **单点权威（M10）**：变体取值只在 `docs/variant-contract.json` 写一次；`docs/ARCHITECTURE.md` 与技能正文一律**引用不复写**。
