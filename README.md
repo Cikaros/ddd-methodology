@@ -33,7 +33,7 @@
 
 ### 方式 B：包（发布后）
 ```bash
-opencode plugin add @cikaros/ddd-methodology@1.0.5
+opencode plugin add @cikaros/ddd-methodology@1.0.6
 ```
 
 ### 方式 C：Git 仓库（无需发布到 npm）
@@ -45,16 +45,16 @@ OpenCode 支持 npm 兼容的 Git 规格（**hosted 简写 / HTTPS / SSH**），
 opencode plugin add github:Cikaros/ddd-methodology
 
 # ② 钉到标签（推荐：可复现）
-opencode plugin add github:Cikaros/ddd-methodology#v1.0.5
+opencode plugin add github:Cikaros/ddd-methodology#v1.0.6
 
 # ③ 钉到完整提交哈希（最稳：不受标签移动影响）
-#    取当前 v1.0.5 的提交哈希：
-#      git ls-remote https://github.com/Cikaros/ddd-methodology.git refs/tags/v1.0.5^{}
+#    取当前 v1.0.6 的提交哈希：
+#      git ls-remote https://github.com/Cikaros/ddd-methodology.git refs/tags/v1.0.6^{}
 #    然后：
 opencode plugin add github:Cikaros/ddd-methodology#<完整提交哈希>
 
 # ④ SSH 形式（等价）
-opencode plugin add git+ssh://git@github.com/Cikaros/ddd-methodology.git#v1.0.5
+opencode plugin add git+ssh://git@github.com/Cikaros/ddd-methodology.git#v1.0.6
 ```
 
 也可不装进全局，而直接在**项目 `opencode.jsonc`** 里以 Git 规格声明：
@@ -63,12 +63,12 @@ opencode plugin add git+ssh://git@github.com/Cikaros/ddd-methodology.git#v1.0.5
 {
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
-    { "package": "github:Cikaros/ddd-methodology#v1.0.5", "options": { "profile": "standard" } }
+    { "package": "github:Cikaros/ddd-methodology#v1.0.6", "options": { "profile": "standard" } }
   ]
 }
 ```
 
-> **钉版建议**：用**标签**或**完整提交哈希**（`@1.0.5` 或 `#v1.0.5`/`#<sha>`）——精确版本与完整 commit 会保持钉住；未钉版的分支会被后台自动检查更新。
+> **钉版建议**：用**标签**或**完整提交哈希**（`@1.0.6` 或 `#v1.0.6`/`#<sha>`）——精确版本与完整 commit 会保持钉住；未钉版的分支会被后台自动检查更新。
 > **仓库子目录**：若插件在 monorepo 子目录，用 `::path:` 选择器，如 `github:acme/plugins#main::path:packages/opencode-plugin`。
 
 `plugins` 里可显式停用（`"-<id>"`）或按需装入；`options.profile` 取 `minimal` / `standard` / `strict`（预设套餐，见 `assets/profiles.json`）。
