@@ -39,6 +39,8 @@ updated: 2026-11-11
 ## 已知约束
 
 - **重放一致**：同一输入恒得同一 `MAPS.md`（除时间戳）；`check` 检出差异。
+- **含快照摘要（派生件的派生件）**：`MAPS.md` 内嵌 `docs/reports/design-tree.json` 的计数——故改动设计树后**必须重跑 `snapshot` 再 `map replay`**（顺序不可颠倒）。根因见 `DEF-0012`（发布曾携带陈旧 `MAPS.md`）。
+- **发布门**：`npm run release`＝`regen`（重放全部派生件：snapshot→map→change→defects）→ `check`（逐件对账）→ `typecheck` → `test`；**发布前必过**，防「陈旧派生件随发布」。
 - **产图者不宣判**：本件只产图与巡检引用面，不作缺陷判定。
 - **派生件禁手改**；引用面不可解析即失败（R20 判据④）。
 - 路径：图集写入项目根；工具取包根（§8.7）。

@@ -56,3 +56,11 @@
 - 本次不做：不动 bash/zsh/Linux/macOS；不在 ddd 机制内新增承重项（属环境适配补充）
 - 怎么算做对：真跑 echo '中文测试ABC' 输出不再乱码且命令回显不被污染；纯函数 ≥ 10 条断言通过；非 PowerShell 不注入
 - 涉及：src/lib/shell-encoding.ts, src/index.ts, docs/OUTLINE-DESIGN.md, docs/ddd/src/lib/DESIGN-shell-encoding.md, docs/ddd/src/DESIGN-index.md
+
+## v1.0.5 · CHG-0008 · fix
+
+- 时间：2026-11-12T06:39:09.740Z
+- 为什么做：修 DEF-0012：发布 v1.0.4 曾携带陈旧派生件 docs/maps/MAPS.md（内嵌 snapshot 计数 58/58/173，实际 59/59/179）。加发布门 npm run release（regen→check→typecheck→test）与派生顺序纪律（先 snapshot 再 map）
+- 本次不做：不改 map/snapshot 算法；仅加门与顺序纪律
+- 怎么算做对：npm run release 全绿；map check 不再因陈旧摘要失败；发布前派生件必同步
+- 涉及：package.json, docs/ddd/scripts/DESIGN-map.md
