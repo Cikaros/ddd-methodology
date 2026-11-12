@@ -17,7 +17,7 @@ updated: 2026-11-11
 
 ## 目录规划（分组层）
 
-`scripts/` 为单层目录，无更深分组。文件级见各 `DESIGN-<filename>.md`。现有：`selftest.mjs`（离线自测）、`snapshot.mjs`（设计树快照 · M1）、`change.mjs`（变更流唯一写入器 · M2）、`validate.mjs`（门禁读取器 · M3）、`map.mjs`（图集重放 · M9）、`drift-check.mjs`（反漂移复写扫描 · M10）、`defects.mjs`（缺陷登记册唯一写入器 · R36）、`board.mjs`（看板唯一写入器 · M7）、`materialize.mjs`（随包件物化 · F5）、`scaffold.mjs`（项目骨架生成器 · F7/R1）。
+`scripts/` 为单层目录，无更深分组。文件级见各 `DESIGN-<filename>.md`。现有：`selftest.mjs`（离线自测）、`snapshot.mjs`（设计树快照 · M1）、`change.mjs`（变更流唯一写入器 · M2）、`validate.mjs`（门禁读取器 · M3）、`map.mjs`（图集重放 · M9）、`drift-check.mjs`（反漂移复写扫描 · M10）、`defects.mjs`（缺陷登记册唯一写入器 · R36）、`board.mjs`（看板唯一写入器 · M7）、`materialize.mjs`（随包件物化 · F5）、`scaffold.mjs`（项目骨架生成器 · F7/R1）、`report-io.mjs`（派生报告幂等写入）。
 
 ## 依赖方向
 

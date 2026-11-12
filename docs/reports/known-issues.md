@@ -1,7 +1,7 @@
 <!-- 派生视图，由 scripts/defects.mjs replay 生成；禁手改 -->
 # 已知问题（known-issues）
 
-open=0 / total=12
+open=0 / total=13
 
 | id | severity | status | area | title |
 |---|---|---|---|---|
@@ -17,3 +17,4 @@ open=0 / total=12
 | DEF-0010 | med | resolved | src | 纪律注入重复：entry 可用时仍走 system 兜底（快照 seen=undefined 判断错） |
 | DEF-0011 | med | resolved | src | 纪律经 prompt hook 注入用户消息正文（区别于 §19.3 键控/不占轮次）；退役 <!--ddd:core--> 哨兵 |
 | DEF-0012 | med | resolved | docs/maps | 发布 v1.0.4 携带陈旧派生件 MAPS.md（内嵌 snapshot 摘要 58/58/173，实际 59/59/179）；发布流程漏跑 map replay |
+| DEF-0013 | med | resolved | scripts | 派生报告含 wall-clock ts 且每次刷新 → 违反「可复算」，令 npm run release 永远脏工作区 |

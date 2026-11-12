@@ -462,6 +462,32 @@ async function main() {
     check("UT-scripts-scaffold-03 根文档白名单（第四件 → 退出 1，R12）", s3.status === 1);
   }
 
+  // ============ 7c2. 派生报告幂等写入（DEF-0013）============
+  group("幂等报告：report-io.mjs");
+  {
+    const { writeFileSync: wf2, readFileSync: rf2, existsSync: ex2, mkdirSync: mk2 } = await import("node:fs");
+    const tmp = mkTmp("ddd-reportio-");
+    const rio = await import(pathToFileURL(join(pluginDir, "scripts", "report-io.mjs")).href);
+    const out = join(tmp, "docs", "reports", "x.json");
+    const a = rio.writeReportJson(out, { ts: "2026-01-01T00:00:00Z", v: 1 });
+    check("UT-scripts-report-io-01 首写落盘", a === true && ex2(out));
+    const before = rf2(out, "utf8");
+    const b = rio.writeReportJson(out, { ts: "2026-02-02T00:00:00Z", v: 1 });
+    check("UT-scripts-report-io-02 内容不变保留 ts（返回 false、文件不变）", b === false && rf2(out, "utf8") === before && rf2(out, "utf8").includes("2026-01-01"));
+    const c = rio.writeReportJson(out, { ts: "2026-02-02T00:00:00Z", v: 2 });
+    check("UT-scripts-report-io-03 内容变化更新（返回 true）", c === true && rf2(out, "utf8").includes("\"v\": 2"));
+    const outM = join(tmp, "docs", "reports", "y.md");
+    mk2(join(tmp, "docs", "reports"), { recursive: true });
+    wf2(outM, "same", "utf8");
+    check("UT-scripts-report-io-04 文本幂等（同内容返回 false）", rio.writeReportText(outM, "same") === false);
+    // 可复算：同输入连跑两次逐字节相同
+    const out2 = join(tmp, "docs", "reports", "z.json");
+    rio.writeReportJson(out2, { ts: "T", v: 1 });
+    const s1 = rf2(out2, "utf8");
+    rio.writeReportJson(out2, { ts: "T2", v: 1 });
+    check("UT-scripts-report-io-05 可复算（同输入两次逐字节相同）", rf2(out2, "utf8") === s1);
+  }
+
   // ============ 8. 自测入口自身（退出码语义）============
   group("自测入口：selftest.mjs");
   {

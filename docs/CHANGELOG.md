@@ -64,3 +64,11 @@
 - 本次不做：不改 map/snapshot 算法；仅加门与顺序纪律
 - 怎么算做对：npm run release 全绿；map check 不再因陈旧摘要失败；发布前派生件必同步
 - 涉及：package.json, docs/ddd/scripts/DESIGN-map.md
+
+## v1.0.6 · CHG-0009 · fix
+
+- 时间：2026-11-12T06:48:30.340Z
+- 为什么做：修 DEF-0013：派生报告含 wall-clock ts 且每次刷新 → 违反「可复算」，令 npm run release 永远脏。新增 scripts/report-io.mjs 幂等写入（内容不变保留旧 ts）；snapshot/drift-check/validate 改用之
+- 本次不做：不改报告字段与判定逻辑；仅改写入策略
+- 怎么算做对：npm run release 通过且工作区干净；同输入连跑两次报告逐字节相同；UT-scripts-report-io-01..05 通过
+- 涉及：scripts/report-io.mjs, scripts/snapshot.mjs, scripts/drift-check.mjs, scripts/validate.mjs

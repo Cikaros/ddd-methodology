@@ -1,5 +1,5 @@
 {
-  "ts": "2026-11-12T06:40:29.169Z",
+  "ts": "2026-11-12T06:48:30.778Z",
   "designs": [
     {
       "path": "docs/ddd/agents/DESIGN-AGENT-TEMPLATE.md",
@@ -197,6 +197,15 @@
       "status": "frozen",
       "landed": "true",
       "covers": "[materialize]",
+      "depends": "[src/lib/paths.ts]"
+    },
+    {
+      "path": "docs/ddd/scripts/DESIGN-report-io.md",
+      "level": "file",
+      "target": "scripts/report-io.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[writeReportJson, writeReportText]",
       "depends": "[src/lib/paths.ts]"
     },
     {
@@ -755,6 +764,19 @@
       ]
     },
     {
+      "path": "docs/ddd/scripts/UNIT-TESTS-report-io.md",
+      "target": "scripts/report-io.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-scripts-report-io-01",
+        "UT-scripts-report-io-02",
+        "UT-scripts-report-io-03",
+        "UT-scripts-report-io-04",
+        "UT-scripts-report-io-05"
+      ]
+    },
+    {
       "path": "docs/ddd/scripts/UNIT-TESTS-scaffold.md",
       "target": "scripts/scaffold.mjs",
       "status": "frozen",
@@ -1148,11 +1170,11 @@
     }
   ],
   "counts": {
-    "design": 59,
-    "test": 59,
-    "ids": 179,
+    "design": 60,
+    "test": 60,
+    "ids": 184,
     "byLevel": {
-      "file": 44,
+      "file": 45,
       "module": 5,
       "subproject": 1,
       "group": 9
