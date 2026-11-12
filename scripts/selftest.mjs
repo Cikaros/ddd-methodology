@@ -121,6 +121,7 @@ async function main() {
       guard: await import(pathToFileURL(resolve(pluginDir, "src/lib/guard.ts")).href),
       memory: await import(pathToFileURL(resolve(pluginDir, "src/lib/memory.ts")).href),
       board: await import(pathToFileURL(resolve(pluginDir, "src/lib/board.ts")).href),
+      shellEncoding: await import(pathToFileURL(resolve(pluginDir, "src/lib/shell-encoding.ts")).href),
     };
   } catch (e) {
     check("纯函数层可加载", false, e?.message ?? String(e));
@@ -306,6 +307,24 @@ async function main() {
     const orphan = b.detectOrphans([{ taskId: "O", reqId: "R", title: "", acceptance: "x", priority: "P2", status: "in_progress", dependsOn: [], seq: 1, ts: "2000-01-01T00:00:00Z" }], new Date("2026-01-02T00:00:00Z"), cfg);
     check("UT-src-lib-board-06 孤儿检测列提示（非失败）", orphan.length === 1);
     check("UT-src-lib-board-07 收尾投影非空不得过", b.wrapupVerdict(proj, cfg).verdict === "block");
+  }
+
+  group("纯函数：shell-encoding");
+  {
+    const se = lib.shellEncoding;
+    check("UT-src-lib-shell-encoding-01 导出面齐全", typeof se.isPowerShellShell === "function" && typeof se.powershellEncodingPrefix === "function" && typeof se.applyEncodingPrefix === "function");
+    check("UT-src-lib-shell-encoding-02 判定 PowerShell（大小写不敏感）", se.isPowerShellShell("C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.EXE") === true && se.isPowerShellShell("C:/Program Files/PowerShell/7/pwsh.exe") === true);
+    check("UT-src-lib-shell-encoding-03 判定非 PowerShell", se.isPowerShellShell("/bin/bash") === false && se.isPowerShellShell("/bin/zsh") === false && se.isPowerShellShell("") === false && se.isPowerShellShell(undefined) === false);
+    const pfx = se.powershellEncodingPrefix();
+    check("UT-src-lib-shell-encoding-04 前缀无输出噪音", !/\bWrite-|echo|Out-Host/.test(pfx) && !/^\s*"/.test(pfx));
+    check("UT-src-lib-shell-encoding-05 前缀设 UTF-8", /OutputEncoding/.test(pfx) && /UTF8/.test(pfx));
+    check("UT-src-lib-shell-encoding-06 幂等标记", pfx.includes(se.ENCODING_MARKER) && se.hasEncodingPrefix(pfx) === true);
+    // 幂等 + 仅 PowerShell + 可关
+    check("UT-src-lib-shell-encoding-06 仅 PowerShell 注入", se.applyEncodingPrefix("/bin/bash", "echo hi", true) === "echo hi");
+    check("UT-src-lib-shell-encoding-06 可关（disabled 不注入）", se.applyEncodingPrefix("powershell.exe", "echo hi", false) === "echo hi");
+    check("UT-src-lib-shell-encoding-06 幂等（已含前缀不重复）", se.applyEncodingPrefix("powershell.exe", pfx + "\necho hi", true) === pfx + "\necho hi");
+    const injected = se.applyEncodingPrefix("powershell.exe", "echo hi", true);
+    check("UT-src-lib-shell-encoding-02 PowerShell 注入前缀且保留原命令", injected.includes("echo hi") && injected.startsWith("[Console]::OutputEncoding"));
   }
 
   // ============ 3. assets 基线 ============

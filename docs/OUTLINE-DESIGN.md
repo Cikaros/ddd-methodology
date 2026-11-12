@@ -334,7 +334,7 @@ targetVersion: 1.0.0
 ### 8.5 按需装入靠 options
 
 - 使用者在 `opencode.json(c)` 用对象形 `{ "package": "<包名>", "options": {...} }` 声明；`setup(ctx)` 读 `ctx.options`（类型 `Readonly<Record<string, any>>`，值须自行收窄）。
-- **options 键集**：`profile`（预设套餐）、`gates`（启停缺省门禁）、`paths`（文档树根）、`blindspotCap`（不可判定放行上限）。据「Manifest + Profile」原则，避免装入不需要的组件产生上下文噪音。
+- **options 键集**：`profile`（预设套餐）、`gates`（启停缺省门禁）、`paths`（文档树根）、`blindspotCap`（不可判定放行上限）、`powershellUtf8`（Windows PowerShell 输出编码适配，默认 `true`）。据「Manifest + Profile」原则，避免装入不需要的组件产生上下文噪音。
 - **options 只在 `setup` 读一次**（裁定 `V-02`）：不依赖「改 options 自动重载」。要求「改配置即生效」的场景，一律走**显式重载/重启**并在文档写明，不赌自动重载。
 
 ### 8.6 持久化分层
@@ -436,7 +436,7 @@ ddd-methodology/
 | `tool.hook("execute.before")` | 工具执行前 | 参数规范化/脱敏；替换 `event.input` | 否（拦走权限层） |
 | `tool.hook("execute.after")` | 工具成功/失败后 | 审计、打标、挂验收证据 | 否 |
 | `permission.hook("evaluate")` | 规则评估后、执行/弹窗前 | 企业策略/LLM 二次判断；置 effect/message；**fail-safe**；**在此自写留痕** | **是（置 deny）** |
-| `shell.hook("create.before")` | shell 命令创建前 | 强制沙箱变量；限制超时（**毫秒**）；注入代理 | 否 |
+| `shell.hook("create.before")` | shell 命令创建前 | 强制沙箱变量；限制超时（**毫秒**）；注入代理；**Windows PowerShell 编码适配**（可选，`options.powershellUtf8`） | 否 |
 | `session.hook("retry")` | 失败已分类、重试未调度 | 重试松/紧调整（`delay` 单位**毫秒**）；**不声称精确计数**（裁定 `V-05`） | 否 |
 | `session.hook("compaction")` | 压缩摘要请求 | 压缩前存证；可自带 `result` 跳过模型调用 | 否 |
 | `session.hook("experimental.idle")` | 会话将 idle、无待处理输入时 | **可选增强**：收尾「软推一次继续」；不可用则退化为收尾门禁硬拦（裁定 `V-09`） | 否（经准入输入促其续跑） |

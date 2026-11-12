@@ -1,5 +1,5 @@
 {
-  "ts": "2026-11-12T06:11:47.668Z",
+  "ts": "2026-11-12T06:32:16.302Z",
   "designs": [
     {
       "path": "docs/ddd/agents/DESIGN-AGENT-TEMPLATE.md",
@@ -476,6 +476,15 @@
       "status": "frozen",
       "landed": "true",
       "covers": "[routeSlices, detectIntent, Phase]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-shell-encoding.md",
+      "level": "file",
+      "target": "src/lib/shell-encoding.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[powershellEncodingPrefix, isPowerShellShell]",
+      "depends": "[assets/commands.json]"
     },
     {
       "path": "docs/ddd/src/lib/DESIGN.md",
@@ -1068,6 +1077,20 @@
       ]
     },
     {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-shell-encoding.md",
+      "target": "src/lib/shell-encoding.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-src-lib-shell-encoding-01",
+        "UT-src-lib-shell-encoding-02",
+        "UT-src-lib-shell-encoding-03",
+        "UT-src-lib-shell-encoding-04",
+        "UT-src-lib-shell-encoding-05",
+        "UT-src-lib-shell-encoding-06"
+      ]
+    },
+    {
       "path": "docs/ddd/src/TESTS-src.md",
       "target": "src",
       "status": "frozen",
@@ -1125,11 +1148,11 @@
     }
   ],
   "counts": {
-    "design": 58,
-    "test": 58,
-    "ids": 173,
+    "design": 59,
+    "test": 59,
+    "ids": 179,
     "byLevel": {
-      "file": 43,
+      "file": 44,
       "module": 5,
       "subproject": 1,
       "group": 9

@@ -24,6 +24,7 @@ updated: 2026-11-11
 | `guard.ts` | 底线守卫：底线清单 → 机械执法点；无执法点者报错 |
 | `memory.ts` | M6 记忆闭环：置信度/提醒/晋升/衰减/scope（纯函数） |
 | `board.ts` | M7 看板：投影/准入/状态转移/孤儿检测（持久多步待办） |
+| `shell-encoding.ts` | PowerShell 输出编码适配（UTF-8 前缀；环境适配、可关） |
 | `gates.ts` | 六道门禁判据，入参为项目状态快照；区分 `pass/block/visible/na` |
 | `paths.ts` | 包根 / 项目根解析；随包件与项目件分离 |
 

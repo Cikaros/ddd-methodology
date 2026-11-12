@@ -54,7 +54,8 @@ updated: 2026-11-11
 | `ctx.command.transform / ctx.skill.transform` | 注册面编辑（同步回调，返回 `Registration`） |
 | `ctx.rpc.register` | 注册 RPC 实现 |
 | `ctx.session.hook("prompt")` | 意图探测（写 `ddd:intent`）；**不注入、不改消息正文** |
-| `ctx.session.instructions.entry.put` | 纪律/切片**键控**注入（`ddd:discipline`/`ddd:<sliceId>`；渲染 `<context key>`；不占轮次） |
+| `ctx.session.instructions.entry.put` | 纪律/切片**键控**注入（`ddd.discipline`/`ddd.phase`；渲染 `<context key>`；不占轮次） |
+| `ctx.shell.hook("create.before")` | 改 `ev.command`（shell 命令正门）；**Windows PowerShell 编码适配**（`applyEncodingPrefix`，`options.powershellUtf8` 可关） |
 | `ctx.session.prompt` | 命令把内容送进会话（**默认同会话**路径） |
 | `ctx.permission.assert` | 阻塞式确认（M5；§9.5 分职责，server 侧） |
 | `ctx.session.create` / `ctx.session.switchAgent` | Q3 **隔离例外**子会话派发（仅 review/validate/consolidate） |

@@ -48,3 +48,11 @@
 - 本次不做：切片/看板/记忆仍走 context hook 的 event.system（每请求动态）；不改其内容
 - 怎么算做对：真跑：instructions.entries 含 ddd.discipline；模型在 <context key=ddd.discipline> 块内看到纪律；用户消息正文无哨兵/纪律；离线自测含键名正则与「只注入一处」断言
 - 涉及：src/index.ts, docs/OUTLINE-DESIGN.md, docs/ddd/src/DESIGN-index.md
+
+## v1.0.4 · CHG-0007 · feat
+
+- 时间：2026-11-12T06:32:16.143Z
+- 为什么做：环境适配补充项：Windows PowerShell 输出编码（GBK→UTF-8）消除中文乱码。落点为 shell.hook("create.before") 改 ev.command（宿主改 shell 命令正门，不绕内置扫描器），仅对 PowerShell 注入、可经 options.powershellUtf8 关闭
+- 本次不做：不动 bash/zsh/Linux/macOS；不在 ddd 机制内新增承重项（属环境适配补充）
+- 怎么算做对：真跑 echo '中文测试ABC' 输出不再乱码且命令回显不被污染；纯函数 ≥ 10 条断言通过；非 PowerShell 不注入
+- 涉及：src/lib/shell-encoding.ts, src/index.ts, docs/OUTLINE-DESIGN.md, docs/ddd/src/lib/DESIGN-shell-encoding.md, docs/ddd/src/DESIGN-index.md

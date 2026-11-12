@@ -15,6 +15,7 @@ import { routeSlices, detectIntent, type Phase, type Intent } from "./lib/router
 import { evaluateBottomLines, assertEnforceable, type BottomLine } from "./lib/guard.ts";
 import { selectInjection, countCandidates, projectScope, matchesTrigger, type MemoryEntry, type MemoryConfig } from "./lib/memory.ts";
 import { project as boardProject, summarize as boardSummary, type BoardRow, type BoardConfig } from "./lib/board.ts";
+import { applyEncodingPrefix } from "./lib/shell-encoding.ts";
 import { gates as gateFns, summarize as gateSummary, canAdvance } from "./lib/gates.ts";
 import type { GateReading } from "./lib/gates.ts";
 import { Ddd } from "./rpc.ts";
@@ -445,6 +446,12 @@ export default Plugin.define({
           await ctx.shell.hook("create.before", async (ev: any) => {
             try {
               ev.env = { ...(ev.env ?? {}), DDD_ACTIVE: "1" };
+              // 环境适配：Windows PowerShell 输出编码（GBK→UTF-8），消除中文乱码。
+              // 走 shell.create.before（宿主「改 shell 命令」正门，不绕内置扫描器）；可用 options 关闭。
+              const psUtf8 = options.powershellUtf8 !== false; // 默认 true
+              if (psUtf8 && typeof ev.command === "string") {
+                ev.command = applyEncodingPrefix(ev.shell, ev.command, true);
+              }
             } catch {
               /* ignore */
             }
