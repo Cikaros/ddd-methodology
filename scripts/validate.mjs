@@ -10,6 +10,7 @@
 import { readFileSync, existsSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
 import { dirname, join, resolve, basename } from "node:path";
 import { fileURLToPath } from "node:url";
+import { writeReportJson } from "./report-io.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(here, "..");
@@ -92,8 +93,7 @@ const readings = [gates.gates.G1(state), gates.gates.G2(state), gates.gates.G3(s
 const report = { ts: new Date().toISOString(), readings, summary: gates.summarize(readings), canAdvance: gates.canAdvance(readings), defectsRegister: hasDefects, note: "「零 FAIL」与「零缺陷」是两个读数；na ≠ pass" };
 
 const outPath = join(root, "docs", "reports", "validate.json");
-mkdirSync(dirname(outPath), { recursive: true });
-writeFileSync(outPath, JSON.stringify(report, null, 2), "utf8");
+writeReportJson(outPath, report);
 
 for (const r of readings) console.log(`${r.id} ${r.verdict}${r.remedy ? " — " + r.remedy : ""}`);
 console.log(`summary=${JSON.stringify(report.summary)} canAdvance=${report.canAdvance}`);

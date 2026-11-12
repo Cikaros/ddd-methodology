@@ -9,6 +9,7 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { dirname, join, resolve, basename, relative } from "node:path";
+import { writeReportJson } from "./report-io.mjs";
 
 function parseArgs(argv) {
   const out = { _: [] };
@@ -131,6 +132,6 @@ if (args.check) {
 }
 
 mkdirSync(dirname(outPath), { recursive: true });
-writeFileSync(outPath, JSON.stringify(snapshot, null, 2), "utf8");
-console.log(`快照已写出：design=${designs.length} test=${tests.length} ids=${idSeen.size} gaps=${missingUnitTests.length + missingGroupTests.length + duplicateTargets.length + duplicateIds.length}`);
+const changed = writeReportJson(outPath, snapshot);
+console.log(`快照已写出：design=${designs.length} test=${tests.length} ids=${idSeen.size} gaps=${missingUnitTests.length + missingGroupTests.length + duplicateTargets.length + duplicateIds.length}${changed ? "" : "（内容未变）"}`);
 process.exit(0);

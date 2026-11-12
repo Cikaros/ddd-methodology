@@ -9,6 +9,7 @@
 import { readFileSync, existsSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { writeReportJson } from "./report-io.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(here, "..");
@@ -74,8 +75,7 @@ try {
 const ok = checks.every((c) => c.ok);
 const report = { ts: new Date().toISOString(), checks, ok };
 const outPath = join(root, "docs", "reports", "drift-check.json");
-mkdirSync(dirname(outPath), { recursive: true });
-writeFileSync(outPath, JSON.stringify(report, null, 2), "utf8");
+writeReportJson(outPath, report);
 
 if (!ok) {
   console.error("失败：反漂移扫描检出复写/不一致。");
