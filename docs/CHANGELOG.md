@@ -88,3 +88,35 @@
 - 本次不做：不新增承重机制、不改门禁；技能仅补「设计稿对照」可选步骤
 - 怎么算做对：真跑：主会话派发两子代理完成「读图→对照」，抓出真实差异；角色清单/role-tools/契约自测通过
 - 涉及：agents/ddd-vision-reader.md, agents/ddd-ui-diff.md, assets/role-tools.json, skills/frontend-variant-contract/SKILL.md
+
+## v1.0.8 · CHG-0012 · fix
+
+- 时间：2026-11-13T10:35:33.268Z
+- 为什么做：修相位读写异键：putPhase 写 ddd.phase.<sid>（点）而 context hook 读 ddd:phase:<sid>（冒号）→ 所有按相位选出的纪律切片静默失效（真跑 [ddd:self] 恒为 phase=-）
+- 本次不做：不改切片内容与相位集合；不改 intent 键（其读写本就同键）
+- 怎么算做对：离线自测 UT-src-index-06 断言 storage 含 ddd:phase:<sid> 且无 ddd.phase.<sid>；真跑注入切片随相位命中
+- 涉及：src/index.ts, scripts/selftest.mjs, docs/ddd/src/DESIGN-index.md, docs/ddd/src/UNIT-TESTS-index.md
+
+## v1.0.8 · CHG-0013 · feat
+
+- 时间：2026-11-13T10:35:42.987Z
+- 为什么做：同会话路径补角色约束投影：same 派发不切 agent，角色 md 的「约束」节不进入上下文，行为边界形同虚设；改为指令显式带入 〖硬约束〗（经 router.roleConstraints 只读投影，正文单点权威仍在 agents/<role>.md）+ 切片全文指针（router.sliceSources）+ 尾置 〖执行前自检〗
+- 本次不做：不改角色清单/派发策略/门禁；不把约束复制进代码（只投影）；END 区定位为启发式，不主张可观测的注意力收益
+- 怎么算做对：离线自测 UT-src-index-07 断言 ddd-designer 指令含〖硬约束〗与切片路径、尾置自检；无角色命令不产硬约束块；typecheck 0 错；selftest 160/160
+- 涉及：src/index.ts, src/lib/router.ts, docs/ddd/src/DESIGN-index.md, docs/ddd/src/lib/DESIGN-router.md, docs/ddd/src/UNIT-TESTS-index.md, docs/ddd/src/lib/UNIT-TESTS-router.md
+
+## v1.0.8 · CHG-0014 · feat
+
+- 时间：2026-11-13T10:41:48.864Z
+- 为什么做：核心纪律（CORE_DISCIPLINE，单点）补两条反压缩条款：交付须逐项（不得以摘要代替）、可修问题当场修或落看板追踪（不得以「建议后续」收尾）。置常驻纪律单点，不进每条指令以免稀释角色硬约束。
+- 本次不做：不声称可观测的行为增益；不作机械判定（属判断式，故落提示词合规）；不改门禁。
+- 怎么算做对：UT-src-index-08 断言核心纪律含两条条款；typecheck 0 错；selftest 全过
+- 涉及：src/index.ts, scripts/selftest.mjs, docs/ddd/src/UNIT-TESTS-index.md
+
+## v1.0.8 · CHG-0015 · fix
+
+- 时间：2026-11-13T10:49:15.633Z
+- 为什么做：自检审计发现：package-lock.json 两处根版本滞留 1.0.7（历次发布均同步）。同步至 1.0.8，并加机械守卫 UT-scripts-selftest-03/04（锁文件版本 = package.json；最新变更流版本 = package.json），使版本漂移可被离线自测拦下。
+- 本次不做：不改发布流程脚本；不改 R31 三处定义（锁文件属第四落点，为构建产物一致性）。
+- 怎么算做对：UT-scripts-selftest-03/04 通过；selftest 全过；npm run release 全绿；工作区派生件一致
+- 涉及：package-lock.json, scripts/selftest.mjs, docs/ddd/scripts/UNIT-TESTS-selftest.md

@@ -1,7 +1,7 @@
 <!-- 派生视图，由 scripts/defects.mjs replay 生成；禁手改 -->
 # 已知问题（known-issues）
 
-open=0 / total=14
+open=0 / total=16
 
 | id | severity | status | area | title |
 |---|---|---|---|---|
@@ -19,3 +19,5 @@ open=0 / total=14
 | DEF-0012 | med | resolved | docs/maps | 发布 v1.0.4 携带陈旧派生件 MAPS.md（内嵌 snapshot 摘要 58/58/173，实际 59/59/179）；发布流程漏跑 map replay |
 | DEF-0013 | med | resolved | scripts | 派生报告含 wall-clock ts 且每次刷新 → 违反「可复算」，令 npm run release 永远脏工作区 |
 | DEF-0014 | high | resolved | src | 第二个乱码根因：PS 5.1 读 .ps1 源码无 BOM 即按 GBK 解码；UTF-8 无 BOM 且含中文的脚本常量/语法皆错（chcp/OutputEncoding 均无效） |
+| DEF-0015 | high | resolved | src | 相位读写异键：写 ddd.phase.<sid>、读 ddd:phase:<sid>，导致按相位选出的纪律切片静默失效 |
+| DEF-0016 | low | resolved | . | package-lock.json 根版本未随发布同步（滞留在 1.0.7），违反历次发布约定 |

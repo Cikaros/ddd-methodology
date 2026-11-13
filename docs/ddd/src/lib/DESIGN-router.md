@@ -5,7 +5,7 @@ target: src/lib/router.ts
 status: frozen
 landed: true
 covers: [routeSlices, detectIntent, Phase]
-updated: 2026-11-11
+updated: 2026-11-13
 ---
 
 # 文件设计：src/lib/router.ts（自主注入路由）
@@ -20,10 +20,12 @@ updated: 2026-11-11
 
 | 导出 | 形态 | 说明 |
 |---|---|---|
-| `Phase` | 类型 | `init`/`intent`/`arch`/`design`/`implement`/`test`/`wrapup`/`idle` |
+| `Phase` | 类型 | `init`/`intent`/`arch`/`design`/`review`/`test-design`/`implement`/`test`/`validate`/`change`/`map`/`wrapup`/`consolidate`/`board`/`memo`/`idle` |
 | `Intent` | 类型 | `frontend`/`backend`/`bugfix`/`docs`/`unknown` |
 | `routeSlices(input)` | `(input) => { sliceIds, basis }` | 选切片；`basis` 记录判定依据（可观测） |
 | `detectIntent(text, files)` | `(t,f) => Intent` | 启发式；可选由 `experimental.generate.decisions` 复核 |
+| `roleConstraints(md)` | `(md) => string[]` | 从角色 md 的「约束」节提取条目（只读投影，不复制正文） |
+| `sliceSources(sliceIds, slices)` | `(ids,slices) => string[]` | 选定切片的来源件路径（去重；供指令指示按需读全文） |
 
 ## 需引入的依赖
 

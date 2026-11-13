@@ -11,7 +11,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { COMMANDS, SKILLS } from "./lib/registry.ts";
 import { packagePath, projectPath, projectRoot } from "./lib/paths.ts";
-import { routeSlices, detectIntent, type Phase, type Intent } from "./lib/router.ts";
+import { routeSlices, detectIntent, type Phase, type Intent, type SliceSpec, roleConstraints, sliceSources } from "./lib/router.ts";
 import { evaluateBottomLines, assertEnforceable, type BottomLine } from "./lib/guard.ts";
 import { selectInjection, countCandidates, projectScope, matchesTrigger, type MemoryEntry, type MemoryConfig } from "./lib/memory.ts";
 import { project as boardProject, summarize as boardSummary, type BoardRow, type BoardConfig } from "./lib/board.ts";
@@ -26,7 +26,7 @@ type Registration = { dispose: () => Promise<void> | void };
 
 /** 核心纪律正文（单点）。经 `instructions.entry` 键控注入（key = `ddd.discipline`）。 */
 const CORE_DISCIPLINE =
-  "[ddd] 关键纪律：文档为唯一权威（先改文档再落地）；变更须落 CHANGELOG 三字段；执行规则必落可执行面；持久多步待办走看板（带 acceptance）。";
+  "[ddd] 关键纪律：文档为唯一权威（先改文档再落地）；变更须落 CHANGELOG 三字段；执行规则必落可执行面；持久多步待办走看板（带 acceptance）；交付须逐项、不得以摘要代替；可修问题当场修或落看板追踪，不得以「建议后续」收尾。";
 
 function readJson(rel: string): Json | undefined {
   try {
@@ -80,6 +80,16 @@ function phaseOf(name: string): Phase | undefined {
   return allowed.includes(k) ? (k as Phase) : undefined;
 }
 
+/** 读取随包角色件正文（只读；缺失即返回空串，不回落、不发明）。 */
+function readRoleBody(role: string): string {
+  try {
+    const p = packagePath(`agents/${role}.md`);
+    return existsSync(p) ? readFileSync(p, "utf8") : "";
+  } catch {
+    return "";
+  }
+}
+
 /**
  * 生成命令 handler。
  * Q3 派发（裁决 16）：
@@ -87,7 +97,7 @@ function phaseOf(name: string): Phase | undefined {
  *  - `isolated`（仅 review/validate/consolidate）：经宿主 `subagent` 工具派发**子会话**；
  *    不可用时**降级为同会话且读数可见**（不静默降级，见 agents/DESIGN.md）。
  */
-function makeHandler(name: string, ctx: any, dispatchOf: Record<string, string>): (input: { sessionID: string; prompt?: { text?: string } }) => Promise<void> {
+function makeHandler(name: string, ctx: any, dispatchOf: Record<string, string>, slices: readonly SliceSpec[]): (input: { sessionID: string; prompt?: { text?: string } }) => Promise<void> {
   return async (input) => {
     const phase = phaseOf(name);
     const sessionID = input?.sessionID ?? "";
@@ -106,7 +116,20 @@ function makeHandler(name: string, ctx: any, dispatchOf: Record<string, string>)
         message: `ddd/${name} 是阻塞节点：请确认在澄清/定稿后再推进（§6.1 ▲）。`,
       });
     }
-    const directive = `[ddd/${name}] 相位=${phase ?? "n/a"}${role ? ` 角色=${role}` : ""}${spec.blocking ? " 阻塞确认=已取" : ""}。按方法论推进该节点；先读对应设计件与纪律切片，变更一律先改文档再落地。`;
+    // 指令构建（单点权威：角色约束正文只在 agents/<role>.md，此处是只读投影，不复制）。
+    // 背景：`same` 派发不切 agent → 角色 md 的「约束」节不会自动进入上下文；须由指令显式带入。
+    // 指令尾部的 〖硬约束〗 放在 END 区：即使模型对中段注意力衰减，边界约束仍处于末位。
+    const parts = [`[ddd/${name}] 相位=${phase ?? "n/a"}${role ? ` 角色=${role}` : ""}${spec.blocking ? " 阻塞确认=已取" : ""}。按方法论推进该节点；变更一律先改文档再落地。`];
+    const sources = sliceSources(routeSlices({ phase }, slices).sliceIds, slices);
+    if (sources.length) parts.push(`先读纪律切片（全文，按需）：${sources.join("、")}。`);
+    if (role) {
+      const constraints = roleConstraints(readRoleBody(role));
+      if (constraints.length) {
+        parts.push(`〖硬约束 · 逐条遵守〗\n${constraints.map((c, i) => `${i + 1}. ${c}`).join("\n")}`);
+      }
+    }
+    parts.push("〖执行前自检〗未读齐上列切片与对应设计件即开始产出 → 停止并报告缺口；未改设计件不得改代码。");
+    const directive = parts.join("\n");
 
     // F7：/ddd-init 的机械承接——物化随包件 + 落项目骨架。
     // §8.7 / C-43：**必须以 `node` 具名启动**，不得用 `process.execPath`——后者在真宿主里是
@@ -153,7 +176,7 @@ function makeHandler(name: string, ctx: any, dispatchOf: Record<string, string>)
 
 async function putPhase(ctx: any, sessionID: string, phase: Phase): Promise<void> {
   try {
-    await ctx.storage.set(`ddd.phase.${sessionID}`, phase);
+    await ctx.storage.set(`ddd:phase:${sessionID}`, phase);
   } catch {
     /* storage 可选 */
   }
@@ -229,7 +252,7 @@ export default Plugin.define({
     registrations.push(
       await ctx.command.transform((editor: any) => {
         for (const c of COMMANDS) {
-          editor.add({ name: c.name, description: c.description, execute: makeHandler(c.name, ctx, dispatchOf) });
+          editor.add({ name: c.name, description: c.description, execute: makeHandler(c.name, ctx, dispatchOf, slices) });
         }
       }),
     );

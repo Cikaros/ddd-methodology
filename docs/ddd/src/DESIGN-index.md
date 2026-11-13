@@ -6,7 +6,7 @@ status: frozen
 landed: true
 covers: [Plugin.define, setup]
 depends: [src/lib/registry.ts, src/lib/paths.ts, src/rpc.ts]
-updated: 2026-11-11
+updated: 2026-11-13
 ---
 
 # 文件设计：src/index.ts（server part 入口）
@@ -29,6 +29,7 @@ updated: 2026-11-11
 - **F7 骨架生成（`ddd-init`）**：`ddd-init` handler 机械调用 `scripts/scaffold.mjs`（物化随包件 + 落 `docs/` 骨架），而不是只发提示词。
 - **Q3 命令→角色派发（默认同会话 + 隔离例外）**：策略读 `assets/commands.json` 的 `dispatch`——
   - `same`（默认，12 条）：在**当前会话**内 `ctx.session.prompt` 注入该角色指令，**不新建会话**；不切该会话的 agent。
+    - **指令投影（`same` 路径）**：因不切 agent，角色 md 的「约束」节不会自动进入上下文；指令须**显式带入**——① 该角色「约束」节条目（经 `router.roleConstraints` 只读投影，正文单点权威仍在 `agents/<role>.md`，不复制）；② 本相位切片全文路径（经 `router.sliceSources`，指示按需读全文）。指令尾置 〖执行前自检〗（END 区）以稳定边界约束。
   - `isolated`（仅 `ddd-review`／`ddd-validate`／`ddd-consolidate`）：经宿主 `subagent` 工具派发**子会话**（独立交叉评审／独立对账／R44 归并隔离）。
   - 隔离派发不可用时**降级为同会话且读数可见**（不静默降级）。
 - **M5 意图确认（§9.5 分职责）**：阻塞节点（概要 §6.1 ▲：`ddd-intent`/`ddd-arch`/`ddd-wrapup`/`ddd-consolidate`）在推进前调用 `ctx.permission.assert` 取**阻塞式确认**（过闸机：可中止/可记忆/远程恒可用）；被拒即中止该步，不静默降级。TUI 侧 `dialog.select/prompt` 只承担**输入采集**（选场景、收四问），与 assert **确认点不重叠**（见 `DESIGN-tui.md`）。
@@ -36,6 +37,7 @@ updated: 2026-11-11
 - RPC：`ctx.rpc.register(Ddd, { gates, board })`。
 - hook：`ctx.session.hook("prompt", ...)` **只做意图探测**（写 `ctx.storage` 的 `ddd:intent`），**不改用户消息正文**；纪律与切片经 `ctx.session.instructions.entry.put`（**键控** `ddd.discipline`／`ddd.phase`，渲染 `<context key>`，不占轮次、用户不可见）+ `ctx.session.hook("context", ...)` 注入。
   - **键名约束（宿主）**：`^[a-z0-9][a-z0-9._-]*$`——**不含冒号**（`ddd.discipline` 合法，`ddd:discipline` 会被拒收）。
+  - **两类键不得混用**：`instructions.entry` 的键**不得含冒号**（`ddd.discipline`/`ddd.phase`）；`ctx.storage` 的键**用冒号命名空间**（`ddd:intent:<sid>`、`ddd:phase:<sid>`）。相位**读写须同键**（写 `ddd:phase:<sid>`，context hook 亦读 `ddd:phase:<sid>`）——曾因写 `ddd.phase.<sid>`、读 `ddd:phase:<sid>` 而致相位切片**静默失效**（以 `UT-src-index-06` 防回归）。
   - 幂等靠**键控**（同键重复写＝更新/替换），**不再用正文哨兵** `<!--ddd:core-->`。
 - **角色工具面强制（Q4）**：`ctx.session.hook("context", ...)` 按 `event.agent` 删除不在 `assets/role-tools.json` 白名单的工具（`delete event.tools[x]`）；同时 `ctx.permission.hook("evaluate", ...)` 做运行时 deny 兜底（fail-safe）。
 - **记忆注入与复发统计（M6）**：`ctx.session.hook("context")` 注入 topN + 候选提示；`ctx.tool.hook("execute.before")` 匹配 `trigger` 计 `occur`；`ctx.event.subscribe(["session.deleted"])` 触发 `decay`。

@@ -1,5 +1,5 @@
 {
-  "ts": "2026-11-12T07:48:05.538Z",
+  "ts": "2026-11-13T10:49:18.999Z",
   "designs": [
     {
       "path": "docs/ddd/agents/DESIGN-AGENT-TEMPLATE.md",
@@ -805,7 +805,9 @@
       "landed": "true",
       "ids": [
         "UT-scripts-selftest-01",
-        "UT-scripts-selftest-02"
+        "UT-scripts-selftest-02",
+        "UT-scripts-selftest-03",
+        "UT-scripts-selftest-04"
       ]
     },
     {
@@ -1117,7 +1119,9 @@
       "ids": [
         "UT-src-lib-router-01",
         "UT-src-lib-router-02",
-        "UT-src-lib-router-03"
+        "UT-src-lib-router-03",
+        "UT-src-lib-router-04",
+        "UT-src-lib-router-05"
       ]
     },
     {
@@ -1152,7 +1156,10 @@
       "ids": [
         "UT-src-index-01",
         "UT-src-index-02",
-        "UT-src-index-03"
+        "UT-src-index-03",
+        "UT-src-index-06",
+        "UT-src-index-07",
+        "UT-src-index-08"
       ]
     },
     {
@@ -1194,7 +1201,7 @@
   "counts": {
     "design": 61,
     "test": 61,
-    "ids": 189,
+    "ids": 196,
     "byLevel": {
       "file": 46,
       "module": 5,

@@ -73,7 +73,7 @@ function makeMockCtx(options) {
     storage: { get: async (k) => storage.get(k), set: async (k, v) => void storage.set(k, v), remove: async (k) => void storage.delete(k), scan: async () => [] },
     event: { subscribe: () => (async function* () {})() },
   };
-  return { ctx, registrations };
+  return { ctx, registrations, storage };
 }
 
 function readJson(rel) {
@@ -130,7 +130,7 @@ async function main() {
     return report();
   }
 
-  const { ctx, registrations } = makeMockCtx({ profile: "standard" });
+  const { ctx, registrations, storage } = makeMockCtx({ profile: "standard" });
   let cleanup;
   try {
     cleanup = await plugin.setup(ctx);
@@ -180,6 +180,7 @@ async function main() {
     }
     const coreEntry = registrations.entries.find((e) => e.key === "ddd.discipline");
     check("UT-src-index-05 纪律经 instructions.entry 键控注入（key=ddd.discipline）", !!coreEntry && typeof coreEntry.value === "string" && coreEntry.value.includes("文档为唯一权威"));
+    check("UT-src-index-08 核心纪律含逐项交付与即修/追踪（不以摘要或建议收尾）", !!coreEntry && coreEntry.value.includes("不得以摘要代替") && coreEntry.value.includes("建议后续"));
     // 恰好一处：entry 可用时不得再走 system 兜底（防重复注入）。
     check("UT-src-index-05 纪律只注入一处（entry 可用时 system 不重复）", !!coreEntry && sysHasDiscipline === false);
 
@@ -199,6 +200,23 @@ async function main() {
     check("UT-src-index-02 Q3 隔离例外恰为 review/validate/consolidate", JSON.stringify(isolated) === JSON.stringify(expectIsolated), isolated.join(","));
     check("UT-src-index-02 Q3 隔离命令建子会话（session.create + switchAgent）", registrations.created.length === expectIsolated.length && registrations.switched.length === expectIsolated.length && registrations.created.every((c) => typeof c.agent === "string"));
     check("UT-src-index-02 Q3 子会话带 parentID（非顶层新会话）", registrations.created.every((c) => typeof c.parentID === "string" && c.parentID.length > 0));
+  }
+
+  // M13 相位读写同键（DEF：写 ddd.phase.<sid> 而读 ddd:phase:<sid> → 相位切片静默失效）
+  {
+    check("UT-src-index-06 相位读写同键（storage 含 ddd:phase:<sid>）", storage.has("ddd:phase:ses_mock"), [...storage.keys()].filter((k) => /phase/.test(k)).join(","));
+    check("UT-src-index-06 相位键无遗留形态（ddd.phase.<sid> 不复存在）", ![...storage.keys()].some((k) => /^ddd\.phase\./.test(k)));
+  }
+
+  // 同会话路径：角色约束与切片全文指针须显式进入指令（角色 md 不自动入上下文）
+  {
+    const withRole = registrations.prompts.map((p) => String(p?.text ?? ""));
+    const designer = withRole.find((t) => t.includes("角色=ddd-designer"));
+    check("UT-src-index-07 同会话指令投影角色约束（〖硬约束〗块）", !!designer && designer.includes("〖硬约束") && designer.includes("凭空发明"));
+    check("UT-src-index-07 同会话指令含切片全文指针", !!designer && /先读纪律切片/.test(designer) && /skills\/ddd-methodology\//.test(designer));
+    check("UT-src-index-07 指令尾置执行前自检（END 区）", !!designer && designer.trimEnd().endsWith("未改设计件不得改代码。"));
+    const noRole = withRole.find((t) => t.startsWith("[ddd/ddd-init]"));
+    check("UT-src-index-07 无角色命令不产硬约束块（不发明）", !!noRole && !noRole.includes("〖硬约束"));
   }
 
   if (registrations.rpc) {
@@ -256,6 +274,14 @@ async function main() {
     const out2 = r.routeSlices({ phase: "intent" }, slices);
     check("UT-src-lib-router-03 未命中只留常驻", out2.sliceIds.length === 1 && out2.sliceIds[0] === "core");
     check("UT-src-lib-router-02 detectIntent bugfix", r.detectIntent("修复这个 bug") === "bugfix");
+    // 角色约束只读投影（单点权威在 agents/<role>.md；此处只提取，不复制）
+    const md = "# 职责\n\n有事。\n\n# 约束\n\n- 只在 `docs/ddd/**` 写。\n- **不得**凭空发明。\n\n# 输出\n\n- 件。\n";
+    const cs = r.roleConstraints(md);
+    check("UT-src-lib-router-04 角色约束提取（仅「约束」节，别节不混入）", cs.length === 2 && cs[0].includes("只在") && cs[1].includes("不得") && !cs.some((c) => c.includes("有事")));
+    check("UT-src-lib-router-04 无「约束」节 → 空（不发明）", r.roleConstraints("# 职责\n\nx\n").length === 0);
+    const sl = [{ id: "core", source: "skills/core.md", when: {} }, { id: "d", source: "skills/d.md", when: { phase: "design" } }, { id: "d2", source: "skills/d.md", when: { phase: "design" } }];
+    check("UT-src-lib-router-05 切片来源去重且可解析", JSON.stringify(r.sliceSources(["core", "d", "d2"], sl)) === JSON.stringify(["skills/core.md", "skills/d.md"]));
+    check("UT-src-lib-router-05 未命中的 id 忽略", r.sliceSources(["nope"], sl).length === 0);
   }
 
   group("纯函数：guard");
@@ -368,6 +394,21 @@ async function main() {
   const langJson = readJson("assets/languages.json");
   check("UT-assets-languages-01 schema 合法（≥12 语言）", langJson?.languages?.length >= 12);
   check("UT-assets-variant-contract-schema-01 schema 合法（五维）", (readJson("assets/variant-contract-schema.json")?.properties?.dimensions?.minItems) === 5);
+
+  // 版本一致性（R31 + 发布约定）：package.json / package-lock.json 根字段 / 最新 CHANGELOG 组同号。
+  {
+    const pkg = readJson("package.json");
+    const lock = readJson("package-lock.json");
+    const lockRoot = lock?.packages?.[""]?.version;
+    check("UT-scripts-selftest-03 package-lock 根版本与 package.json 一致（发布须同步锁文件）", !lock || (lock.version === pkg.version && lockRoot === pkg.version), `pkg=${pkg?.version} lock=${lock?.version}/${lockRoot}`);
+    const chgPath = join(pluginDir, "docs", "CHANGELOG.jsonl");
+    if (existsSync(chgPath)) {
+      const rows = readFileSync(chgPath, "utf8").split(/\r?\n/).filter((l) => l.trim()).map((l) => JSON.parse(l));
+      const last = rows[rows.length - 1];
+      const want = `v${pkg.version}`;
+      check("UT-scripts-selftest-04 最新变更流记录版本 = package.json 版本（三处一致）", !last || last.version === want, `changelog=${last?.version} pkg=${want}`);
+    }
+  }
 
   // ============ 4. 内容层契约 ============
   group("内容层契约");

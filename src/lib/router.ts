@@ -67,6 +67,41 @@ export function routeSlices(input: RouteInput, slices: readonly SliceSpec[]): Ro
   };
 }
 
+/**
+ * 从角色 md 正文提取「# 约束」节条目。
+ *
+ * 单点权威：约束正文只在 `agents/<role>.md`；此处是**只读投影**，不复制。
+ * 用途：`same` 派发路径不切 agent，角色约束不会自动进入上下文——须由指令显式带入。
+ */
+export function roleConstraints(md: string): string[] {
+  const lines = (md ?? "").split(/\r?\n/);
+  const out: string[] = [];
+  let inSection = false;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (/^#{1,6}\s*约束/.test(line)) {
+      inSection = true;
+      continue;
+    }
+    if (inSection) {
+      if (/^#{1,6}\s*\S/.test(line)) break; // 下一个标题即结束
+      if (/^[-*]\s+/.test(line)) out.push(line.replace(/^[-*]\s+/, ""));
+    }
+  }
+  return out;
+}
+
+/** 选定切片的来源件路径（供指令指示「按需读全文」，渐进式披露）。 */
+export function sliceSources(sliceIds: readonly string[], slices: readonly SliceSpec[]): string[] {
+  const byId = new Map(slices.map((s) => [s.id, s.source]));
+  const out: string[] = [];
+  for (const id of sliceIds) {
+    const src = byId.get(id);
+    if (src && !out.includes(src)) out.push(src);
+  }
+  return out;
+}
+
 /** 启发式意图探测：文本关键词 + 文件扩展名。可选由宿主 decisions 复核（此处保持纯函数）。 */
 export function detectIntent(text: string, files: readonly string[] = []): Intent {
   const t = (text || "").toLowerCase();
