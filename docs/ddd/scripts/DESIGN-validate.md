@@ -13,16 +13,16 @@ updated: 2026-11-11
 
 ## 定位与边界
 
-- **职责**：把项目状态**凑成** `ProjectState` 快照，调用 `src/lib/gates.ts` 的判据，产出 `docs/reports/validate.json`（G1–G6 读数）。**不做判断式**；只做机械读数。
+- **职责**：复用 `src/lib/evidence.mjs` 把项目实物采集为 `ProjectState` 快照，调用 `src/lib/gates.ts` 的判据，产出 `docs/reports/validate.json`（G1–G6 读数）。**不做判断式**；只做机械读数。
 - **边界内**：状态采集、判据调用、报告；G6 收尾前置（含缺陷登记册存在性）。
 - **边界外**：判据实现（`src/lib/gates.ts`）；缺陷判定（审计）。
 
 ## 对外暴露接口
 
-`node scripts/validate.mjs [--root <项目根>] [--check]`
+`node --experimental-strip-types scripts/validate.mjs [--root <项目根>] [--check] [--release]`
 退出码：`0` 无 `block`（可推进）；`1` 有 `block`；`2` 用法错。
 
-**报告形态**（`docs/reports/validate.json`）：`{ ts, readings: GateReading[], summary, canAdvance }`。
+**报告形态**（`docs/reports/validate.json`）：`{ ts, readings: GateReading[], summary, canAdvance, readyForRelease, errors, evidence, defectsRegister }`。
 每个 `GateReading` 含 `id`/`verdict`/`examined`/`unrecognized`/`remedy?`；**`na` 与 `pass` 不得塌成同一读数**。
 
 ## 需引入的依赖
@@ -31,7 +31,7 @@ updated: 2026-11-11
 
 ## 调用的模块能力及接口
 
-- 读：`docs/ddd/**`（经 `scripts/snapshot.mjs` 快照）、`docs/REQUIREMENTS.md`、`docs/ARCHITECTURE.md`、`docs/temp.jsonl`、`docs/board/board.jsonl`、缺陷登记册。
+- 读：`docs/ddd/**`（直接扫描；不信任可手改快照）、`docs/REQUIREMENTS.md`、`docs/ARCHITECTURE.md`、`docs/temp.jsonl`、`docs/board/board.jsonl`、缺陷登记册。
 - 写：`docs/reports/validate.json`。
 - 被 `/ddd-validate` 命令调用。
 

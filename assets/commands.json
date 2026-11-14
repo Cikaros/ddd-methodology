@@ -15,7 +15,8 @@
       "params": [],
       "impl": "extension",
       "blocking": true,
-      "dispatch": "same"
+      "dispatch": "same",
+      "role": "ddd-intent-clarifier"
     },
     {
       "name": "ddd-arch",
@@ -23,7 +24,8 @@
       "params": [],
       "impl": "extension",
       "blocking": true,
-      "dispatch": "same"
+      "dispatch": "same",
+      "role": "ddd-architect"
     },
     {
       "name": "ddd-design",
@@ -33,7 +35,8 @@
       ],
       "impl": "extension",
       "blocking": false,
-      "dispatch": "same"
+      "dispatch": "same",
+      "role": "ddd-designer"
     },
     {
       "name": "ddd-review",
@@ -41,7 +44,8 @@
       "params": [],
       "impl": "extension",
       "blocking": false,
-      "dispatch": "isolated"
+      "dispatch": "isolated",
+      "role": "ddd-design-reviewer"
     },
     {
       "name": "ddd-test-design",
@@ -49,7 +53,8 @@
       "params": [],
       "impl": "extension",
       "blocking": false,
-      "dispatch": "same"
+      "dispatch": "same",
+      "role": "ddd-test-designer"
     },
     {
       "name": "ddd-implement",
@@ -57,7 +62,8 @@
       "params": [],
       "impl": "extension",
       "blocking": false,
-      "dispatch": "same"
+      "dispatch": "same",
+      "role": "ddd-implementer"
     },
     {
       "name": "ddd-test",
@@ -65,7 +71,8 @@
       "params": [],
       "impl": "extension",
       "blocking": false,
-      "dispatch": "same"
+      "dispatch": "same",
+      "role": "ddd-tester"
     },
     {
       "name": "ddd-validate",
@@ -73,7 +80,8 @@
       "params": [],
       "impl": "extension",
       "blocking": false,
-      "dispatch": "isolated"
+      "dispatch": "isolated",
+      "role": "ddd-auditor"
     },
     {
       "name": "ddd-change",
@@ -110,7 +118,8 @@
       ],
       "impl": "extension",
       "blocking": true,
-      "dispatch": "isolated"
+      "dispatch": "isolated",
+      "role": "ddd-consolidator"
     },
     {
       "name": "ddd-board",
@@ -135,7 +144,8 @@
       ],
       "impl": "extension",
       "blocking": false,
-      "dispatch": "same"
+      "dispatch": "same",
+      "role": "ddd-curator"
     }
   ]
 }

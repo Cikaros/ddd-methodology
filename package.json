@@ -1,11 +1,11 @@
 {
   "name": "@cikaros/ddd-methodology",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "分治式设计驱动开发方法论（Hermess 2.0）· OpenCode 插件：文档为唯一权威，代码为其落地",
   "license": "MIT",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.16.0"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -23,17 +23,17 @@
   ],
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --experimental-strip-types ./scripts/selftest.mjs .",
-    "snapshot": "node scripts/snapshot.mjs .",
-    "change": "node scripts/change.mjs",
-    "map": "node scripts/map.mjs replay .",
-    "validate": "node scripts/validate.mjs .",
-    "drift-check": "node scripts/drift-check.mjs .",
-    "defects": "node scripts/defects.mjs",
-    "materialize": "node scripts/materialize.mjs all .",
-    "scaffold": "node scripts/scaffold.mjs .",
-    "regen": "node scripts/snapshot.mjs . && node scripts/map.mjs replay . && node scripts/change.mjs replay --root . && node scripts/defects.mjs replay --root .",
-    "check": "node scripts/snapshot.mjs . --check && node scripts/map.mjs check . && node scripts/change.mjs check --root . && node scripts/defects.mjs check --root . && node scripts/drift-check.mjs .",
+    "test": "node --experimental-strip-types ./scripts/selftest.mjs . && node --experimental-strip-types --test tests/refactor.test.mjs",
+    "snapshot": "node --experimental-strip-types scripts/snapshot.mjs .",
+    "change": "node --experimental-strip-types scripts/change.mjs",
+    "map": "node --experimental-strip-types scripts/map.mjs replay .",
+    "validate": "node --experimental-strip-types scripts/validate.mjs .",
+    "drift-check": "node --experimental-strip-types scripts/drift-check.mjs .",
+    "defects": "node --experimental-strip-types scripts/defects.mjs",
+    "materialize": "node --experimental-strip-types scripts/materialize.mjs all .",
+    "scaffold": "node --experimental-strip-types scripts/scaffold.mjs .",
+    "regen": "node --experimental-strip-types scripts/snapshot.mjs . && node --experimental-strip-types scripts/map.mjs replay . && node --experimental-strip-types scripts/change.mjs replay --root . && node --experimental-strip-types scripts/defects.mjs replay --root .",
+    "check": "node --experimental-strip-types scripts/snapshot.mjs . --check && node --experimental-strip-types scripts/map.mjs check . && node --experimental-strip-types scripts/change.mjs check --root . && node --experimental-strip-types scripts/defects.mjs check --root . && node --experimental-strip-types scripts/drift-check.mjs .",
     "release": "npm run regen && npm run check && npm run typecheck && npm test"
   },
   "peerDependencies": {

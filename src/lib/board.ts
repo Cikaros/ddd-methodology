@@ -72,7 +72,7 @@ const TERMINAL: readonly BoardStatus[] = ["done", "dropped"];
  * 折叠每 taskId 最新态 → 剔除 archive → 剔除前驱未满足 → 按 (priority 升, seq 升) 排序。
  * 前驱未满足：任一 dependsOn 不在已 done 集合内即剔除。
  */
-export function project(rows: readonly BoardRow[]): BoardItem[] {
+export function projectAll(rows: readonly BoardRow[]): BoardItem[] {
   const byId = new Map<string, BoardItem>();
   const ordered = [...rows].sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0));
   for (const r of ordered) {
@@ -98,14 +98,19 @@ export function project(rows: readonly BoardRow[]): BoardItem[] {
       byId.set(r.taskId, { ...cur, ts: r.ts });
     }
   }
-  const done = new Set<string>();
-  for (const it of byId.values()) if (TERMINAL.includes(it.status)) done.add(it.taskId);
-  const visible = [...byId.values()].filter((it) => it.dependsOn.every((d) => done.has(d)));
+  const visible = [...byId.values()];
   visible.sort((a, b) => {
     const p = rankOf(a.priority) - rankOf(b.priority);
     return p !== 0 ? p : a.seq - b.seq;
   });
   return visible;
+}
+
+/** 可执行投影：过滤前驱未完成的任务；不应用于 G6 活跃数。 */
+export function project(rows: readonly BoardRow[]): BoardItem[] {
+  const all = projectAll(rows);
+  const done = new Set(all.filter(it => TERMINAL.includes(it.status)).map(it => it.taskId));
+  return all.filter(it => it.dependsOn.every(d => done.has(d)));
 }
 
 /** 合法转移：见 DESIGN-board.md；其余拒。 */

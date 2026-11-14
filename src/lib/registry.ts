@@ -9,6 +9,9 @@
 export interface CommandSpec {
   readonly name: string;
   readonly description: string;
+  readonly role?: string;
+  readonly blocking: boolean;
+  readonly dispatch: "same" | "isolated";
 }
 
 export interface SkillSpec {
@@ -24,24 +27,29 @@ export interface Registrations {
   readonly skills: readonly SkillSpec[];
 }
 
-/** 13 条节点命令 + ddd-board（M7）+ ddd-memo（M6），共 15 条，统一 `ddd-` 前缀。 */
-export const COMMANDS: readonly CommandSpec[] = [
-  { name: "ddd-init", description: "在当前项目根落项目级骨架" },
-  { name: "ddd-intent", description: "明确意图：把需求澄清到可设计、可验收" },
-  { name: "ddd-arch", description: "生成或更新 docs/ARCHITECTURE.md 与目录规划" },
-  { name: "ddd-design", description: "逐层生成或更新设计树（--from-code 由代码反推）" },
-  { name: "ddd-review", description: "冻结前独立交叉评审接口契约" },
-  { name: "ddd-test-design", description: "生成或更新测试用例树" },
-  { name: "ddd-implement", description: "按冻结契约落代码与单元测试" },
-  { name: "ddd-test", description: "执行四级测试并出报告与缺陷路由" },
-  { name: "ddd-validate", description: "跑门禁、出报告" },
-  { name: "ddd-change", description: "记一条变更流" },
-  { name: "ddd-map", description: "重放图集" },
-  { name: "ddd-wrapup", description: "收尾：清临时件、剔需求、发布版本" },
-  { name: "ddd-consolidate", description: "冻结即归并：按模块/目录隔离重构为最终版" },
-  { name: "ddd-board", description: "看板闭环：查/增/转/证/弃/重挂 持久多步待办任务" },
-  { name: "ddd-memo", description: "记忆闭环：查记忆条目、候选提示" },
-];
+/** 命令注册表以 assets/commands.json 为唯一来源；角色/确认/派发不再维护第二份映射。 */
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const authority = resolve(dirname(fileURLToPath(import.meta.url)), "../../assets/commands.json");
+function loadCommands(): readonly CommandSpec[] {
+  const payload = JSON.parse(readFileSync(authority, "utf8")) as { commands?: Array<Record<string, unknown>> };
+  if (!Array.isArray(payload.commands) || payload.commands.length === 0) throw new Error("commands.json: commands 缺失");
+  const seen = new Set<string>();
+  return payload.commands.map((raw) => {
+    const name = raw.name;
+    const description = raw.purpose;
+    if (typeof name !== "string" || !/^ddd-[a-z-]+$/.test(name) || seen.has(name)) throw new Error(`commands.json: 非法或重复命令 ${String(name)}`);
+    if (typeof description !== "string" || !description.trim()) throw new Error(`commands.json: ${name} 缺 purpose`);
+    if (raw.dispatch !== "same" && raw.dispatch !== "isolated") throw new Error(`commands.json: ${name} dispatch 非法`);
+    if (typeof raw.blocking !== "boolean") throw new Error(`commands.json: ${name} blocking 非法`);
+    if (raw.role !== undefined && (typeof raw.role !== "string" || !/^ddd-[a-z-]+$/.test(raw.role))) throw new Error(`commands.json: ${name} role 非法`);
+    seen.add(name);
+    return { name, description, role: raw.role as string | undefined, blocking: raw.blocking, dispatch: raw.dispatch };
+  });
+}
+export const COMMANDS: readonly CommandSpec[] = loadCommands();
 
 /** 随包技能清单（主技能 + 前端技能 + 工具技能 + 语言族同构实例）。 */
 export const SKILLS: readonly SkillSpec[] = [

@@ -1,0 +1,16 @@
+---
+doc: test-design
+level: file
+target: src/lib/evidence.mjs
+status: frozen
+landed: true
+updated: 2026-11-14
+---
+
+# 单元测试设计：src/lib/evidence.mjs
+
+| 用例 ID | 输入/动作 | 验收判据 |
+|---|---|---|
+| UT-evidence-001 | 读取正常项目/模型输入 | 机械结果与输入一致，不可伪造通过 |
+| UT-evidence-002 | 传入空文件、损坏或异常输入 | 显式拒绝或受控降级，不得静默通过 |
+| UT-evidence-003 | 运行原版自测和重构反例 | `npm test` 成功，且不改动权威件 |

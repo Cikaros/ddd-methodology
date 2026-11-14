@@ -30,7 +30,7 @@ updated: 2026-11-11
 | `designs[]` | `{ path, level, target, status, landed, covers, depends }` |
 | `tests[]` | `{ path, target, status, landed, ids }` |
 | `counts` | `{ design, test, ids, byLevel }` |
-| `gaps` | `{ missingUnitTests[], missingGroupTests[], duplicateTargets[], duplicateIds[] }` |
+| `gaps` | `{ mismatches[], missingUnitTests[], missingGroupTests[], duplicateTargets[], duplicateIds[] }` |
 
 ## 需引入的依赖
 
@@ -39,7 +39,7 @@ updated: 2026-11-11
 
 ## 调用的模块能力及接口
 
-- 复用 `src/lib/registry.ts` 的清单口径仅作交叉核对（可选）；快照本身只读 `docs/ddd/**`。
+- 统一调用 `src/lib/evidence.mjs#scanDesignTree`，不再另写一份 frontmatter、设计树和测试缺口解析器。
 - 被 `scripts/validate.mjs`（G3/G4 判据入参）与审计只读消费。
 
 ## 已知约束

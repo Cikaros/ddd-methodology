@@ -38,6 +38,7 @@ updated: 2026-11-11
 
 | 导出 | 契约 |
 |---|---|
+| `projectAll(rows)` | 保留所有未归档任务（含前驱未满足的），供 G6 与完整状态统计；不得以可执行投影代替总量 |
 | `project(rows)` | 折叠每 `taskId` 最新态 → 剔除 `archive` → 剔除前驱未满足 → 按 `(priority 升, seq 升)` 排序 |
 | `admit(row, projection, cfg)` | 准入：`acceptance` 非空、`priority` 在域、`dependsOn` 实存；返回插入位次；反饥饿超限且缺 `reason` 则拒 |
 | `canTransition(from, to)` | 合法转移（见下） |

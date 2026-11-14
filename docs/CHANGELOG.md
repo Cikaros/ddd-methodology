@@ -120,3 +120,35 @@
 - 本次不做：不改发布流程脚本；不改 R31 三处定义（锁文件属第四落点，为构建产物一致性）。
 - 怎么算做对：UT-scripts-selftest-03/04 通过；selftest 全过；npm run release 全绿；工作区派生件一致
 - 涉及：package-lock.json, scripts/selftest.mjs, docs/ddd/scripts/UNIT-TESTS-selftest.md
+
+## v1.0.9 · CHG-0016 · feat
+
+- 时间：2026-11-14T14:33:15.163Z
+- 为什么做：统一证据源与门禁判定：原 G1–G6 存在硬编码（未决数 0、架构只判标题存在、G5 的 schemaValid/whitelisted 写死 true、G6 版本只读 2 处、看板用可执行投影漏算 blocked）。改为单一采集器 evidence.mjs 从实物读取，snapshot/validate/RPC 共用同一解析与判定；JSONL 严格解析（行号/长度/对象契约，损坏不再吞成空）；G6 增缺陷登记册读数并以 projectAll 统计全部未归档任务。
+- 本次不做：不改门禁编号与命令语义；不以静态扫描冒充业务语义的形式化验证；不引入运行时依赖；不改 assets 中阈值取值。
+- 怎么算做对：UT-evidence-001/002/003 通过；npm run release 全绿；tests/refactor.test.mjs 18 项反例通过（空章节、未落地、符号链接、损坏 JSONL、blocked 看板、版本钉版漂移均被拦下）；snapshot --check 与 validate 读数一致。
+- 涉及：src/lib/evidence.mjs, src/lib/evidence.d.mts, src/lib/gates.ts, scripts/validate.mjs, scripts/snapshot.mjs, src/index.ts, tests/refactor.test.mjs, docs/ddd/src/lib/DESIGN-evidence.md, docs/ddd/src/lib/DESIGN-evidence.d.md
+
+## v1.0.9 · CHG-0017 · feat
+
+- 时间：2026-11-14T14:33:15.201Z
+- 为什么做：DeepSeek V4.1 Flash 上下文预算适配：把每请求多条无上限的注入（切片/看板/记忆）改为单条 composeContext 预算内状态（Flash 1000 字符、其他 1700，可经 options.contextBudgetChars 覆盖），优先保留证据错误，项目文件内容按数据处理；不改温度、推理参数、工具协议与模型选择。
+- 本次不做：不自动改选模型、不劫持宿主推理协议、不改写提供商密钥；不声称可观测的准确度/时延增益（尚无基准对照）。
+- 怎么算做对：UT-model-policy-001/002/003 通过；tests/refactor.test.mjs 的 Flash 识别与预算截断用例通过；typecheck 0 错。
+- 涉及：src/lib/model-policy.ts, src/index.ts, docs/ddd/src/lib/DESIGN-model-policy.md, docs/optimization/DEEPSEEK-FLASH.md, docs/optimization/REFACTOR-REPORT.md
+
+## v1.0.9 · CHG-0018 · fix
+
+- 时间：2026-11-14T14:33:15.238Z
+- 为什么做：去第二份命令角色映射：原先 COMMAND_ROLE 与 assets/commands.json 各自维护命令→角色/确认/派发，属复写；现以 assets/commands.json 为唯一权威，registry.ts 校验投影，派发与阻塞统一从注册表读取。同时把 board 拆为 projectAll（全量未归档，供 G6）与 project（可执行投影，供 UI）。
+- 本次不做：不改命令名/参数/门禁语义；不改角色清单与派发策略。
+- 怎么算做对：drift-check 的 commands 对账零差异；selftest 全过；registry 对非法/重复命令抛错被反例覆盖。
+- 涉及：assets/commands.json, src/lib/registry.ts, src/lib/board.ts, src/index.ts, docs/ddd/src/lib/DESIGN-registry.md, docs/ddd/src/lib/DESIGN-board.md
+
+## v1.0.9 · CHG-0019 · fix
+
+- 时间：2026-11-14T14:33:15.275Z
+- 为什么做：环境与发布一致性：CLI 直接加载 TypeScript 需 Node >=22.16，engines 与 README 前置由 >=20 校正为 >=22.16，npm scripts 与嵌套测试统一加 --experimental-strip-types；validate 增 --release/--check，README 与文档同步版本号至 1.0.9。
+- 本次不做：不改 OpenCode 宿主自身的 TS 加载机制；不改发布流程的步骤次序。
+- 怎么算做对：Node22 下 npm test / npm run check / npm run release 全绿；README 无残留 1.0.8 钉版。
+- 涉及：package.json, package-lock.json, scripts/selftest.mjs, README.md, docs/ddd/scripts/DESIGN-validate.md, docs/ddd/scripts/DESIGN-snapshot.md

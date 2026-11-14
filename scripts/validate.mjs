@@ -1,100 +1,32 @@
 /**
- * scripts/validate.mjs —— 门禁读取器（M3）。
- *
- * 把项目状态凑成 ProjectState，调用 src/lib/gates.ts 的判据，产出 docs/reports/validate.json。
- * 只做机械读数；不做判断式。na 与 pass 不得塌成同一读数。
- * 用法：node scripts/validate.mjs [--root <项目根>] [--check]
- * 退出码：0 无 block（可推进）；1 有 block；2 用法错。
+ * G1-G6 CLI reader. Same live evidence collector and same gate predicates as RPC.
+ * `--check`: do not write a report; `--release`: require all six gates to pass.
+ * Exit 0 = no blocks (or all pass for --release); exit 1 = blocked; exit 2 = usage.
  */
+import { resolve, dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { collectProjectEvidence } from '../src/lib/evidence.mjs';
+import { writeReportJson } from './report-io.mjs';
 
-import { readFileSync, existsSync, writeFileSync, mkdirSync, readdirSync } from "node:fs";
-import { dirname, join, resolve, basename } from "node:path";
-import { fileURLToPath } from "node:url";
-import { writeReportJson } from "./report-io.mjs";
-
-const here = dirname(fileURLToPath(import.meta.url));
-const packageRoot = resolve(here, "..");
-
-function parseArgs(argv) {
-  const out = { _: [] };
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a.startsWith("--")) { const k = a.slice(2); const n = argv[i + 1]; if (n === undefined || n.startsWith("--")) out[k] = true; else { out[k] = n; i++; } }
-    else out._.push(a);
-  }
-  return out;
+const args = process.argv.slice(2);
+function value(flag) { const i = args.indexOf(flag); return i >= 0 && args[i + 1] && !args[i+1].startsWith('--') ? args[i + 1] : undefined; }
+if (args.includes('--root') && !value('--root')) { console.error('--root 需要目录'); process.exit(2); }
+const root = resolve(value('--root') ?? args.find(a=>!a.startsWith('--')) ?? '.');
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+try {
+  const { gates, summarize, canAdvance } = await import('../src/lib/gates.ts');
+  const { COMMANDS } = await import('../src/lib/registry.ts');
+  const { state, errors, details } = collectProjectEvidence(root, { commandNames: COMMANDS.map(c=>c.name), packageRoot });
+  const readings = [gates.G1(state), gates.G2(state), gates.G3(state), gates.G4(state), gates.G5(state), gates.G6(state)];
+  const readyForRelease = errors.length === 0 && readings.every(r=>r.verdict === 'pass');
+  const canProceed = errors.length === 0 && canAdvance(readings);
+  const report = { ts: new Date().toISOString(), defectsRegister: state.wrapup?.defectsRegister === true, readings, summary: summarize(readings), canAdvance: canProceed, readyForRelease, errors, evidence: { designGaps: details.designTree?.gaps, isomorphism: details.isomorphism, commandRegistry: details.commandRegistry }, note: 'na ≠ pass；--release 要求所有门禁 pass，无损坏证据' };
+  if (!args.includes('--check')) writeReportJson(join(root,'docs','reports','validate.json'), report);
+  for (const r of readings) console.log(`${r.id} ${r.verdict}${r.remedy ? ' — '+r.remedy : ''}`);
+  for (const error of errors) console.error(`证据错误: ${error}`);
+  console.log(`summary=${JSON.stringify(report.summary)} canAdvance=${canProceed} readyForRelease=${readyForRelease}`);
+  process.exit(args.includes('--release') ? (readyForRelease ? 0 : 1) : (canProceed ? 0 : 1));
+} catch (error) {
+  console.error(`校验失败（拒绝按成功处理）：${error?.stack ?? error}`);
+  process.exit(1);
 }
-const args = parseArgs(process.argv.slice(2));
-const root = args.root && args.root !== true ? resolve(String(args.root)) : process.cwd();
-
-const gates = await import(new URL("../src/lib/gates.ts", import.meta.url).href);
-const board = await import(new URL("../src/lib/board.ts", import.meta.url).href);
-
-const read = (p) => (existsSync(p) ? readFileSync(p, "utf8") : undefined);
-const readJson = (p) => { try { return JSON.parse(readFileSync(p, "utf8")); } catch { return undefined; } };
-const readJsonl = (p) => { try { return existsSync(p) ? readFileSync(p, "utf8").split(/\r?\n/).filter((l) => l.trim()).map((l) => JSON.parse(l)) : []; } catch { return []; } };
-
-// —— 采集 ProjectState ——
-const reqHead = (read(join(root, "docs", "REQUIREMENTS.md")) ?? "").split("---")[1] ?? "";
-const reqFrozen = /status:\s*frozen/.test(reqHead);
-const hasReq = existsSync(join(root, "docs", "REQUIREMENTS.md"));
-
-const archText = read(join(root, "docs", "ARCHITECTURE.md"));
-const arch = archText
-  ? {
-      techStack: /技术栈|tech.?stack/i.test(archText),
-      dependencies: /依赖|dependenc/i.test(archText),
-      directory: /目录|director/i.test(archText),
-      environment: /环境|environment|探查/i.test(archText),
-    }
-  : undefined;
-
-// 设计树覆盖（G4）
-const dddRoot = join(root, "docs", "ddd");
-let missingCoverage = 0;
-let hasDesignTree = false;
-if (existsSync(dddRoot)) {
-  hasDesignTree = true;
-  const files = [];
-  (function walk(d) { for (const e of readdirSync(d, { withFileTypes: true })) { const p = join(d, e.name); if (e.isDirectory()) walk(p); else if (/\.md$/.test(e.name)) files.push(p); } })(dddRoot);
-  for (const p of files) {
-    const b = basename(p);
-    if (!/^DESIGN(-.*)?\.md$/.test(b) || b === "DESIGN.md") continue;
-    const s = b.replace(/^DESIGN-/, "").replace(/\.md$/, "");
-    if (!existsSync(join(dirname(p), `UNIT-TESTS-${s}.md`))) missingCoverage++;
-  }
-}
-
-// 落地（G5）
-const landingTargets = ["src/index.ts", "src/lib/board.ts", "assets/commands.json", "scripts/board.mjs", "scripts/validate.mjs"];
-const landings = {
-  items: landingTargets.map((id) => ({ id, existsBytes: (read(join(root, id)) ?? "").length, schemaValid: true, whitelisted: true })),
-};
-
-// 收尾（G6）
-const tempRows = readJsonl(join(root, "docs", "temp.jsonl"));
-const boardRows = readJsonl(join(root, "docs", "board", "board.jsonl"));
-const hasBoard = existsSync(join(root, "docs", "board", "board.jsonl"));
-const boardProj = board.project(boardRows);
-const pkg = readJson(join(root, "package.json"));
-const versionPlaces = (pkg && existsSync(join(root, "docs", "CHANGELOG.jsonl")) ? 1 : 0) + (existsSync(join(root, "docs", "CHANGELOG.jsonl")) ? 1 : 0);
-const hasDefects = existsSync(join(root, "docs", "defects.jsonl")) || existsSync(join(root, "docs", "audits", "landing-findings.md"));
-
-const state = {
-  requirements: hasReq ? { frozen: reqFrozen, openRulings: 0 } : undefined,
-  architecture: arch,
-  designTree: hasDesignTree ? { isomorphicMismatches: 0, commandRegistryMismatches: 0 } : undefined,
-  testTree: hasDesignTree ? { missingCoverage } : undefined,
-  landings,
-  wrapup: hasBoard ? { tempOpen: tempRows.length, boardActive: boardProj.length, versionPlaces } : undefined,
-};
-
-const readings = [gates.gates.G1(state), gates.gates.G2(state), gates.gates.G3(state), gates.gates.G4(state), gates.gates.G5(state), gates.gates.G6(state)];
-const report = { ts: new Date().toISOString(), readings, summary: gates.summarize(readings), canAdvance: gates.canAdvance(readings), defectsRegister: hasDefects, note: "「零 FAIL」与「零缺陷」是两个读数；na ≠ pass" };
-
-const outPath = join(root, "docs", "reports", "validate.json");
-writeReportJson(outPath, report);
-
-for (const r of readings) console.log(`${r.id} ${r.verdict}${r.remedy ? " — " + r.remedy : ""}`);
-console.log(`summary=${JSON.stringify(report.summary)} canAdvance=${report.canAdvance}`);
-process.exit(report.canAdvance ? 0 : 1);

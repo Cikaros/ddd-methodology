@@ -7,8 +7,8 @@
  * 退出码：0 过；1 失败（快照与设计树不一致，含手改检出）；2 用法错。
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
-import { dirname, join, resolve, basename, relative } from "node:path";
+import { readFileSync, existsSync, mkdirSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { writeReportJson } from "./report-io.mjs";
 
 function parseArgs(argv) {
@@ -39,79 +39,21 @@ if (!existsSync(dddRoot)) {
   process.exit(0);
 }
 
-function frontmatter(t) {
-  const m = t.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  const o = {};
-  if (m) for (const l of m[1].split(/\r?\n/)) {
-    const i = l.indexOf(":");
-    if (i > 0) o[l.slice(0, i).trim()] = l.slice(i + 1).trim();
-  }
-  return o;
+// Shared with CLI and RPC: one design-tree parser, one set of gap rules.
+const { scanDesignTree } = await import("../src/lib/evidence.mjs");
+const tree = scanDesignTree(root);
+if (!tree) {
+  console.log("无设计树（na，不判通过）。");
+  process.exit(0);
 }
-
-const files = [];
-(function walk(d) {
-  for (const e of readdirSync(d, { withFileTypes: true })) {
-    const p = join(d, e.name);
-    if (e.isDirectory()) walk(p);
-    else if (/\.md$/.test(e.name)) files.push(p);
-  }
-})(dddRoot);
-
-const designs = [];
-const tests = [];
-for (const p of files) {
-  const rel = relative(dddRoot, p).replace(/\\/g, "/");
-  const b = basename(p);
-  const t = readFileSync(p, "utf8");
-  const f = frontmatter(t);
-  if (/^DESIGN(-.*)?\.md$/.test(b)) {
-    designs.push({ path: "docs/ddd/" + rel, level: f.level, target: f.target, status: f.status, landed: f.landed, covers: f.covers, depends: f.depends });
-  } else if (/^UNIT-TESTS-|^TESTS-/.test(b)) {
-    const ids = [...t.matchAll(/\|\s*((?:UT|ST|MT|GT)-[A-Za-z0-9-]+-\d+)\s*\|/g)].map((m) => m[1]);
-    tests.push({ path: "docs/ddd/" + rel, target: f.target, status: f.status, landed: f.landed, ids });
-  }
-}
-
-// 缺口自省
-const missingUnitTests = [];
-for (const d of designs) {
-  if (d.level !== "file") continue;
-  const p = join(root, d.path);
-  const b = basename(p).replace(/^DESIGN-/, "").replace(/\.md$/, "");
-  if (!existsSync(join(dirname(p), `UNIT-TESTS-${b}.md`))) missingUnitTests.push(d.path);
-}
-const missingGroupTests = [];
-for (const d of designs) {
-  if (d.level !== "group") continue;
-  const p = join(root, d.path);
-  const groupName = (d.target || "").split("/").filter(Boolean).pop() || "group";
-  const cands = [`TESTS-${groupName}.md`, `TESTS-${basename(dirname(p))}.md`];
-  if (!cands.some((c) => existsSync(join(dirname(p), c)))) missingGroupTests.push(d.path);
-}
-const targetSeen = new Map();
-const duplicateTargets = [];
-for (const d of designs) {
-  if (!d.target) continue;
-  if (targetSeen.has(d.target)) duplicateTargets.push(d.target);
-  else targetSeen.set(d.target, 1);
-}
-const idSeen = new Map();
-const duplicateIds = [];
-for (const t of tests) for (const id of t.ids) {
-  if (idSeen.has(id)) duplicateIds.push(id);
-  else idSeen.set(id, 1);
-}
-
 const byLevel = {};
-for (const d of designs) byLevel[d.level] = (byLevel[d.level] || 0) + 1;
-
+for (const d of tree.designs) byLevel[d.level] = (byLevel[d.level] ?? 0) + 1;
 const snapshot = {
   ts: new Date().toISOString(),
-  designs,
-  tests,
-  counts: { design: designs.length, test: tests.length, ids: idSeen.size, byLevel },
-  gaps: { missingUnitTests, missingGroupTests, duplicateTargets, duplicateIds },
+  designs: tree.designs,
+  tests: tree.tests,
+  counts: { ...tree.counts, byLevel },
+  gaps: { ...tree.gaps },
 };
 
 const outPath = join(root, "docs", "reports", "design-tree.json");
@@ -133,5 +75,5 @@ if (args.check) {
 
 mkdirSync(dirname(outPath), { recursive: true });
 const changed = writeReportJson(outPath, snapshot);
-console.log(`快照已写出：design=${designs.length} test=${tests.length} ids=${idSeen.size} gaps=${missingUnitTests.length + missingGroupTests.length + duplicateTargets.length + duplicateIds.length}${changed ? "" : "（内容未变）"}`);
+console.log(`快照已写出：design=${tree.designs.length} test=${tree.tests.length} ids=${tree.counts.ids} gaps=${Object.values(tree.gaps).reduce((a, xs) => a + xs.length, 0)}${changed ? "" : "（内容未变）"}`);
 process.exit(0);

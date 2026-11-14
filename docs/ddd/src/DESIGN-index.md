@@ -40,14 +40,14 @@ updated: 2026-11-13
   - **两类键不得混用**：`instructions.entry` 的键**不得含冒号**（`ddd.discipline`/`ddd.phase`）；`ctx.storage` 的键**用冒号命名空间**（`ddd:intent:<sid>`、`ddd:phase:<sid>`）。相位**读写须同键**（写 `ddd:phase:<sid>`，context hook 亦读 `ddd:phase:<sid>`）——曾因写 `ddd.phase.<sid>`、读 `ddd:phase:<sid>` 而致相位切片**静默失效**（以 `UT-src-index-06` 防回归）。
   - 幂等靠**键控**（同键重复写＝更新/替换），**不再用正文哨兵** `<!--ddd:core-->`。
 - **角色工具面强制（Q4）**：`ctx.session.hook("context", ...)` 按 `event.agent` 删除不在 `assets/role-tools.json` 白名单的工具（`delete event.tools[x]`）；同时 `ctx.permission.hook("evaluate", ...)` 做运行时 deny 兜底（fail-safe）。
-- **记忆注入与复发统计（M6）**：`ctx.session.hook("context")` 注入 topN + 候选提示；`ctx.tool.hook("execute.before")` 匹配 `trigger` 计 `occur`；`ctx.event.subscribe(["session.deleted"])` 触发 `decay`。
-- **看板（M7）**：`/ddd-board list|add|move|evidence|drop|rehome` 由 `COMMANDS` 注册；`ctx.session.hook("context")` 注入看板摘要（待办/进行/阻塞）；`ctx.tool.hook("execute.after")` 自动挂 `evidence`；G6 要求活跃投影为空。
+- **记忆注入与复发统计（M6）**：`ctx.session.hook("context")` 按当前模型上下文预算挑选 topN + 候选提示；`ctx.tool.hook("execute.before")` 匹配 `trigger` 计 `occur`；`ctx.event.subscribe(["session.deleted"])` 触发 `decay`。
+- **看板（M7）**：`/ddd-board list|add|move|evidence|drop|rehome` 由 `COMMANDS` 注册；`ctx.session.hook("context")` 注入预算内看板摘要（待办/进行/阻塞）；`ctx.tool.hook("execute.after")` 自动挂 `evidence`；G6 要求活跃投影为空。
 - 返回 cleanup：`dispose` 各 registration。
 
 ## 需引入的依赖
 
 - `@opencode/plugin`（宿主）：`Plugin`、`Skill`。
-- `./lib/registry.ts`、`./lib/paths.ts`、`./lib/router.ts`、`./lib/guard.ts`、`./lib/memory.ts`、`./lib/board.ts`、`./rpc.ts`。
+- `./lib/registry.ts`、`./lib/evidence.mjs`、`./lib/model-policy.ts`、`./lib/paths.ts`、`./lib/router.ts`、`./lib/guard.ts`、`./lib/memory.ts`、`./lib/board.ts`、`./rpc.ts`。
 
 ## 调用的模块能力及接口
 
@@ -61,8 +61,8 @@ updated: 2026-11-13
 | `ctx.session.prompt` | 命令把内容送进会话（**默认同会话**路径） |
 | `ctx.permission.assert` | 阻塞式确认（M5；§9.5 分职责，server 侧） |
 | `ctx.session.create` / `ctx.session.switchAgent` | Q3 **隔离例外**子会话派发（仅 review/validate/consolidate） |
-| `child_process.spawnSync("node", […])` | 调 `scripts/scaffold.mjs`（F7 骨架生成）；**禁 `process.execPath`**（§8.7/C-43） |
-| `ctx.options` | 读 `profile`／`gates`／`paths`（只读一次，裁定 V-02） |
+| `child_process.execFile("node", […])` | 调 `scripts/scaffold.mjs`（F7 骨架生成）；**禁 `process.execPath`**（§8.7/C-43） |
+| `ctx.options` | 读 `profile`／`contextBudgetChars`／`model`（只读一次，裁定 V-02） |
 
 ## 已知约束
 

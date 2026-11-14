@@ -1,5 +1,8 @@
 # @cikaros/ddd-methodology（Hermess）
 
+> **v1.0.9 · 基于原版源码的重构（2026-11-14）**：保留原版 Hermess 2.0 目标、命令、TUI/RPC、Agent/Skill 与既有文档体系；重构统一证据源、G1–G6 判定、命令元数据及 DeepSeek Flash 上下文预算。详见 [重构与验证报告](docs/optimization/REFACTOR-REPORT.md) 与 [DeepSeek V4.1 Flash 适配说明](docs/optimization/DEEPSEEK-FLASH.md)。本版**尚未**真实 OpenCode/DeepSeek 端到端联调，不能作为性能提升的实测证明。CLI 需 Node ≥22.16。
+
+
 > **分区式设计驱动开发方法论** —— 文档为唯一权威，代码为其落地。
 > 一个可装入 [OpenCode](https://opencode.ai) 的插件包；装入后在**当前项目根**搭起设计文档骨架，其后按节点序列与门禁推进当前项目。
 
@@ -15,7 +18,7 @@
 ## 一、安装
 
 ### 前置
-- Node.js ≥ 20
+- Node.js ≥ 22.16（`engines` 与 CLI 直接加载 TypeScript 所需）
 - OpenCode v2.2.7 或更高（`opencode --version`）
 - 同一环境可用的模型（本方法论需模型驱动；见「模型」节）
 
@@ -33,7 +36,7 @@
 
 ### 方式 B：包（发布后）
 ```bash
-opencode plugin add @cikaros/ddd-methodology@1.0.8
+opencode plugin add @cikaros/ddd-methodology@1.0.9
 ```
 
 ### 方式 C：Git 仓库（无需发布到 npm）
@@ -45,16 +48,16 @@ OpenCode 支持 npm 兼容的 Git 规格（**hosted 简写 / HTTPS / SSH**），
 opencode plugin add github:Cikaros/ddd-methodology
 
 # ② 钉到标签（推荐：可复现）
-opencode plugin add github:Cikaros/ddd-methodology#v1.0.8
+opencode plugin add github:Cikaros/ddd-methodology#v1.0.9
 
 # ③ 钉到完整提交哈希（最稳：不受标签移动影响）
-#    取当前 v1.0.8 的提交哈希：
-#      git ls-remote https://github.com/Cikaros/ddd-methodology.git refs/tags/v1.0.8^{}
+#    取当前 v1.0.9 的提交哈希：
+#      git ls-remote https://github.com/Cikaros/ddd-methodology.git refs/tags/v1.0.9^{}
 #    然后：
 opencode plugin add github:Cikaros/ddd-methodology#<完整提交哈希>
 
 # ④ SSH 形式（等价）
-opencode plugin add git+ssh://git@github.com/Cikaros/ddd-methodology.git#v1.0.8
+opencode plugin add git+ssh://git@github.com/Cikaros/ddd-methodology.git#v1.0.9
 ```
 
 也可不装进全局，而直接在**项目 `opencode.jsonc`** 里以 Git 规格声明：
@@ -63,12 +66,12 @@ opencode plugin add git+ssh://git@github.com/Cikaros/ddd-methodology.git#v1.0.8
 {
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
-    { "package": "github:Cikaros/ddd-methodology#v1.0.8", "options": { "profile": "standard" } }
+    { "package": "github:Cikaros/ddd-methodology#v1.0.9", "options": { "profile": "standard" } }
   ]
 }
 ```
 
-> **钉版建议**：用**标签**或**完整提交哈希**（`@1.0.8` 或 `#v1.0.8`/`#<sha>`）——精确版本与完整 commit 会保持钉住；未钉版的分支会被后台自动检查更新。
+> **钉版建议**：用**标签**或**完整提交哈希**（`@1.0.9` 或 `#v1.0.9`/`#<sha>`）——精确版本与完整 commit 会保持钉住；未钉版的分支会被后台自动检查更新。
 > **仓库子目录**：若插件在 monorepo 子目录，用 `::path:` 选择器，如 `github:acme/plugins#main::path:packages/opencode-plugin`。
 
 `plugins` 里可显式停用（`"-<id>"`）或按需装入；`options.profile` 取 `minimal` / `standard` / `strict`（预设套餐，见 `assets/profiles.json`）。

@@ -12,7 +12,7 @@ updated: 2026-11-11
 
 ## 定位与边界
 
-- **职责**：声明本插件要注册的**命令清单**与**技能清单**，并提供自检（前缀、去重、必有描述）。
+- **职责**：从 `assets/commands.json` 校验投影**命令清单**，声明**技能清单**，并提供自检（前缀、去重、必有描述）。
 - **边界内**：清单数据与纯函数自检。
 - **边界外**：把清单装进宿主（在 `src/index.ts`）；命令的**唯一权威**注册表（在 `assets/commands.json`，本件是运行期投影）。
 
@@ -20,9 +20,9 @@ updated: 2026-11-11
 
 | 导出 | 形态 | 说明 |
 |---|---|---|
-| `CommandSpec` | 类型 | `{ name, description }` |
+| `CommandSpec` | 类型 | `{ name, description, role?, blocking, dispatch }` |
 | `SkillSpec` | 类型 | `{ id, name, description }` |
-| `COMMANDS` | `readonly CommandSpec[]` | 13 条命令，统一 `ddd-` 前缀 |
+| `COMMANDS` | `readonly CommandSpec[]` | 15 条命令，统一 `ddd-` 前缀 |
 | `SKILLS` | `readonly SkillSpec[]` | 随包技能清单 |
 | `registrations()` | `() => Registrations` | 返回清单 |
 | `auditRegistrations(r?)` | `(r?) => string[]` | 自检，返回问题列表（空即合格） |

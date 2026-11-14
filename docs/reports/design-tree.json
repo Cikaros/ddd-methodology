@@ -1,6 +1,13 @@
 {
-  "ts": "2026-11-13T10:49:18.999Z",
+  "ts": "2026-11-14T14:01:51.544Z",
   "designs": [
+    {
+      "path": "docs/ddd/DESIGN.md",
+      "level": "subproject",
+      "target": ".",
+      "status": "frozen",
+      "landed": "true"
+    },
     {
       "path": "docs/ddd/agents/DESIGN-AGENT-TEMPLATE.md",
       "level": "file",
@@ -139,13 +146,6 @@
       "landed": "true"
     },
     {
-      "path": "docs/ddd/DESIGN.md",
-      "level": "subproject",
-      "target": ".",
-      "status": "frozen",
-      "landed": "true"
-    },
-    {
       "path": "docs/ddd/scripts/DESIGN-board.md",
       "level": "file",
       "target": "scripts/board.mjs",
@@ -252,6 +252,13 @@
       "landed": "true"
     },
     {
+      "path": "docs/ddd/skills/DESIGN.md",
+      "level": "module",
+      "target": "skills",
+      "status": "frozen",
+      "landed": "true"
+    },
+    {
       "path": "docs/ddd/skills/ddd-methodology/DESIGN-SKILL.md",
       "level": "file",
       "target": "skills/ddd-methodology/SKILL.md",
@@ -310,13 +317,6 @@
       "path": "docs/ddd/skills/ddd-methodology/references/DESIGN.md",
       "level": "group",
       "target": "skills/ddd-methodology/references",
-      "status": "frozen",
-      "landed": "true"
-    },
-    {
-      "path": "docs/ddd/skills/DESIGN.md",
-      "level": "module",
-      "target": "skills",
       "status": "frozen",
       "landed": "true"
     },
@@ -438,6 +438,22 @@
       "depends": "[assets/board.json]"
     },
     {
+      "path": "docs/ddd/src/lib/DESIGN-evidence.d.md",
+      "level": "file",
+      "target": "src/lib/evidence.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[ProjectState, collectProjectEvidence]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-evidence.md",
+      "level": "file",
+      "target": "src/lib/evidence.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[collectProjectEvidence, scanDesignTree, readJsonlStrict, EvidenceError]"
+    },
+    {
       "path": "docs/ddd/src/lib/DESIGN-gates.md",
       "level": "file",
       "target": "src/lib/gates.ts",
@@ -461,6 +477,14 @@
       "landed": "true",
       "covers": "[MemoryEntry, computeConfidence, shouldRemind, shouldPromote, decay, projectScope]",
       "depends": "[assets/memory.json]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-model-policy.md",
+      "level": "file",
+      "target": "src/lib/model-policy.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[isFlash, contextBudget, asData, composeContext]"
     },
     {
       "path": "docs/ddd/src/lib/DESIGN-paths.md",
@@ -510,9 +534,27 @@
       "target": "src/lib",
       "status": "frozen",
       "landed": "true"
+    },
+    {
+      "path": "docs/ddd/tests/DESIGN-refactor.test.md",
+      "level": "file",
+      "target": "tests/refactor.test.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[refactor-test]"
     }
   ],
   "tests": [
+    {
+      "path": "docs/ddd/TESTS-subproject.md",
+      "target": ".",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "ST-root-01",
+        "ST-root-02"
+      ]
+    },
     {
       "path": "docs/ddd/agents/TESTS-agents.md",
       "target": "agents",
@@ -836,6 +878,36 @@
       ]
     },
     {
+      "path": "docs/ddd/skills/TESTS-skills.md",
+      "target": "skills",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "MT-skills-01",
+        "MT-skills-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/ddd-methodology/TESTS-ddd-methodology.md",
+      "target": "skills/ddd-methodology",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "GT-skills-ddd-methodology-01",
+        "GT-skills-ddd-methodology-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/skills/ddd-methodology/UNIT-TESTS-SKILL.md",
+      "target": "skills/ddd-methodology/SKILL.md",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-skills-ddd-methodology-SKILL-01",
+        "UT-skills-ddd-methodology-SKILL-02"
+      ]
+    },
+    {
       "path": "docs/ddd/skills/ddd-methodology/references/TESTS-references.md",
       "target": "skills/ddd-methodology/references",
       "status": "frozen",
@@ -896,36 +968,6 @@
       ]
     },
     {
-      "path": "docs/ddd/skills/ddd-methodology/TESTS-ddd-methodology.md",
-      "target": "skills/ddd-methodology",
-      "status": "frozen",
-      "landed": "true",
-      "ids": [
-        "GT-skills-ddd-methodology-01",
-        "GT-skills-ddd-methodology-02"
-      ]
-    },
-    {
-      "path": "docs/ddd/skills/ddd-methodology/UNIT-TESTS-SKILL.md",
-      "target": "skills/ddd-methodology/SKILL.md",
-      "status": "frozen",
-      "landed": "true",
-      "ids": [
-        "UT-skills-ddd-methodology-SKILL-01",
-        "UT-skills-ddd-methodology-SKILL-02"
-      ]
-    },
-    {
-      "path": "docs/ddd/skills/dev-tools/references/TESTS-references.md",
-      "target": "skills/dev-tools/references",
-      "status": "frozen",
-      "landed": "true",
-      "ids": [
-        "GT-skills-dev-tools-references-01",
-        "GT-skills-dev-tools-references-02"
-      ]
-    },
-    {
       "path": "docs/ddd/skills/dev-tools/TESTS-dev-tools.md",
       "target": "skills/dev-tools",
       "status": "frozen",
@@ -946,13 +988,13 @@
       ]
     },
     {
-      "path": "docs/ddd/skills/frontend-variant-contract/references/TESTS-references.md",
-      "target": "skills/frontend-variant-contract/references",
+      "path": "docs/ddd/skills/dev-tools/references/TESTS-references.md",
+      "target": "skills/dev-tools/references",
       "status": "frozen",
       "landed": "true",
       "ids": [
-        "GT-skills-frontend-variant-contract-references-01",
-        "GT-skills-frontend-variant-contract-references-02"
+        "GT-skills-dev-tools-references-01",
+        "GT-skills-dev-tools-references-02"
       ]
     },
     {
@@ -976,13 +1018,13 @@
       ]
     },
     {
-      "path": "docs/ddd/skills/lang/references/TESTS-references.md",
-      "target": "skills/lang/references",
+      "path": "docs/ddd/skills/frontend-variant-contract/references/TESTS-references.md",
+      "target": "skills/frontend-variant-contract/references",
       "status": "frozen",
       "landed": "true",
       "ids": [
-        "GT-skills-lang-references-01",
-        "GT-skills-lang-references-02"
+        "GT-skills-frontend-variant-contract-references-01",
+        "GT-skills-frontend-variant-contract-references-02"
       ]
     },
     {
@@ -1006,13 +1048,62 @@
       ]
     },
     {
-      "path": "docs/ddd/skills/TESTS-skills.md",
-      "target": "skills",
+      "path": "docs/ddd/skills/lang/references/TESTS-references.md",
+      "target": "skills/lang/references",
       "status": "frozen",
       "landed": "true",
       "ids": [
-        "MT-skills-01",
-        "MT-skills-02"
+        "GT-skills-lang-references-01",
+        "GT-skills-lang-references-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/TESTS-src.md",
+      "target": "src",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "MT-src-01",
+        "MT-src-02"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/UNIT-TESTS-index.md",
+      "target": "src/index.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-src-index-01",
+        "UT-src-index-02",
+        "UT-src-index-03",
+        "UT-src-index-06",
+        "UT-src-index-07",
+        "UT-src-index-08"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/UNIT-TESTS-rpc.md",
+      "target": "src/rpc.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-src-rpc-01",
+        "UT-src-rpc-02",
+        "UT-src-rpc-03"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/UNIT-TESTS-tui.md",
+      "target": "src/tui.tsx",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-src-tui-01",
+        "UT-src-tui-02",
+        "UT-src-tui-03",
+        "UT-src-tui-04",
+        "UT-src-tui-05",
+        "UT-src-tui-06"
       ]
     },
     {
@@ -1038,6 +1129,24 @@
         "UT-src-lib-board-05",
         "UT-src-lib-board-06",
         "UT-src-lib-board-07"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-evidence.d.md",
+      "target": "src/lib/evidence.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": []
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-evidence.md",
+      "target": "src/lib/evidence.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-evidence-001",
+        "UT-evidence-002",
+        "UT-evidence-003"
       ]
     },
     {
@@ -1074,6 +1183,17 @@
         "UT-src-lib-memory-04",
         "UT-src-lib-memory-05",
         "UT-src-lib-memory-06"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-model-policy.md",
+      "target": "src/lib/model-policy.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-model-policy-001",
+        "UT-model-policy-002",
+        "UT-model-policy-003"
       ]
     },
     {
@@ -1139,77 +1259,26 @@
       ]
     },
     {
-      "path": "docs/ddd/src/TESTS-src.md",
-      "target": "src",
+      "path": "docs/ddd/tests/UNIT-TESTS-refactor.test.md",
+      "target": "tests/refactor.test.mjs",
       "status": "frozen",
       "landed": "true",
-      "ids": [
-        "MT-src-01",
-        "MT-src-02"
-      ]
-    },
-    {
-      "path": "docs/ddd/src/UNIT-TESTS-index.md",
-      "target": "src/index.ts",
-      "status": "frozen",
-      "landed": "true",
-      "ids": [
-        "UT-src-index-01",
-        "UT-src-index-02",
-        "UT-src-index-03",
-        "UT-src-index-06",
-        "UT-src-index-07",
-        "UT-src-index-08"
-      ]
-    },
-    {
-      "path": "docs/ddd/src/UNIT-TESTS-rpc.md",
-      "target": "src/rpc.ts",
-      "status": "frozen",
-      "landed": "true",
-      "ids": [
-        "UT-src-rpc-01",
-        "UT-src-rpc-02",
-        "UT-src-rpc-03"
-      ]
-    },
-    {
-      "path": "docs/ddd/src/UNIT-TESTS-tui.md",
-      "target": "src/tui.tsx",
-      "status": "frozen",
-      "landed": "true",
-      "ids": [
-        "UT-src-tui-01",
-        "UT-src-tui-02",
-        "UT-src-tui-03",
-        "UT-src-tui-04",
-        "UT-src-tui-05",
-        "UT-src-tui-06"
-      ]
-    },
-    {
-      "path": "docs/ddd/TESTS-subproject.md",
-      "target": ".",
-      "status": "frozen",
-      "landed": "true",
-      "ids": [
-        "ST-root-01",
-        "ST-root-02"
-      ]
+      "ids": []
     }
   ],
   "counts": {
-    "design": 61,
-    "test": 61,
-    "ids": 196,
+    "design": 65,
+    "test": 65,
+    "ids": 202,
     "byLevel": {
-      "file": 46,
-      "module": 5,
       "subproject": 1,
+      "file": 50,
+      "module": 5,
       "group": 9
     }
   },
   "gaps": {
+    "mismatches": [],
     "missingUnitTests": [],
     "missingGroupTests": [],
     "duplicateTargets": [],

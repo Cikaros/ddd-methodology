@@ -8,13 +8,16 @@
 
 import { Plugin } from "@opencode/plugin";
 import { readFileSync, existsSync } from "node:fs";
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { COMMANDS, SKILLS } from "./lib/registry.ts";
-import { packagePath, projectPath, projectRoot } from "./lib/paths.ts";
+import { collectProjectEvidence, readJsonlStrict } from "./lib/evidence.mjs";
+import { contextBudget, composeContext, asData } from "./lib/model-policy.ts";
+import { packagePath, packageRoot, projectPath, projectRoot } from "./lib/paths.ts";
 import { routeSlices, detectIntent, type Phase, type Intent, type SliceSpec, roleConstraints, sliceSources } from "./lib/router.ts";
 import { evaluateBottomLines, assertEnforceable, type BottomLine } from "./lib/guard.ts";
 import { selectInjection, countCandidates, projectScope, matchesTrigger, type MemoryEntry, type MemoryConfig } from "./lib/memory.ts";
-import { project as boardProject, summarize as boardSummary, type BoardRow, type BoardConfig } from "./lib/board.ts";
+import { project as boardProject, projectAll as boardAll, summarize as boardSummary, type BoardRow, type BoardConfig } from "./lib/board.ts";
 import { applyEncodingPrefix } from "./lib/shell-encoding.ts";
 import { needsUtf8Bom, withUtf8Bom } from "./lib/powershell-bom.ts";
 import { gates as gateFns, summarize as gateSummary, canAdvance } from "./lib/gates.ts";
@@ -33,51 +36,14 @@ function readJson(rel: string): Json | undefined {
     const p = packagePath(rel);
     if (!existsSync(p)) return undefined;
     return JSON.parse(readFileSync(p, "utf8")) as Json;
-  } catch {
-    return undefined;
+  } catch (error) {
+    throw new Error(`ddd 配置损坏（${rel}）：${(error as Error).message}`);
   }
 }
-
-function readJsonl(absPath: string): Record<string, unknown>[] {
-  try {
-    if (!existsSync(absPath)) return [];
-    return readFileSync(absPath, "utf8")
-      .split(/\r?\n/)
-      .filter((l) => l.trim())
-      .map((l) => JSON.parse(l) as Record<string, unknown>);
-  } catch {
-    return [];
-  }
-}
-
-interface CommandRole {
-  readonly role?: string;
-  /** 阻塞节点（概要 §6.1 ▲）：推进前取阻塞式确认（§9.5，server 侧 `permission.assert`）。 */
-  readonly blocking?: boolean;
-}
-
-const COMMAND_ROLE: Record<string, CommandRole> = {
-  "ddd-init": {},
-  "ddd-intent": { role: "ddd-intent-clarifier", blocking: true },
-  "ddd-arch": { role: "ddd-architect", blocking: true },
-  "ddd-design": { role: "ddd-designer" },
-  "ddd-review": { role: "ddd-design-reviewer" },
-  "ddd-test-design": { role: "ddd-test-designer" },
-  "ddd-implement": { role: "ddd-implementer" },
-  "ddd-test": { role: "ddd-tester" },
-  "ddd-validate": { role: "ddd-auditor" },
-  "ddd-change": {},
-  "ddd-map": {},
-  "ddd-wrapup": { blocking: true },
-  "ddd-consolidate": { role: "ddd-consolidator", blocking: true },
-  "ddd-board": {},
-  "ddd-memo": { role: "ddd-curator" },
-};
 
 function phaseOf(name: string): Phase | undefined {
   const k = name.replace(/^ddd-/, "");
-  const allowed: readonly string[] = ["init", "intent", "arch", "design", "review", "test-design", "implement", "test", "validate", "change", "map", "wrapup", "consolidate", "board", "memo"];
-  return allowed.includes(k) ? (k as Phase) : undefined;
+  return COMMANDS.some(c => c.name === name) ? (k as Phase) : undefined;
 }
 
 /** 读取随包角色件正文（只读；缺失即返回空串，不回落、不发明）。 */
@@ -97,15 +63,15 @@ function readRoleBody(role: string): string {
  *  - `isolated`（仅 review/validate/consolidate）：经宿主 `subagent` 工具派发**子会话**；
  *    不可用时**降级为同会话且读数可见**（不静默降级，见 agents/DESIGN.md）。
  */
-function makeHandler(name: string, ctx: any, dispatchOf: Record<string, string>, slices: readonly SliceSpec[]): (input: { sessionID: string; prompt?: { text?: string } }) => Promise<void> {
+function makeHandler(name: string, ctx: any, slices: readonly SliceSpec[]): (input: { sessionID: string; prompt?: { text?: string; [key: string]: unknown }; delivery?: "steer" | "queue" }) => Promise<void> {
   return async (input) => {
     const phase = phaseOf(name);
     const sessionID = input?.sessionID ?? "";
     if (!sessionID) return;
-    if (phase) await putPhase(ctx, sessionID, phase);
-    const spec = COMMAND_ROLE[name] ?? {};
+    const spec = COMMANDS.find(c => c.name === name);
+    if (!spec) throw new Error(`未知 ddd 命令：${name}`);
     const role = spec.role;
-    const dispatch = dispatchOf[name] ?? "same";
+    const dispatch = spec.dispatch;
     // M5 意图确认（§9.5 分职责）：阻塞节点推进前取**阻塞式确认**（server `permission.assert`；
     // dialog 只做输入采集、不在此放行）；被拒即抛错中止，不静默降级。
     if (spec.blocking && typeof ctx.permission?.assert === "function") {
@@ -116,6 +82,7 @@ function makeHandler(name: string, ctx: any, dispatchOf: Record<string, string>,
         message: `ddd/${name} 是阻塞节点：请确认在澄清/定稿后再推进（§6.1 ▲）。`,
       });
     }
+    if (phase) await putPhase(ctx, sessionID, phase);
     // 指令构建（单点权威：角色约束正文只在 agents/<role>.md，此处是只读投影，不复制）。
     // 背景：`same` 派发不切 agent → 角色 md 的「约束」节不会自动进入上下文；须由指令显式带入。
     // 指令尾部的 〖硬约束〗 放在 END 区：即使模型对中段注意力衰减，边界约束仍处于末位。
@@ -128,23 +95,23 @@ function makeHandler(name: string, ctx: any, dispatchOf: Record<string, string>,
         parts.push(`〖硬约束 · 逐条遵守〗\n${constraints.map((c, i) => `${i + 1}. ${c}`).join("\n")}`);
       }
     }
+    // OpenCode CommandInvocation.prompt contains user arguments and attachments.
+    // Preserve them; structured quoting keeps user data out of method instructions.
+    if (input.prompt?.text?.trim()) parts.push(`〖命令请求（原文数据）〗${JSON.stringify(input.prompt.text).slice(0, 8000)}`);
     parts.push("〖执行前自检〗未读齐上列切片与对应设计件即开始产出 → 停止并报告缺口；未改设计件不得改代码。");
     const directive = parts.join("\n");
+    const prompt = { ...(input.prompt ?? {}), sessionID, text: directive, ...(input.delivery ? { delivery: input.delivery } : {}) };
 
     // F7：/ddd-init 的机械承接——物化随包件 + 落项目骨架。
     // §8.7 / C-43：**必须以 `node` 具名启动**，不得用 `process.execPath`——后者在真宿主里是
     // 宿主自身可执行文件（opencode），会把 .mjs 当子命令而失败。
-    if (name === "ddd-init" && typeof ctx.session?.prompt === "function") {
+    if (name === "ddd-init") {
+      const root = projectRoot(ctx.location);
       try {
-        const { spawnSync } = await import("node:child_process");
-        const root = projectRoot(ctx.location);
-        const scaffold = spawnSync("node", [packagePath("scripts/scaffold.mjs"), "--root", root], { encoding: "utf8" });
-        const tail = (scaffold.stdout ?? "").trim().split(/\r?\n/).slice(-3).join(" | ");
-        const err = scaffold.error ? String(scaffold.error.message) : "";
-        const ok = scaffold.status === 0 && !scaffold.error;
-        await ctx.session.prompt({ sessionID, text: `[ddd] 骨架生成：${ok ? "完成" : "异常"}（${tail || err || "无输出"}）` });
-      } catch {
-        await ctx.session.prompt({ sessionID, text: "[ddd] 骨架生成未能机械执行；请手动运行 scripts/scaffold.mjs。" }).catch(() => {});
+        const { stdout, stderr } = await promisify(execFile)("node", [packagePath("scripts/scaffold.mjs"), "--root", root], { cwd: root, timeout: 45_000, maxBuffer: 1024 * 1024 });
+        prompt.text += `\n[ddd:init] 骨架执行成功：${asData((stdout || stderr).trim().split(/\r?\n/).slice(-3).join(' | '), 500)}`;
+      } catch (error) {
+        throw new Error(`ddd-init 骨架失败（中止后续派发）：${(error as Error).message}`);
       }
     }
 
@@ -155,22 +122,18 @@ function makeHandler(name: string, ctx: any, dispatchOf: Record<string, string>,
         const childID = child?.id ?? child?.data?.id;
         if (childID) {
           await ctx.session.switchAgent({ sessionID: childID, agent: role });
-          await ctx.session.prompt({ sessionID: childID, text: directive });
+          await ctx.session.prompt({ ...prompt, sessionID: childID });
           return;
         }
       } catch {
         // 失败回退：本会话执行，但须在读数上可见（不得静默降级）。
-        await ctx.session.prompt({ sessionID, text: `[ddd] 子代理隔离派发失败（角色 ${role}），本会话降级执行：${directive}` }).catch(() => {});
+        await ctx.session.prompt({ ...prompt, text: `[ddd] 子代理隔离派发失败（角色 ${role}），本会话降级执行：\n${prompt.text}` });
         return;
       }
     }
 
     // 默认（same）：**在当前会话**内执行，不新建会话。
-    try {
-      await ctx.session.prompt({ sessionID, text: directive });
-    } catch {
-      /* 命令的可见性由注入与门禁承担；prompt 失败不抛出。 */
-    }
+    await ctx.session.prompt(prompt);
   };
 }
 
@@ -245,14 +208,10 @@ export default Plugin.define({
 
     // —— 命令（M4 命令改造口）——
     // 派发策略单点权威在 assets/commands.json 的 dispatch 字段（M10，裁决 16）。
-    const dispatchOf: Record<string, string> = {};
-    for (const c of ((readJson("assets/commands.json")?.commands as Array<{ name: string; dispatch?: string }>) ?? [])) {
-      if (c?.name) dispatchOf[c.name] = c.dispatch ?? "same";
-    }
     registrations.push(
       await ctx.command.transform((editor: any) => {
         for (const c of COMMANDS) {
-          editor.add({ name: c.name, description: c.description, execute: makeHandler(c.name, ctx, dispatchOf, slices) });
+          editor.add({ name: c.name, description: c.description, execute: makeHandler(c.name, ctx, slices) });
         }
       }),
     );
@@ -338,50 +297,45 @@ export default Plugin.define({
             /* storage 可选 */
           }
           const route = routeSlices({ phase, intent }, slices);
-          if (Array.isArray(ev.system)) {
-            for (const id of route.sliceIds) {
-              const slice = slices.find((s) => s.id === id);
-              const one = slice ? sourceFirstLine(slice.source) : "";
-              ev.system.push({ type: "text", text: `[ddd:${id}] ${one}` } as (typeof ev.system)[number]);
-            }
-          }
-
-          // M7：看板摘要（持久多步待办，每步注回）。
+          // Evidence is data. Give the model paths and actionable state, not repeated
+          // paragraphs of rules. Flash receives a smaller, deterministic budget.
+          const contextErrors: string[] = [];
+          let boardText = "";
+          let memoryText = "";
+          const root = projectRoot(ctx.location);
           try {
-            const root = projectRoot(ctx.location);
-            const rows = readJsonl(projectPath(root, "docs/board/board.jsonl")) as unknown as BoardRow[];
-            const proj = boardProject(rows);
-            const sum = boardSummary(proj);
-            if (Array.isArray(ev.system) && proj.length > 0) {
-              const top = proj.slice(0, 3).map((it) => `${it.taskId}(${it.priority}/${it.status}) ${it.title}`).join("; ");
-              ev.system.push({ type: "text", text: `[ddd:board] 待办 ${sum.pending} / 进行 ${sum.inProgress} / 阻塞 ${sum.blocked}${top ? ` — top: ${top}` : ""}` } as (typeof ev.system)[number]);
+            const rows = readJsonlStrict(projectPath(root, "docs/board/board.jsonl")) as unknown as BoardRow[];
+            const active = boardAll(rows);
+            const visible = boardProject(rows);
+            const sum = boardSummary(active);
+            if (active.length) {
+              const top = visible.slice(0, 2).map((it) => `${it.taskId}(${it.priority}/${it.status}) ${it.title}`).join("; ");
+              boardText = `待办 ${sum.pending} / 进行 ${sum.inProgress} / 阻塞 ${sum.blocked}${top ? `; top: ${top}` : ""}`;
             }
-          } catch {
-            /* 项目根缺失或未落看板 */
+          } catch (error) {
+            contextErrors.push(`看板损坏：${(error as Error).message}`);
           }
-
-          // M6：记忆 topN + 候选提示。
           try {
-            const root = projectRoot(ctx.location);
             const scope = projectScope(root);
-            const raw = readJsonl(projectPath(root, "docs/memory/memory.jsonl"));
+            const raw = readJsonlStrict(projectPath(root, "docs/memory/memory.jsonl"));
             const entries = foldMemory(raw);
-            const inj = selectInjection(entries, scope, memoryCfg);
-            if (Array.isArray(ev.system)) {
-              for (const e of inj) {
-                ev.system.push({ type: "text", text: `[ddd:mem] ${e.symptom ?? e.key}（${e.confidence}★）` } as (typeof ev.system)[number]);
-              }
-              const cand = countCandidates(entries, memoryCfg);
-              if (cand > 0) ev.system.push({ type: "text", text: `[ddd:mem] 有 ${cand} 条候选待提升（/ddd-memo list）` } as (typeof ev.system)[number]);
-            }
-          } catch {
-            /* 未落记忆 */
+            const injected = selectInjection(entries, scope, memoryCfg);
+            const excerpts = injected.slice(0, 3).map((e) => `${e.symptom ?? e.key} (${e.confidence}★)`);
+            const candidates = countCandidates(entries, memoryCfg);
+            memoryText = excerpts.join("; ") + (candidates ? `; 待提升 ${candidates} 条（/ddd-memo list）` : "");
+          } catch (error) {
+            contextErrors.push(`记忆损坏：${(error as Error).message}`);
+          }
+          const sliceRefs = route.sliceIds.map((id) => {
+            const source = slices.find((slice) => slice.id === id)?.source;
+            return { id, source, preview: source ? sourceFirstLine(source).slice(0, 40) : undefined };
+          });
+          const budget = contextBudget(ev.model ?? ev.options?.model ?? options.model, options.contextBudgetChars);
+          const runtime = composeContext({ budget, phase, intent, slices: sliceRefs, board: boardText, memory: memoryText, errors: contextErrors });
+          if (Array.isArray(ev.system) && !ev.system.some((part: any) => String(part.text ?? "").startsWith("[ddd:runtime]"))) {
+            ev.system.push({ type: "text", text: runtime } as (typeof ev.system)[number]);
           }
 
-          // M13/§19.5 自省：注入自报（可观测）。
-          if (Array.isArray(ev.system)) {
-            ev.system.push({ type: "text", text: `[ddd:self] 注入切片 ${route.sliceIds.length} 片（profile=${profile} phase=${route.basis.phase ?? "-"} intent=${route.basis.intent ?? "-"}）` } as (typeof ev.system)[number]);
-          }
         } catch {
           /* context hook 不阻断 */
         }
@@ -406,7 +360,7 @@ export default Plugin.define({
             }
           }
           const root = projectRoot(ctx.location);
-          const raw = readJsonl(projectPath(root, "docs/memory/memory.jsonl"));
+          const raw = readJsonlStrict(projectPath(root, "docs/memory/memory.jsonl"));
           const entries = foldMemory(raw);
           const dedupSet = new Set<string>();
           try {
@@ -442,6 +396,7 @@ export default Plugin.define({
             const key = `ddd:evidence:${ev.sessionID}`;
             const prev = ((await ctx.storage.get(key)) as unknown[]) ?? [];
             prev.push({ tool: ev.tool, id: ev.id, ts: new Date().toISOString() });
+            if (prev.length > 128) prev.splice(0, prev.length - 128);
             await ctx.storage.set(key, prev as never);
           }
         } catch {
@@ -524,11 +479,11 @@ export default Plugin.define({
           let rows: BoardRow[] = [];
           try {
             const root = projectRoot(ctx.location);
-            rows = readJsonl(projectPath(root, "docs/board/board.jsonl")) as unknown as BoardRow[];
-          } catch {
-            /* 无项目根 → 空投影 */
+            rows = readJsonlStrict(projectPath(root, "docs/board/board.jsonl")) as unknown as BoardRow[];
+          } catch (error) {
+            throw new Error(`看板 RPC 读取失败：${(error as Error).message}`);
           }
-          return boardSummary(boardProject(rows));
+          return boardSummary(boardAll(rows));
         },
       })) as unknown as Registration;
       if (rpcReg) registrations.push(rpcReg);
@@ -553,27 +508,16 @@ export default Plugin.define({
 function resourcesMatch(pattern: string, resources: readonly string[]): boolean {
   if (!resources || resources.length === 0) return false;
   const rx = new RegExp("^" + pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*\*/g, ".*").replace(/(?<!\.)\*/g, "[^/]*") + "$", "i");
-  return resources.some((r) => rx.test(r) || r.includes(pattern));
+  return resources.some((r) => rx.test(r));
 }
 
-/** 由项目状态快照取门禁读数（缺件即该门禁 na）。 */
+/** CLI 与 RPC 读相同实物状态，不读旧报告。 */
 function sampleReadings(ctx: any): GateReading[] {
-  const state = collectState(ctx);
-  return [gateFns.G1(state), gateFns.G2(state), gateFns.G3(state), gateFns.G4(state), gateFns.G5(state), gateFns.G6(state)];
-}
-
-function collectState(ctx: any): any {
-  try {
-    const root = projectRoot(ctx.location);
-    const boardRows = readJsonl(projectPath(root, "docs/board/board.jsonl")) as unknown as BoardRow[];
-    const proj = boardProject(boardRows);
-    const hasBoard = existsSync(projectPath(root, "docs/board/board.jsonl"));
-    return {
-      wrapup: hasBoard ? { tempOpen: 0, boardActive: proj.length, versionPlaces: 0 } : undefined,
-    };
-  } catch {
-    return {};
-  }
+  const root = projectRoot(ctx.location);
+  const { state, errors } = collectProjectEvidence(root, { commandNames: COMMANDS.map(c => c.name), packageRoot: packageRoot() });
+  const readings: GateReading[] = [gateFns.G1(state), gateFns.G2(state), gateFns.G3(state), gateFns.G4(state), gateFns.G5(state), gateFns.G6(state)];
+  if (errors.length) readings[5] = { id: "G6", verdict: "block", examined: 0, unrecognized: errors.length, remedy: errors.join("; ").slice(0, 1500) };
+  return readings;
 }
 
 /** 折叠记忆行：按 id 取最新一条。 */

@@ -1,5 +1,6 @@
 {
-  "ts": "2026-11-12T06:36:00.970Z",
+  "ts": "2026-11-14T14:21:56.470Z",
+  "defectsRegister": false,
   "readings": [
     {
       "id": "G1",
@@ -28,7 +29,7 @@
     {
       "id": "G5",
       "verdict": "pass",
-      "examined": 5,
+      "examined": 48,
       "unrecognized": 0
     },
     {
@@ -45,6 +46,53 @@
     "na": 2
   },
   "canAdvance": true,
-  "defectsRegister": true,
-  "note": "「零 FAIL」与「零缺陷」是两个读数；na ≠ pass"
+  "readyForRelease": false,
+  "errors": [],
+  "evidence": {
+    "designGaps": {
+      "mismatches": [],
+      "missingUnitTests": [],
+      "missingGroupTests": [],
+      "duplicateTargets": [],
+      "duplicateIds": []
+    },
+    "isomorphism": [],
+    "commandRegistry": {
+      "declared": [
+        "ddd-init",
+        "ddd-intent",
+        "ddd-arch",
+        "ddd-design",
+        "ddd-review",
+        "ddd-test-design",
+        "ddd-implement",
+        "ddd-test",
+        "ddd-validate",
+        "ddd-change",
+        "ddd-map",
+        "ddd-wrapup",
+        "ddd-consolidate",
+        "ddd-board",
+        "ddd-memo"
+      ],
+      "runtime": [
+        "ddd-init",
+        "ddd-intent",
+        "ddd-arch",
+        "ddd-design",
+        "ddd-review",
+        "ddd-test-design",
+        "ddd-implement",
+        "ddd-test",
+        "ddd-validate",
+        "ddd-change",
+        "ddd-map",
+        "ddd-wrapup",
+        "ddd-consolidate",
+        "ddd-board",
+        "ddd-memo"
+      ]
+    }
+  },
+  "note": "na ≠ pass；--release 要求所有门禁 pass，无损坏证据"
 }

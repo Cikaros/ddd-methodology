@@ -54,6 +54,8 @@ export interface ProjectState {
     readonly tempOpen: number;
     readonly boardActive: number;
     readonly versionPlaces: number;
+    /** 缺陷登记册存在且可解析。 */
+    readonly defectsRegister?: boolean;
   };
 }
 
@@ -115,12 +117,13 @@ export const gates = {
   G6(s: ProjectState): GateReading {
     const w = s.wrapup;
     if (!w) return reading("G6", "na", 0, 0);
-    const examined = 3;
-    if (w.tempOpen === 0 && w.boardActive === 0 && w.versionPlaces === 3) return reading("G6", "pass", examined, 0);
+    const examined = 4;
+    if (w.tempOpen === 0 && w.boardActive === 0 && w.versionPlaces === 3 && w.defectsRegister === true) return reading("G6", "pass", examined, 0);
     const parts: string[] = [];
     if (w.tempOpen !== 0) parts.push(`临时件未清 ${w.tempOpen}`);
     if (w.boardActive !== 0) parts.push(`看板活跃 ${w.boardActive}`);
     if (w.versionPlaces !== 3) parts.push(`版本落点 ${w.versionPlaces}/3`);
+    if (w.defectsRegister !== true) parts.push("缺陷登记册缺失或损坏");
     return reading("G6", "block", examined, 0, `收尾未清空（${parts.join("，")}）；清空后方可收尾。`);
   },
 } as const;

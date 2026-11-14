@@ -491,7 +491,7 @@ async function main() {
     const { existsSync: ex, readdirSync: rd } = await import("node:fs");
     const os = await import("node:os");
     const tmp = mkTmp("ddd-tools-");
-    const run = (name, args, root) => spawnSync("node", [join(pluginDir, "scripts", name), ...args, "--root", root], { encoding: "utf8" });
+    const run = (name, args, root) => spawnSync("node", ["--experimental-strip-types", join(pluginDir, "scripts", name), ...args, "--root", root], { encoding: "utf8" });
 
     // materialize:agents
     const m1 = run("materialize.mjs", ["agents"], tmp);
@@ -549,7 +549,7 @@ async function main() {
     const { writeFileSync: wf, mkdirSync } = await import("node:fs");
     const os = await import("node:os");
     const self = join(pluginDir, "scripts", "selftest.mjs");
-    const bad = spawnSync("node", [self, join(pluginDir, "__no_such_dir__")], { encoding: "utf8" });
+    const bad = spawnSync("node", ["--experimental-strip-types", self, join(pluginDir, "__no_such_dir__")], { encoding: "utf8" });
     check("UT-scripts-selftest-02 用法/入口错 → 退出 2", bad.status === 2, `实为 ${bad.status}`);
 
     // 构造一个「能加载但注册面不合格」的临时插件 → 退出 1
@@ -557,7 +557,7 @@ async function main() {
     mkdirSync(join(fake, "src"), { recursive: true });
     wf(join(fake, "package.json"), JSON.stringify({ name: "bad", type: "module", exports: { ".": "./src/index.ts" } }), "utf8");
     wf(join(fake, "src", "index.ts"), "export default { id: 'nope' };\n", "utf8");
-    const fail = spawnSync("node", [self, fake], { encoding: "utf8" });
+    const fail = spawnSync("node", ["--experimental-strip-types", self, fake], { encoding: "utf8" });
     check("UT-scripts-selftest-02 注册面不合格 → 退出 1", fail.status === 1, `实为 ${fail.status}`);
     check("UT-scripts-selftest-01 注册面断言（本次运行内的所有 check）", true);
   }
@@ -571,7 +571,7 @@ async function boardChecks(dir) {
   const os = await import("node:os");
   const board = join(dir, "scripts", "board.mjs");
   if (!ex(board)) { check("board.mjs 存在", false); return; }
-  const run = (args, root) => spawnSync("node", [board, ...args, "--root", root], { encoding: "utf8" });
+  const run = (args, root) => spawnSync("node", ["--experimental-strip-types", board, ...args, "--root", root], { encoding: "utf8" });
   const tmp = mkTmp("ddd-board-");
   const jsonl = join(tmp, "docs", "board", "board.jsonl");
 
@@ -616,7 +616,7 @@ async function toolChecks(dir) {
   const { writeFileSync: wf, readFileSync: rf, existsSync: ex, mkdirSync } = await import("node:fs");
   const os = await import("node:os");
   const T = (name) => join(dir, "scripts", name);
-  const run = (name, args, root) => spawnSync("node", [T(name), ...args, "--root", root], { encoding: "utf8" });
+  const run = (name, args, root) => spawnSync("node", ["--experimental-strip-types", T(name), ...args, "--root", root], { encoding: "utf8" });
   const tmp = mkTmp("ddd-scaffold-");
   mkdirSync(join(tmp, "docs", "ddd", "src"), { recursive: true });
   // 种子：最小设计树（使 snapshot 有判定对象）
@@ -683,7 +683,7 @@ async function toolChecks(dir) {
     }
   };
 
-  const drift = spawnSync("node", [T("drift-check.mjs"), "--root", dir], { encoding: "utf8" });
+  const drift = spawnSync("node", ["--experimental-strip-types", T("drift-check.mjs"), "--root", dir], { encoding: "utf8" });
   check("UT-scripts-drift-check-02 权威=实物（零复写）", drift.status === 0);
   const dr = ex(join(dir, "docs", "reports", "drift-check.json")) ? JSON.parse(rf(join(dir, "docs", "reports", "drift-check.json"), "utf8")) : null;
   check("UT-scripts-drift-check-03 阈值不内置（专项检查在册且通过）", !!dr && (dr.checks ?? []).some((c) => c.id === "drift.no-inline-thresholds" && c.ok));
