@@ -1,6 +1,6 @@
 # 项目覆盖（SQL (mysql/redis)）
 
-> 默认使用基线 `official:sql-style@fact-standard`；项目如需偏离基线，**在本文件登记覆盖项与理由**，使「基线 vs 项目」不打架。
+> 默认使用基线 `https://www.postgresql.org/docs/current/sql.html`；项目如需偏离基线，**在本文件登记覆盖项与理由**，使「基线 vs 项目」不打架。
 
 ## 覆盖登记
 

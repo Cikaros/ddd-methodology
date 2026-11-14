@@ -219,3 +219,36 @@ export { rankOf };
 export function priorityDomainOf(cfg: BoardConfig): readonly string[] {
   return cfg.priorityDomain;
 }
+
+/** 严格历史验证：CLI 写入器、RPC 读取和 G6 共用，不能只检查 JSON 语法。 */
+export function validateBoardHistory(rows: readonly BoardRow[]): void {
+  const live = new Map<string, BoardItem>();
+  let previousSeq = 0;
+  for (const [i, r] of rows.entries()) {
+    const fail = (why: string): never => { throw new Error(`board.jsonl:${i + 1} ${why}`); };
+    if (!r || typeof r.taskId !== 'string' || !r.taskId || typeof r.kind !== 'string') fail('缺 kind/taskId');
+    if (!Number.isSafeInteger(r.seq) || (r.seq ?? 0) <= previousSeq) fail('seq 缺失或非单调递增');
+    previousSeq = r.seq!;
+    const cur = live.get(r.taskId);
+    if (r.kind === 'task') {
+      if (cur && r.reason !== 'rehome') fail(`重复创建任务 ${r.taskId}`);
+      if (!cur && r.reason === 'rehome') fail(`无法 rehome 不存在的任务 ${r.taskId}`);
+      if (!r.title?.trim() || !r.acceptance?.trim()) fail('任务缺 title/acceptance');
+      if (!['pending','in_progress','blocked','done','dropped'].includes(r.status ?? '')) fail('status 越域');
+      if (r.reason === 'rehome' && cur && (r.status !== cur.status || r.title !== cur.title || r.acceptance !== cur.acceptance)) fail('rehome 不得篡改任务状态或验收标准');
+      if (r.dependsOn?.includes(r.taskId)) fail('任务不得依赖自身');
+      live.set(r.taskId, { taskId:r.taskId, reqId:r.reqId ?? null, title:r.title!, acceptance:r.acceptance!, priority:r.priority ?? 'P2', status:r.status!, dependsOn:r.dependsOn ?? [], seq:r.seq!, ts:r.ts });
+    } else if (r.kind === 'move') {
+      if (!cur || !r.to || r.from !== cur.status || !canTransition(cur.status, r.to)) fail(`非法状态转换 ${r.taskId}`);
+      live.set(r.taskId, { ...cur!, status:r.to!, ts:r.ts });
+    } else if (r.kind === 'evidence') {
+      if (!cur || !r.evidence?.trim()) fail('证据缺失或目标任务不存在');
+      live.set(r.taskId, { ...cur!, ts:r.ts });
+    } else if (r.kind === 'archive') {
+      if (!cur || !TERMINAL.includes(cur.status)) fail('只有存在且已结束的任务可归档');
+      live.delete(r.taskId);
+    } else if (!['rule-hit','rule-undecided','profile-change','stale-hit'].includes(r.kind)) {
+      fail(`未知事件类型 ${r.kind}`);
+    }
+  }
+}

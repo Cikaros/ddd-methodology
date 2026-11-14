@@ -1,21 +1,5 @@
-# formatter / linter 使用约定
+# 格式化、静态检查
 
-## 何时跑
+使用仓库现成配置优先：ESLint / Prettier / Biome / Stylelint；Python Ruff、Black、mypy、Pyright；Go gofmt / go vet / golangci-lint；Rust rustfmt / Clippy；C# dotnet format；PHP PHPStan / PHP-CS-Fixer。区分自动修复与只读检查；先运行 check，修复后再次确认。不能因工具不存在而标记“通过”，应标记 unverified 并给出探测事实。风格工具不替代编译和行为测试。
 
-- **写后自动**：宿主 `formatter` 在 `write`/`edit`/`patch` 后自动格式化——不重造该层。
-- **提交前**：跑一次 lint 与 format check，确保工作区干净。
-
-## 跑什么
-
-- 机械取值（缩进/行宽/引号/尾逗号/严格度）读 `assets/lang-<id>.json`；配置由项目 formatter 消费。
-- 规则集与基线来源见 `assets/languages.json` 的 `baseline`。
-
-## 失败如何自纠
-
-- 格式失败：直接重跑 formatter 修正（可机械判定）。
-- lint 失败：先读首条规则与位置，再改；多规则冲突以项目配置为准并登记覆盖理由。
-- **Linter 即 Prompt**：每条规则失败须能给出**补救指令**。
-
-## 不重造
-
-- lint/格式的机械执行交宿主；本技能只提供约定与 `assets/` 基线。
+- 参考 https://eslint.org/docs/latest/ ; https://biomejs.dev/ ; https://docs.astral.sh/ruff/ ; https://mypy.readthedocs.io/ ; https://github.com/golangci/golangci-lint

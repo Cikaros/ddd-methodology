@@ -187,7 +187,9 @@ async function main() {
     const srcIndex = readFileSync(join(pluginDir, "src", "index.ts"), "utf8");
     check("UT-src-index-05 已退役正文哨兵 <!--ddd:core-->（不再写 ev.prompt.text）", !/prompt\.text\s*=/.test(srcIndex) && !/<!--ddd:core-->/.test(srcIndex));
     // instructions.entry 的 key 约束（宿主）：^[a-z0-9][a-z0-9._-]*$ → 不含冒号。
-    const entryKeys = [...srcIndex.matchAll(/instructions[^;]*?entry[^;]*?put\(\{[^}]*key:\s*"([^"]+)"/g)].map((m) => m[1]);
+    // 2.0.0: instructions keys live at their owning context/dispatch boundaries.
+    const injectionSources = ["src/lib/context-service.ts", "src/lib/command-dispatcher.ts"].map((f) => readFileSync(join(pluginDir, f), "utf8")).join("\n");
+    const entryKeys = [...injectionSources.matchAll(/key:\s*["'](ddd\.[a-z0-9._-]+)["']/g)].map((m) => m[1]);
     check("UT-src-index-05 instructions.entry 键名合法（无冒号，匹配宿主正则）", entryKeys.length > 0 && entryKeys.every((k) => /^[a-z0-9][a-z0-9._-]*$/.test(k)), entryKeys.join(","));
   }
 

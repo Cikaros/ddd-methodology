@@ -6,8 +6,11 @@
  */
 import { readFileSync, existsSync, readdirSync, lstatSync, realpathSync } from 'node:fs';
 import { dirname, join, resolve, relative, sep, isAbsolute, basename, extname, posix } from 'node:path';
+import { readJsonlStrict, EvidenceError } from './jsonl.mjs';
+import { readBoardRows } from './board-store.mjs';
+import { projectAll } from './board.ts';
+export { readJsonlStrict, EvidenceError } from './jsonl.mjs';
 
-export class EvidenceError extends Error { constructor(message) { super(message); this.name = 'EvidenceError'; } }
 export function within(root, path) {
   const rel = relative(resolve(root), resolve(path));
   return !rel || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));
@@ -25,26 +28,6 @@ function safeTarget(root, target) {
     if (existsSync(walk) && lstatSync(walk).isSymbolicLink()) return null;
   }
   return abs;
-}
-export function readJsonlStrict(file, { optional = true, maxLineBytes = 1_048_576 } = {}) {
-  if (!existsSync(file)) {
-    if (optional) return [];
-    throw new EvidenceError(`缺少 JSONL：${file}`);
-  }
-  const raw = readFileSync(file, 'utf8');
-  const rows = [];
-  raw.split(/\r?\n/).forEach((line, index) => {
-    if (!line.trim()) return;
-    if (Buffer.byteLength(line, 'utf8') > maxLineBytes) throw new EvidenceError(`${file}:${index + 1} 超过单行大小限制`);
-    try {
-      const value = JSON.parse(line);
-      if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new Error('不是 JSON 对象');
-      rows.push(value);
-    } catch (e) {
-      throw new EvidenceError(`${file}:${index + 1} JSONL 损坏：${e.message}`);
-    }
-  });
-  return rows;
 }
 function readText(path) { return existsSync(path) ? readFileSync(path, 'utf8') : undefined; }
 function readJson(file) {
@@ -155,23 +138,6 @@ function countOpenRulings(requirements) {
   if (!m) return NaN;
   return m[1].split(/\r?\n/).filter(x => /^\|\s*[^|]+\|/.test(x) && /\|\s*(?:未决|待定|open|pending)\s*\|?\s*$/i.test(x)).length;
 }
-function archivedBoardCount(rows) {
-  const active = new Map();
-  // Per task, last event wins; any record after archive must explicitly re-create task.
-  for (const row of rows) {
-    if (!row.taskId || typeof row.taskId !== 'string') throw new EvidenceError('看板记录缺 taskId');
-    if (row.kind === 'task') active.set(row.taskId, row);
-    else if (row.kind === 'archive') {
-      if (!active.has(row.taskId)) throw new EvidenceError(`看板重复或无效归档：${row.taskId}`);
-      active.delete(row.taskId);
-    } else if (row.kind === 'move') {
-      if (!active.has(row.taskId)) throw new EvidenceError(`看板转移未找到任务：${row.taskId}`);
-    } else if (row.kind === 'evidence') {
-      if (!active.has(row.taskId)) throw new EvidenceError(`看板证据未找到任务：${row.taskId}`);
-    }
-  }
-  return active.size; // Includes blocked dependencies and done-but-unarchived tasks.
-}
 function countVersionLocations(root, pkg, changelog, errors) {
   const version = pkg?.version;
   if (typeof version !== 'string' || !version) return 0;
@@ -260,7 +226,7 @@ export function collectProjectEvidence(rootInput, { commandNames = [], packageRo
     let tempOpen = 0, boardActive = 0, versionPlaces = 0, defectsRegister = false;
     try { tempOpen = readJsonlStrict(join(root,'docs','temp.jsonl')).length; }
     catch (e) { tempOpen = 1; errors.push(`G6: ${relError(e.message)}`); }
-    try { boardActive = archivedBoardCount(readJsonlStrict(join(root,'docs','board','board.jsonl'),{optional:false,maxLineBytes:8192})); }
+    try { boardActive = projectAll(readBoardRows(root,8192)).length; }
     catch (e) { boardActive = 1; errors.push(`G6: ${relError(e.message)}`); }
     try {
       const pkg = readJson(join(root, 'package.json'));

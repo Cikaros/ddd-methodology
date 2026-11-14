@@ -44,3 +44,11 @@ updated: 2026-11-11
 ## 状态
 
 本件为 `frozen`；与实物（`scripts/`）对账一致。
+
+## 2.0.1 修订
+
+`skills` 和 `all` 会从权威目录物化 `SKILL.md` 及 references 到 `.opencode/skills/<id>/`；开始写入前对所有目标执行冲突检查；禁止符号链接越界，只有显式 `--force` 才能覆盖已有不同内容；幂等。
+
+## 2.0.2 全局集成约束
+
+agents/commands/skills 共用全局预检与安全目标路径；所有类别检查通过后才写文件。支持 --check 只读预检。

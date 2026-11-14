@@ -1,13 +1,5 @@
-# 容器使用约定
+# 容器与编排
 
-## 用法边界
+Docker / Docker Compose 检查镜像来源、卷和端口、环境变量注入；避免将 secrets 写入 Dockerfile 或日志。Kubernetes 使用 kubectl、Helm、Kustomize（或 Podman 作为容器替代）时先检查 namespace 和当前 context，生产变更先 diff/dry-run；部署资源请求、探针、就绪与回滚均要可验证。Terraform/OpenTofu/Ansible/Packer 属基础设施管理，先 plan / check，再经过授权 apply。
 
-- 构建：`docker build -t <tag> .`；运行：`docker run --rm -it <tag>`。
-- 组合：`docker compose up -d` / `down`；状态 `docker compose ps`、日志 `logs -f`。
-- 清理：`docker system prune` 属破坏性动作，走守卫层。
-
-## 纪律
-
-- 镜像与产物是**派生件**，不入版本控制的权威件。
-- 挂载宿主目录时用仓库相对或显式路径，不把宿主绝对路径写进受控件（R15）。
-- 容器内跑测试须与本地同构，避免「本地过、CI 挂」。
+- 参考 https://docs.docker.com/ ; https://kubernetes.io/docs/ ; https://helm.sh/docs/ ; https://developer.hashicorp.com/terraform/docs ; https://opentofu.org/docs/

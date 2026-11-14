@@ -1,3 +1,6 @@
 node_modules/
 *.log
 .DS_Store
+
+# Local untrusted drafts and dispatch receipts; do not commit ephemeral project state
+.ddd/state/

@@ -41,3 +41,10 @@ updated: 2026-11-11
 ## 状态
 
 本件为 `frozen`；与实物（`scripts/`）对账一致。
+
+## 2.0.2 联动对账增补
+
+- `assets/commands.json` 与 `src/lib/registry.ts` 的命令名、目的、阻塞标志、派发方式及角色应同时对账。
+- `assets/agents.json` 中引用的 Agent 应具备 `assets/role-tools.json` 的权限投影；所有受限 Agent 均须能够读取 `skill` 工具，评审角色仍保持只读。
+- 插件 `package.json`、锁文件与变更流最新版本记录保持一致。
+- 扫描为只读判定，任何不一致返回非零退出状态。

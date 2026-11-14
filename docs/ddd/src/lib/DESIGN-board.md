@@ -62,3 +62,6 @@ updated: 2026-11-11
 - **收尾硬门禁**：`project()` 为空才允许 G6；`done`/`dropped` 须 `archive`；`reqId:null` 须 `rehome` 或 `drop`。
 - **与 `todowrite` 不双记账**：持久任务只在看板；`todowrite` 仅会话内草稿（裁决 #10）。
 - 阈值（priority 域、反饥饿、孤儿）**只读 `assets/board.json`**，不写死。
+## 2.0.0 事件回放
+
+`validateBoardHistory` 对任务创建、合法状态跃迁、归档存在性、seq 单调、重挂不改变验收标准做硬验证；写入事务移至 `board-store.mjs`。可执行投影 `project()` 不可替代 G6 的全量活跃 `projectAll()`。

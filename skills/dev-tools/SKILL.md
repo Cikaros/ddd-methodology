@@ -1,13 +1,13 @@
 ---
 name: dev-tools
-description: 常用开发工具使用规范：git、包管理器、构建、formatter/linter、测试运行器、CI、容器、shell、数据库客户端。检测到相应工具/任务时载入（不常驻）。
+description: 常用开发工具使用规范：git、现代包管理器、构建、质量、测试、CI/CD、容器编排、接口、数据工具与观测。检测到相应工具/任务时载入（不常驻）。
 ---
 
 # dev-tools（常用开发工具使用规范）
 
 ## 何时用
 
-当任务涉及**具体工具操作**——提交/分支、依赖安装、构建、格式化/lint、跑测试、CI、容器、shell、`mysql`/`redis-cli`——时载入。本技能**不常驻**，由 router 检测到相应工具/任务时注入（R62）。
+当任务涉及**具体工具操作**——提交/分支、依赖安装、构建、格式化/lint、跑测试、CI、容器、shell、`mysql`/`psql`/`clickhouse-client`/`mongosh`/`redis-cli`——时载入。本技能**不常驻**，由 router 检测到相应工具/任务时注入（R62）。
 
 ## 跨工具通用约定
 
@@ -26,6 +26,8 @@ description: 常用开发工具使用规范：git、包管理器、构建、form
 - `references/database.md`：`mysql` 客户端与 `redis-cli` 的只读/危险操作边界。
 - `references/shell.md`：sh/zsh/bash/pwsh 的用法边界。
 - `references/ci.md`：流水线约定与门禁接线。
-- `references/containers.md`：容器使用边界。
+- `references/containers.md`：容器、Kubernetes 与基础设施安全。
+- `references/observability.md`：API 调试、可观测性与 CLI 工具。
+- `references/messaging.md`：消息队列、契约和配置语法。
 
 > 机械取值（缩进/行宽/引号）不在此技能，落 `assets/lang-<id>.json`；格式化/lint 的机械执行交宿主。

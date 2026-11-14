@@ -1,11 +1,11 @@
 {
   "name": "@cikaros/ddd-methodology",
-  "version": "1.0.9",
+  "version": "2.0.2",
   "description": "分治式设计驱动开发方法论（Hermess 2.0）· OpenCode 插件：文档为唯一权威，代码为其落地",
   "license": "MIT",
   "type": "module",
   "engines": {
-    "node": ">=22.16.0"
+    "node": ">=22.19.0"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -18,12 +18,13 @@
     "skills",
     "agents",
     "scripts",
+    "docs",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --experimental-strip-types ./scripts/selftest.mjs . && node --experimental-strip-types --test tests/refactor.test.mjs",
+    "test": "node --experimental-strip-types ./scripts/selftest.mjs . && node --experimental-strip-types --test tests/refactor.test.mjs tests/v2.test.mjs tests/rc.test.mjs tests/skills201.test.mjs tests/integration202.test.mjs",
     "snapshot": "node --experimental-strip-types scripts/snapshot.mjs .",
     "change": "node --experimental-strip-types scripts/change.mjs",
     "map": "node --experimental-strip-types scripts/map.mjs replay .",
@@ -32,9 +33,13 @@
     "defects": "node --experimental-strip-types scripts/defects.mjs",
     "materialize": "node --experimental-strip-types scripts/materialize.mjs all .",
     "scaffold": "node --experimental-strip-types scripts/scaffold.mjs .",
-    "regen": "node --experimental-strip-types scripts/snapshot.mjs . && node --experimental-strip-types scripts/map.mjs replay . && node --experimental-strip-types scripts/change.mjs replay --root . && node --experimental-strip-types scripts/defects.mjs replay --root .",
-    "check": "node --experimental-strip-types scripts/snapshot.mjs . --check && node --experimental-strip-types scripts/map.mjs check . && node --experimental-strip-types scripts/change.mjs check --root . && node --experimental-strip-types scripts/defects.mjs check --root . && node --experimental-strip-types scripts/drift-check.mjs .",
-    "release": "npm run regen && npm run check && npm run typecheck && npm test"
+    "regen": "npm run skill-sync && node --experimental-strip-types scripts/snapshot.mjs . && node --experimental-strip-types scripts/map.mjs replay . && node --experimental-strip-types scripts/change.mjs replay --root . && node --experimental-strip-types scripts/defects.mjs replay --root .",
+    "check": "node --experimental-strip-types scripts/snapshot.mjs . --check && node --experimental-strip-types scripts/map.mjs check . && node --experimental-strip-types scripts/change.mjs check --root . && node --experimental-strip-types scripts/defects.mjs check --root . && node --experimental-strip-types scripts/drift-check.mjs . && npm run skill-check",
+    "release": "npm run regen && npm run check && npm run typecheck && npm test",
+    "eval": "node --experimental-strip-types scripts/eval.mjs",
+    "workflow": "node --experimental-strip-types scripts/workflow.mjs",
+    "skill-sync": "node --experimental-strip-types scripts/skills-sync.mjs",
+    "skill-check": "node --experimental-strip-types scripts/skills-sync.mjs --check"
   },
   "peerDependencies": {
     "@opencode/plugin": ">=2.2.7"

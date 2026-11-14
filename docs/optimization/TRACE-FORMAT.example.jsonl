@@ -1,0 +1,2 @@
+{"taskId":"T-001","model":"deepseek-flash","accepted":true,"durationMs":60000,"toolCalls":10,"failedToolCalls":1,"manualInterventions":0,"inputTokens":12000,"outputTokens":4000,"cacheReadTokens":5000}
+{"taskId":"T-002","model":"deepseek-flash","accepted":false,"durationMs":120000,"toolCalls":20,"failedToolCalls":3,"manualInterventions":2,"inputTokens":18000,"outputTokens":6000,"cacheReadTokens":2000}

@@ -1,25 +1,5 @@
-# 构建链路约定
+# 构建工具
 
-## Java 生态
+识别配置再运行：package.json scripts；vite.config.* → Vite；next.config.* → Next.js；pom.xml → Maven；build.gradle* → Gradle；Cargo.toml → Cargo；go.mod → Go；*.sln / *.csproj → dotnet；pubspec.yaml → Flutter；Makefile/CMakeLists.txt → Make/CMake。JS 生态还可见 Webpack、Rollup、esbuild、Turborepo、Nx、Turbopack；先读取现有脚本，不擅自替换构建器。报告构建命令、退出码、生成产物和失败日志。生产发布不得仅凭开发服务器可运行认定成功。
 
-- `javac` 编译；`maven`（`mvn -q verify`）或 `gradle`（`./gradlew build`）驱动。
-- 构建脚本与依赖声明入版本控制；不提交 `target/`、`build/`。
-
-## C/C++
-
-- `gcc`/`g++` 编译；`make` 或 `cmake` 驱动；编译警告当错误处理（项目可覆盖）。
-- 不提交对象文件与产物目录。
-
-## NASM
-
-- `nasm -f <fmt> -o out.o src.asm`；`ld` 链接；产物目录不入版本控制。
-
-## Android
-
-- `./gradlew assembleDebug`；`adb install` / `adb logcat` 调试。
-- 不提交 `build/`、`.gradle/`。
-
-## 判断
-
-- 构建失败先看首个错误，不追末端连锁错误。
-- 构建产物是**派生物**：不入权威件，不在其中写事实。
+- 参考 https://vite.dev/guide/ ; https://webpack.js.org/concepts/ ; https://rollupjs.org/ ; https://esbuild.github.io/ ; https://turbo.build/ ; https://nx.dev/

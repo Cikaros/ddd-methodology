@@ -35,3 +35,7 @@ updated: 2026-11-11
 - **正文不写具体阈值**——读 `assets/lang-<id>.json`。
 - 基线来源在 `assets/languages.json` 声明（Google 优先；无对应用官方/事实标准）。
 - 模板须薄：全文拆到 `references/`。
+
+## 2.0.1 补充契约
+
+语言 Skills 不再由 `injection-slices.json` 硬编码注入；通过 `assets/skills-catalog.json` 提供信号与来源，宿主 `skill` 工具按 ID 按需载入正文。新 Skills 存放 `skills/lang/<id>/`，框架/数据库/工具按各自目录分类。旧 Vue 与 Android 路径暂不迁移，以保持 ID 和用户已有资源兼容。

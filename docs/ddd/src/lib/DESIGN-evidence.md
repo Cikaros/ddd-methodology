@@ -25,3 +25,7 @@ Node fs/path、assets/commands.json；对接 scripts/validate.mjs、scripts/snap
 ## 调用的模块能力及接口
 
 遵循方法论的文档先行原则；可机械验证的断言必须基于当前实物。业务语义无法通过静态扫描证明时不声称通过。
+
+## 2.0.0 统一读取
+
+`readJsonlStrict` 已抽取至 `jsonl.mjs` 并为兼容重导出；看板历史通过 `board-store.mjs`/`board.ts` 严格读取与重放。所有路径检查拒绝越界与符号链接，不从报告回填权威状态。

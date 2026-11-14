@@ -53,3 +53,7 @@ updated: 2026-11-11
 ## 状态
 
 本件为 `frozen`；与实物（`scripts/`）对账一致。
+
+## 2.0.2 全局集成约束
+
+scaffold 在写入任何项目文档前调用 materialize all --check；--force 显式传递给物化器。

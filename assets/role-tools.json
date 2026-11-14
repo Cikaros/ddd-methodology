@@ -1,17 +1,92 @@
 {
   "$schema": "internal:role-tools",
   "roles": {
-    "ddd-intent-clarifier": ["read", "grep", "glob"],
-    "ddd-architect": ["read", "grep", "glob", "write", "edit"],
-    "ddd-designer": ["read", "grep", "glob", "write", "edit"],
-    "ddd-design-reviewer": ["read", "grep", "glob"],
-    "ddd-test-designer": ["read", "grep", "glob", "write", "edit"],
-    "ddd-implementer": ["read", "grep", "glob", "write", "edit", "shell"],
-    "ddd-tester": ["read", "grep", "glob", "shell"],
-    "ddd-auditor": ["read", "grep", "glob"],
-    "ddd-consolidator": ["read", "grep", "glob", "write", "edit"],
-    "ddd-curator": ["read", "grep", "glob", "shell"],
-    "ddd-vision-reader": ["read", "glob", "grep", "write", "edit"],
-    "ddd-ui-diff": ["read", "glob", "grep"]
+    "ddd-intent-clarifier": [
+      "read",
+      "grep",
+      "glob",
+      "skill"
+    ],
+    "ddd-architect": [
+      "read",
+      "grep",
+      "glob",
+      "write",
+      "edit",
+      "skill"
+    ],
+    "ddd-designer": [
+      "read",
+      "grep",
+      "glob",
+      "write",
+      "edit",
+      "skill"
+    ],
+    "ddd-design-reviewer": [
+      "read",
+      "grep",
+      "glob",
+      "skill"
+    ],
+    "ddd-test-designer": [
+      "read",
+      "grep",
+      "glob",
+      "write",
+      "edit",
+      "skill"
+    ],
+    "ddd-implementer": [
+      "read",
+      "grep",
+      "glob",
+      "write",
+      "edit",
+      "shell",
+      "skill"
+    ],
+    "ddd-tester": [
+      "read",
+      "grep",
+      "glob",
+      "shell",
+      "skill"
+    ],
+    "ddd-auditor": [
+      "read",
+      "grep",
+      "glob",
+      "skill"
+    ],
+    "ddd-consolidator": [
+      "read",
+      "grep",
+      "glob",
+      "write",
+      "edit",
+      "skill"
+    ],
+    "ddd-curator": [
+      "read",
+      "grep",
+      "glob",
+      "shell",
+      "skill"
+    ],
+    "ddd-vision-reader": [
+      "read",
+      "glob",
+      "grep",
+      "write",
+      "edit",
+      "skill"
+    ],
+    "ddd-ui-diff": [
+      "read",
+      "glob",
+      "grep",
+      "skill"
+    ]
   }
 }

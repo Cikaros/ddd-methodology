@@ -1,6 +1,6 @@
 # 项目覆盖（Shell (sh/zsh/bash/pwsh)）
 
-> 默认使用基线 `google:shell-style-guide@rev-2024-01-01`；项目如需偏离基线，**在本文件登记覆盖项与理由**，使「基线 vs 项目」不打架。
+> 默认使用基线 `https://google.github.io/styleguide/shellguide.html`；项目如需偏离基线，**在本文件登记覆盖项与理由**，使「基线 vs 项目」不打架。
 
 ## 覆盖登记
 

@@ -1,6 +1,6 @@
 # 项目覆盖（NASM (x86 assembly)）
 
-> 默认使用基线 `official:nasm-style@fact-standard`；项目如需偏离基线，**在本文件登记覆盖项与理由**，使「基线 vs 项目」不打架。
+> 默认使用基线 `https://www.nasm.us/docs.php`；项目如需偏离基线，**在本文件登记覆盖项与理由**，使「基线 vs 项目」不打架。
 
 ## 覆盖登记
 

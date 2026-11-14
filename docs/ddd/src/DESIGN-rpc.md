@@ -44,3 +44,15 @@ updated: 2026-11-11
 - **契约与实现分离**：本件可被他人 `import` 而不加载实现（§8.4）。
 - 事件数据**必须是 object**；`id` 为命名空间（前缀 `rpc.ddd.*`）。
 - 外部客户端可直连 `POST /api/rpc/ddd/{method}`；**入参须服务端校验**，不能只靠 TS 类型。
+
+## 2.0.0 RPC 扩展
+
+`intentCapture` 校验 scenario 四问数据，将其作为可恢复的输入草稿保存，不代替冻结后的 `docs/REQUIREMENTS.md` 或阻塞式 `permission.assert`。`gates` 与 CLI 共用同一评价器，`board` 严格读取完整历史。
+
+## 2.0.0 收尾契约（2026-11-14）
+
+**RPC 读写契约**：原 gates/board/intentCapture 保持；新增 workflow 状态、需 confirmed 的 workflowVerify 和 workflowClose；所有入参服务端再次校验。
+
+## 2.0.2 全局集成约束
+
+新增 overview RPC，把 workflow、Skills、G1–G6 与 board 的实时读数统一暴露给 TUI；原方法保持兼容。

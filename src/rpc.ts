@@ -48,6 +48,49 @@ export const Ddd = Rpc.define({
         additionalProperties: false,
       },
     },
+    intentCapture: {
+      input: {
+        type: "object",
+        properties: {
+          scenario: { type: "string", enum: ["greenfield", "incremental", "migration"] },
+          who: { type: "string", maxLength: 4000 },
+          result: { type: "string", maxLength: 4000 },
+          accept: { type: "string", maxLength: 4000 },
+          notdoing: { type: "string", maxLength: 4000 },
+        },
+        required: ["scenario", "who", "result", "accept", "notdoing"],
+        additionalProperties: false,
+      },
+      output: {
+        type: "object",
+        properties: { saved: { type: "boolean" }, missing: { type: "number" } },
+        required: ["saved", "missing"],
+        additionalProperties: false,
+      },
+    },
+    overview: {
+      input: {type:'object',properties:{sessionID:{type:'string',minLength:1,maxLength:2048}},required:['sessionID'],additionalProperties:false},
+      output: {type:'object',properties:{
+        phase:{type:'string'},status:{type:'string'},seq:{type:'number'},summary:{type:'string'},
+        skills:{type:'array',items:{type:'string'}},
+        gates:{type:'object',properties:{pass:{type:'number'},block:{type:'number'},visible:{type:'number'},na:{type:'number'}},required:['pass','block','visible','na'],additionalProperties:false},
+        blockedGates:{type:'array',items:{type:'string'}},
+        board:{type:'object',properties:{pending:{type:'number'},inProgress:{type:'number'},blocked:{type:'number'}},required:['pending','inProgress','blocked'],additionalProperties:false},
+        canVerify:{type:'boolean'},proofSha:{type:'string'},
+      },required:['phase','status','seq','summary','skills','gates','blockedGates','board','canVerify','proofSha'],additionalProperties:false},
+    },
+    workflow: {
+      input: {type:'object',properties:{sessionID:{type:'string',minLength:1,maxLength:2048}},required:['sessionID'],additionalProperties:false},
+      output: {type:'object',properties:{present:{type:'boolean'},phase:{type:'string'},status:{type:'string'},seq:{type:'number'},summary:{type:'string'},proofSha:{type:'string'}},required:['present','phase','status','seq','summary','proofSha'],additionalProperties:false},
+    },
+    workflowVerify: {
+      input: {type:'object',properties:{sessionID:{type:'string',minLength:1,maxLength:2048},confirmed:{type:'boolean',const:true}},required:['sessionID','confirmed'],additionalProperties:false},
+      output: {type:'object',properties:{status:{type:'string'},reason:{type:'string'},proofSha:{type:'string'}},required:['status','reason','proofSha'],additionalProperties:false},
+    },
+    workflowClose: {
+      input: {type:'object',properties:{sessionID:{type:'string',minLength:1,maxLength:2048},confirmed:{type:'boolean',const:true},reason:{type:'string',minLength:3,maxLength:300}},required:['sessionID','confirmed','reason'],additionalProperties:false},
+      output: {type:'object',properties:{status:{type:'string'},reason:{type:'string'}},required:['status','reason'],additionalProperties:false},
+    },
     board: {
       input: emptyInput,
       output: {

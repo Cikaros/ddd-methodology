@@ -39,3 +39,7 @@ updated: 2026-11-11
 
 - 清单**单点权威**在 `assets/commands.json`；本件与其须一致（由 `scripts/` 对账）。
 - 命令名与 md 文件命令**不同名**（前缀化，规避 V-07）。
+
+## 2.0.1 修订
+
+`SKILLS` 不再硬编码，改为从 `assets/skills-catalog.json` 运行期校验投影。校验 ID、分类、层级、相对目录以及检测信号；发现重复或损坏配置立即拒绝。命令依旧取自 `assets/commands.json`。

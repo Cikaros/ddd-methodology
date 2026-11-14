@@ -1,17 +1,5 @@
-# CI 使用约定
+# CI/CD 与供应链
 
-## 流水线约定
+按仓库实际配置识别 GitHub Actions、GitLab CI、Jenkins、Argo CD、CircleCI。必须明确最小权限、密钥隔离、锁文件缓存键、不可变构建产物、测试失败停止发布。PR 来自不可信分支时谨慎使用带权限的触发条件，第三方 action 固定可审核版本；失败日志不得包含 secrets。工具如 actionlint、Trivy、Semgrep、Gitleaks、Snyk、OWASP ZAP 需依据项目类型选择并输出真实审计结果；不因缺工具而假定安全。
 
-- 每个 PR/推送跑：无模型自测 + 类型检查 + lint/format check；真跑层按需。
-- 门禁是**全覆盖同步拦截**那一层；评估是**抽样异步度量**——二者显式分开。
-- 失败即 `block`，日志须能回答「在哪一步、因何失守」。
-
-## 与门禁接线
-
-- CI 失败可经 `session.create` 开分析会话（程序化会话驱动）。
-- 项目登记的门禁可在 CI 侧复算同一判据（同构）。
-
-## 纪律
-
-- 版本落点三处之一（使用者钉版声明）可在 CI 校验一致性。
-- 不把密钥写入受控件；用 CI secret 机制。
+- 参考 https://docs.github.com/en/actions ; https://docs.gitlab.com/ci/ ; https://argo-cd.readthedocs.io/

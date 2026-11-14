@@ -50,3 +50,11 @@ G6 判据须核对：`docs/temp.jsonl` 登记项均已清理；**看板活跃投
 ## 状态
 
 本件为 `frozen`；与实物（`scripts/`）对账一致。
+
+## 2.0.0 发布条件
+
+CLI 与 RPC 共用 `gate-evaluator.ts`；`--release` 在 G1–G6 全部通过后还调用 `executable-verifier.mjs` 真实执行 npm test 与已有的 typecheck/lint；脚本失败、缺少测试、源码指纹变化均不能视作发布准备就绪。`--check` 保持无报告写入。
+
+## 2.0.0 收尾契约（2026-11-14）
+
+**统一 G1-G6 + release**：--check 只读；--release 明确执行项目测试，无有效测试证明不可通过；所有结果与源指纹一致。

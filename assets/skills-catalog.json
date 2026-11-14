@@ -1,0 +1,831 @@
+{
+  "schemaVersion": 1,
+  "skills": [
+    {
+      "id": "ddd-methodology",
+      "name": "ddd-methodology",
+      "description": "文档先行、需求/设计/测试同构、变更与门禁方法论",
+      "dir": "skills/ddd-methodology",
+      "category": "methodology",
+      "tier": "existing",
+      "signals": {
+        "extensions": [],
+        "markers": [],
+        "keywords": [],
+        "dependencies": []
+      }
+    },
+    {
+      "id": "frontend-variant-contract",
+      "name": "frontend-variant-contract",
+      "description": "UI 变体契约设计：先定义合法变化维度再实现组件",
+      "dir": "skills/frontend-variant-contract",
+      "category": "methodology",
+      "tier": "existing",
+      "signals": {
+        "extensions": [],
+        "markers": [],
+        "keywords": [
+          "变体",
+          "Variant contract"
+        ],
+        "dependencies": []
+      }
+    },
+    {
+      "id": "dev-tools",
+      "name": "dev-tools",
+      "description": "构建、测试、质量、数据库、容器及 CI 等开发工具使用规范",
+      "dir": "skills/dev-tools",
+      "category": "toolchain",
+      "tier": "existing",
+      "signals": {
+        "extensions": [],
+        "markers": [],
+        "keywords": [
+          "构建",
+          "测试工具",
+          "CI/CD",
+          "包管理",
+          "开发工具"
+        ],
+        "dependencies": []
+      }
+    },
+    {
+      "id": "lang-html",
+      "name": "lang-html",
+      "description": "HTML 开发、常见故障和验证工具规范",
+      "dir": "skills/lang/html",
+      "category": "language",
+      "tier": "existing",
+      "signals": {
+        "extensions": [
+          ".html",
+          ".htm"
+        ],
+        "markers": [],
+        "keywords": [
+          "HTML",
+          "模板页面"
+        ],
+        "dependencies": []
+      },
+      "baseline": "https://google.github.io/styleguide/htmlcssguide.html",
+      "mechanicalKeys": "assets/lang-html.json",
+      "tools": [
+        "formatter-linter",
+        "testing"
+      ],
+      "display": "HTML"
+    },
+    {
+      "id": "lang-css",
+      "name": "lang-css",
+      "description": "CSS 开发、常见故障和验证工具规范",
+      "dir": "skills/lang/css",
+      "category": "language",
+      "tier": "existing",
+      "signals": {
+        "extensions": [
+          ".css",
+          ".scss",
+          ".less"
+        ],
+        "markers": [],
+        "keywords": [
+          "CSS",
+          "样式",
+          "stylesheet"
+        ],
+        "dependencies": []
+      },
+      "baseline": "https://google.github.io/styleguide/htmlcssguide.html",
+      "mechanicalKeys": "assets/lang-css.json",
+      "tools": [
+        "formatter-linter"
+      ],
+      "display": "CSS"
+    },
+    {
+      "id": "lang-javascript",
+      "name": "lang-javascript",
+      "description": "JavaScript 开发、常见故障和验证工具规范",
+      "dir": "skills/lang/javascript",
+      "category": "language",
+      "tier": "existing",
+      "signals": {
+        "extensions": [
+          ".js",
+          ".jsx",
+          ".mjs",
+          ".cjs"
+        ],
+        "markers": [],
+        "keywords": [
+          "JavaScript",
+          "Node.js"
+        ],
+        "dependencies": []
+      },
+      "baseline": "https://google.github.io/styleguide/jsguide.html",
+      "mechanicalKeys": "assets/lang-javascript.json",
+      "tools": [
+        "package-manager",
+        "formatter-linter",
+        "testing"
+      ],
+      "display": "JavaScript"
+    },
+    {
+      "id": "lang-vue",
+      "name": "lang-vue",
+      "description": "Vue.js 组件、SFC 与应用开发规范",
+      "dir": "skills/lang/vue",
+      "category": "framework",
+      "tier": "existing",
+      "signals": {
+        "extensions": [
+          ".vue"
+        ],
+        "markers": [],
+        "keywords": [
+          "Vue",
+          "Nuxt"
+        ],
+        "dependencies": []
+      },
+      "baseline": "https://vuejs.org/style-guide/",
+      "mechanicalKeys": "assets/lang-vue.json",
+      "tools": [
+        "package-manager",
+        "formatter-linter",
+        "testing"
+      ],
+      "display": "Vue"
+    },
+    {
+      "id": "lang-java",
+      "name": "lang-java",
+      "description": "Java 开发、常见故障和验证工具规范",
+      "dir": "skills/lang/java",
+      "category": "language",
+      "tier": "existing",
+      "signals": {
+        "extensions": [
+          ".java"
+        ],
+        "markers": [
+          "pom.xml",
+          "build.gradle",
+          "build.gradle.kts"
+        ],
+        "keywords": [
+          "Java",
+          "JVM"
+        ],
+        "dependencies": []
+      },
+      "baseline": "https://google.github.io/styleguide/javaguide.html",
+      "mechanicalKeys": "assets/lang-java.json",
+      "tools": [
+        "build",
+        "testing"
+      ],
+      "display": "Java"
+    },
+    {
+      "id": "lang-python",
+      "name": "lang-python",
+      "description": "Python 开发、常见故障和验证工具规范",
+      "dir": "skills/lang/python",
+      "category": "language",
+      "tier": "existing",
+      "signals": {
+        "extensions": [
+          ".py",
+          ".pyi"
+        ],
+        "markers": [
+          "requirements.txt",
+          "pyproject.toml",
+          "Pipfile"
+        ],
+        "keywords": [
+          "Python",
+          "pytest"
+        ],
+        "dependencies": []
+      },
+      "baseline": "https://google.github.io/styleguide/pyguide.html",
+      "mechanicalKeys": "assets/lang-python.json",
+      "tools": [
+        "package-manager",
+        "formatter-linter",
+        "testing"
+      ],
+      "display": "Python"
+    },
+    {
+      "id": "lang-shell",
+      "name": "lang-shell",
+      "description": "Shell (sh/zsh/bash/pwsh) 开发、常见故障和验证工具规范",
+      "dir": "skills/lang/shell",
+      "category": "language",
+      "tier": "existing",
+      "signals": {
+        "extensions": [
+          ".sh",
+          ".ps1",
+          ".zsh",
+          ".bash"
+        ],
+        "markers": [],
+        "keywords": [
+          "shell",
+          "bash",
+          "PowerShell"
+        ],
+        "dependencies": []
+      },
+      "baseline": "https://google.github.io/styleguide/shellguide.html",
+      "mechanicalKeys": "assets/lang-shell.json",
+      "tools": [
+        "shell",
+        "formatter-linter"
+      ],
+      "display": "Shell"
+    },
+    {
+      "id": "lang-android",
+      "name": "lang-android",
+      "description": "Android 平台与 Kotlin/Java 客户端工程规范",
+      "dir": "skills/lang/android",
+      "category": "platform",
+      "tier": "existing",
+      "signals": {
+        "extensions": [],
+        "markers": [
+          "settings.gradle",
+          "gradle.properties"
+        ],
+        "keywords": [
+          "Android",
+          "Jetpack"
+        ],
+        "dependencies": []
+      },
+      "baseline": "https://developer.android.com/kotlin/style-guide",
+      "mechanicalKeys": "assets/lang-android.json",
+      "tools": [
+        "build",
+        "testing"
+      ],
+      "display": "Android"
+    },
+    {
+      "id": "lang-sql",
+      "name": "lang-sql",
+      "description": "SQL 查询、事务及数据库迁移通用规范（Redis 单独处理）",
+      "dir": "skills/lang/sql",
+      "category": "language",
+      "tier": "existing",
+      "signals": {
+        "extensions": [
+          ".sql"
+        ],
+        "markers": [],
+        "keywords": [
+          "SQL",
+          "数据库查询",
+          "DDL",
+          "DML"
+        ],
+        "dependencies": []
+      },
+      "baseline": "https://www.postgresql.org/docs/current/sql.html",
+      "mechanicalKeys": "assets/lang-sql.json",
+      "tools": [
+        "database"
+      ],
+      "display": "SQL"
+    },
+    {
+      "id": "lang-c",
+      "name": "lang-c",
+      "description": "C 开发、常见故障和验证工具规范",
+      "dir": "skills/lang/c",
+      "category": "language",
+      "tier": "existing",
+      "signals": {
+        "extensions": [
+          ".c",
+          ".h"
+        ],
+        "markers": [],
+        "keywords": [
+          "C language",
+          "C语言"
+        ],
+        "dependencies": []
+      },
+      "baseline": "https://en.cppreference.com/w/c",
+      "mechanicalKeys": "assets/lang-c.json",
+      "tools": [
+        "build",
+        "testing"
+      ],
+      "display": "C"
+    },
+    {
+      "id": "lang-cpp",
+      "name": "lang-cpp",
+      "description": "C++ 开发、常见故障和验证工具规范",
+      "dir": "skills/lang/cpp",
+      "category": "language",
+      "tier": "existing",
+      "signals": {
+        "extensions": [
+          ".cpp",
+          ".cc",
+          ".hpp",
+          ".hh",
+          ".cxx"
+        ],
+        "markers": [
+          "CMakeLists.txt"
+        ],
+        "keywords": [
+          "C++",
+          "CMake"
+        ],
+        "dependencies": []
+      },
+      "baseline": "https://google.github.io/styleguide/cppguide.html",
+      "mechanicalKeys": "assets/lang-cpp.json",
+      "tools": [
+        "build",
+        "testing"
+      ],
+      "display": "C++"
+    },
+    {
+      "id": "lang-nasm",
+      "name": "lang-nasm",
+      "description": "NASM (x86 assembly) 开发、常见故障和验证工具规范",
+      "dir": "skills/lang/nasm",
+      "category": "language",
+      "tier": "existing",
+      "signals": {
+        "extensions": [
+          ".asm"
+        ],
+        "markers": [],
+        "keywords": [
+          "NASM",
+          "x86 汇编"
+        ],
+        "dependencies": []
+      },
+      "baseline": "https://www.nasm.us/docs.php",
+      "mechanicalKeys": "assets/lang-nasm.json",
+      "tools": [
+        "build"
+      ],
+      "display": "NASM"
+    },
+    {
+      "id": "lang-typescript",
+      "name": "lang-typescript",
+      "description": "TypeScript 静态类型、模块与项目构建",
+      "dir": "skills/lang/typescript",
+      "category": "language",
+      "tier": "required",
+      "signals": {
+        "extensions": [
+          ".ts",
+          ".tsx",
+          ".mts",
+          ".cts"
+        ],
+        "markers": [
+          "tsconfig.json"
+        ],
+        "keywords": [
+          "TypeScript",
+          "tsc"
+        ],
+        "dependencies": [
+          "typescript"
+        ]
+      },
+      "display": "TypeScript"
+    },
+    {
+      "id": "lang-go",
+      "name": "lang-go",
+      "description": "Go 模块、并发、错误处理与测试",
+      "dir": "skills/lang/go",
+      "category": "language",
+      "tier": "required",
+      "signals": {
+        "extensions": [
+          ".go"
+        ],
+        "markers": [
+          "go.mod",
+          "go.work"
+        ],
+        "keywords": [
+          "Golang",
+          "Go 语言"
+        ],
+        "dependencies": [
+          "go"
+        ]
+      },
+      "display": "Go"
+    },
+    {
+      "id": "lang-rust",
+      "name": "lang-rust",
+      "description": "Rust 所有权、错误边界及 Cargo 工程",
+      "dir": "skills/lang/rust",
+      "category": "language",
+      "tier": "required",
+      "signals": {
+        "extensions": [
+          ".rs"
+        ],
+        "markers": [
+          "Cargo.toml"
+        ],
+        "keywords": [
+          "Rust",
+          "Cargo"
+        ],
+        "dependencies": [
+          "rust"
+        ]
+      },
+      "display": "Rust"
+    },
+    {
+      "id": "lang-csharp",
+      "name": "lang-csharp",
+      "description": "C# / .NET 异步、空安全和单元测试",
+      "dir": "skills/lang/csharp",
+      "category": "language",
+      "tier": "required",
+      "signals": {
+        "extensions": [
+          ".cs"
+        ],
+        "markers": [
+          "*.csproj",
+          "*.sln",
+          "global.json"
+        ],
+        "keywords": [
+          "C#",
+          "dotnet",
+          ".NET"
+        ],
+        "dependencies": [
+          "Microsoft.NET.Sdk"
+        ]
+      },
+      "display": "C#"
+    },
+    {
+      "id": "lang-kotlin",
+      "name": "lang-kotlin",
+      "description": "Kotlin 空安全、协程与 JVM/Android 构建",
+      "dir": "skills/lang/kotlin",
+      "category": "language",
+      "tier": "required",
+      "signals": {
+        "extensions": [
+          ".kt",
+          ".kts"
+        ],
+        "markers": [
+          "build.gradle.kts"
+        ],
+        "keywords": [
+          "Kotlin",
+          "Ktor",
+          "Coroutines"
+        ],
+        "dependencies": [
+          "org.jetbrains.kotlin"
+        ]
+      },
+      "display": "Kotlin"
+    },
+    {
+      "id": "lang-php",
+      "name": "lang-php",
+      "description": "PHP Composer、类型边界和应用测试",
+      "dir": "skills/lang/php",
+      "category": "language",
+      "tier": "required",
+      "signals": {
+        "extensions": [
+          ".php"
+        ],
+        "markers": [
+          "composer.json"
+        ],
+        "keywords": [
+          "PHP",
+          "Composer",
+          "Laravel"
+        ],
+        "dependencies": [
+          "php"
+        ]
+      },
+      "display": "PHP"
+    },
+    {
+      "id": "framework-react",
+      "name": "framework-react",
+      "description": "React 组件、Hooks、状态和可访问性",
+      "dir": "skills/framework/react",
+      "category": "framework",
+      "tier": "recommended",
+      "signals": {
+        "extensions": [],
+        "markers": [],
+        "keywords": [
+          "React",
+          "React Hooks"
+        ],
+        "dependencies": [
+          "react"
+        ]
+      },
+      "display": "react"
+    },
+    {
+      "id": "framework-nextjs",
+      "name": "framework-nextjs",
+      "description": "Next.js App Router、缓存与服务端界限",
+      "dir": "skills/framework/nextjs",
+      "category": "framework",
+      "tier": "recommended",
+      "signals": {
+        "extensions": [],
+        "markers": [
+          "next.config.js",
+          "next.config.mjs",
+          "next.config.ts"
+        ],
+        "keywords": [
+          "Next.js",
+          "Next App Router"
+        ],
+        "dependencies": [
+          "next"
+        ]
+      },
+      "display": "nextjs"
+    },
+    {
+      "id": "framework-spring-boot",
+      "name": "framework-spring-boot",
+      "description": "Spring Boot、事务、接口与集成测试",
+      "dir": "skills/framework/spring-boot",
+      "category": "framework",
+      "tier": "recommended",
+      "signals": {
+        "extensions": [],
+        "markers": [
+          "pom.xml",
+          "build.gradle",
+          "build.gradle.kts"
+        ],
+        "keywords": [
+          "Spring Boot",
+          "Spring Security",
+          "MyBatis",
+          "JPA"
+        ],
+        "dependencies": [
+          "spring-boot",
+          "org.springframework.boot"
+        ]
+      },
+      "display": "spring-boot"
+    },
+    {
+      "id": "framework-fastapi",
+      "name": "framework-fastapi",
+      "description": "FastAPI、Pydantic 模型、依赖注入和异步接口",
+      "dir": "skills/framework/fastapi",
+      "category": "framework",
+      "tier": "recommended",
+      "signals": {
+        "extensions": [],
+        "markers": [],
+        "keywords": [
+          "FastAPI",
+          "Pydantic"
+        ],
+        "dependencies": [
+          "fastapi"
+        ]
+      },
+      "display": "fastapi"
+    },
+    {
+      "id": "framework-flutter",
+      "name": "framework-flutter",
+      "description": "Flutter/Dart Widget、状态、布局与测试",
+      "dir": "skills/framework/flutter",
+      "category": "framework",
+      "tier": "recommended",
+      "signals": {
+        "extensions": [],
+        "markers": [
+          "pubspec.yaml"
+        ],
+        "keywords": [
+          "Flutter",
+          "Dart"
+        ],
+        "dependencies": [
+          "flutter"
+        ]
+      },
+      "display": "flutter"
+    },
+    {
+      "id": "database-postgresql",
+      "name": "database-postgresql",
+      "description": "PostgreSQL SQL、事务、索引与迁移",
+      "dir": "skills/database/postgresql",
+      "category": "database",
+      "tier": "recommended",
+      "signals": {
+        "extensions": [],
+        "markers": [],
+        "keywords": [
+          "PostgreSQL",
+          "Postgres",
+          "psql"
+        ],
+        "dependencies": [
+          "pg",
+          "psycopg",
+          "org.postgresql"
+        ]
+      },
+      "display": "postgresql"
+    },
+    {
+      "id": "database-mongodb",
+      "name": "database-mongodb",
+      "description": "MongoDB 文档建模、索引与安全更新",
+      "dir": "skills/database/mongodb",
+      "category": "database",
+      "tier": "recommended",
+      "signals": {
+        "extensions": [],
+        "markers": [],
+        "keywords": [
+          "MongoDB",
+          "mongosh",
+          "Mongo"
+        ],
+        "dependencies": [
+          "mongodb",
+          "pymongo",
+          "motor"
+        ]
+      },
+      "display": "mongodb"
+    },
+    {
+      "id": "database-clickhouse",
+      "name": "database-clickhouse",
+      "description": "ClickHouse MergeTree、分区、复制和导入",
+      "dir": "skills/database/clickhouse",
+      "category": "database",
+      "tier": "recommended",
+      "signals": {
+        "extensions": [],
+        "markers": [],
+        "keywords": [
+          "ClickHouse",
+          "clickhouse-client",
+          "MergeTree"
+        ],
+        "dependencies": [
+          "clickhouse-connect",
+          "clickhouse-driver"
+        ]
+      },
+      "display": "clickhouse"
+    },
+    {
+      "id": "tool-playwright",
+      "name": "tool-playwright",
+      "description": "Playwright E2E、稳定定位与 CI 测试",
+      "dir": "skills/tool/playwright",
+      "category": "toolchain",
+      "tier": "recommended",
+      "signals": {
+        "extensions": [],
+        "markers": [
+          "playwright.config.ts",
+          "playwright.config.js"
+        ],
+        "keywords": [
+          "Playwright",
+          "E2E 测试"
+        ],
+        "dependencies": [
+          "@playwright/test",
+          "playwright"
+        ]
+      },
+      "display": "playwright"
+    },
+    {
+      "id": "tool-vite",
+      "name": "tool-vite",
+      "description": "Vite 开发、构建与环境配置",
+      "dir": "skills/tool/vite",
+      "category": "toolchain",
+      "tier": "recommended",
+      "signals": {
+        "extensions": [],
+        "markers": [
+          "vite.config.ts",
+          "vite.config.js",
+          "vite.config.mts"
+        ],
+        "keywords": [
+          "Vite",
+          "vite build"
+        ],
+        "dependencies": [
+          "vite"
+        ]
+      },
+      "display": "vite"
+    },
+    {
+      "id": "tool-kubernetes",
+      "name": "tool-kubernetes",
+      "description": "Kubernetes 清单、部署和变更控制",
+      "dir": "skills/tool/kubernetes",
+      "category": "infrastructure",
+      "tier": "recommended",
+      "signals": {
+        "extensions": [],
+        "markers": [
+          "Chart.yaml",
+          "kustomization.yaml",
+          "kustomization.yml"
+        ],
+        "keywords": [
+          "Kubernetes",
+          "kubectl",
+          "Helm",
+          "Kustomize"
+        ],
+        "dependencies": [
+          "kubernetes",
+          "@kubernetes/client-node"
+        ]
+      },
+      "display": "kubernetes"
+    },
+    {
+      "id": "tool-github-actions",
+      "name": "tool-github-actions",
+      "description": "GitHub Actions 工作流、权限与供应链安全",
+      "dir": "skills/tool/github-actions",
+      "category": "toolchain",
+      "tier": "recommended",
+      "signals": {
+        "extensions": [],
+        "markers": [
+          ".github/workflows"
+        ],
+        "keywords": [
+          "GitHub Actions",
+          "workflow_dispatch",
+          "CI pipeline"
+        ],
+        "dependencies": [
+          "actions/checkout"
+        ]
+      },
+      "display": "github-actions"
+    }
+  ]
+}

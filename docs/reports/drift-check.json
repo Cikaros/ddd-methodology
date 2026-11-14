@@ -1,5 +1,5 @@
 {
-  "ts": "2026-11-12T06:40:29.728Z",
+  "ts": "2026-11-14T16:36:57.515Z",
   "checks": [
     {
       "id": "drift.commands",
@@ -16,9 +16,16 @@
       "findings": []
     },
     {
+      "id": "drift.skills-catalog",
+      "authority": "assets/skills-catalog.json",
+      "mirrors": "skills/**",
+      "ok": true,
+      "findings": []
+    },
+    {
       "id": "drift.languages",
-      "authority": "assets/languages.json",
-      "mirrors": "skills/lang/*",
+      "authority": "assets/skills-catalog.json",
+      "mirrors": "assets/languages.json",
       "ok": true,
       "findings": []
     },
@@ -26,6 +33,20 @@
       "id": "drift.no-inline-thresholds",
       "authority": "assets/board.json + assets/memory.json",
       "mirrors": "src/** + scripts/**",
+      "ok": true,
+      "findings": []
+    },
+    {
+      "id": "drift.agent-skill-tools",
+      "authority": "agents/*.md + assets/role-tools.json",
+      "mirrors": "assets/commands.json + context tool policy",
+      "ok": true,
+      "findings": []
+    },
+    {
+      "id": "drift.release-version",
+      "authority": "package.json",
+      "mirrors": "package-lock.json + docs/CHANGELOG.jsonl",
       "ok": true,
       "findings": []
     }

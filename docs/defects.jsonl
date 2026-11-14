@@ -30,3 +30,5 @@
 {"id":"DEF-0015","ts":"2026-11-13T10:40:48.076Z","status":"resolved","severity":"high","title":"相位读写异键：写 ddd.phase.<sid>、读 ddd:phase:<sid>，导致按相位选出的纪律切片静默失效","area":"src","ref":"docs/ddd/src/DESIGN-index.md","note":"putPhase 改写 ddd:phase:<sid>；加 UT-src-index-06 防回归（见 CHG-0012）"}
 {"id":"DEF-0016","ts":"2026-11-13T10:47:20.309Z","status":"open","severity":"low","title":"package-lock.json 根版本未随发布同步（滞留在 1.0.7），违反历次发布约定","area":".","ref":"package-lock.json"}
 {"id":"DEF-0016","ts":"2026-11-13T10:47:20.401Z","status":"resolved","severity":"low","title":"package-lock.json 根版本未随发布同步（滞留在 1.0.7），违反历次发布约定","area":".","ref":"package-lock.json","note":"同步 package-lock.json 两个根版本字段至 1.0.8"}
+{"id":"DEF-0017","ts":"2026-11-14T17:02:11.624Z","status":"open","severity":"high","title":"file-lock 符号链接拒绝在 Windows 失效：openSync(wx) 对 symlink 成功创建，lstat 检查在 EEXIST 分支后才执行，rc 用例稳定失败","area":"src","ref":"src/lib/file-lock.mjs"}
+{"id":"DEF-0018","ts":"2026-11-14T17:02:11.680Z","status":"open","severity":"high","title":"tui.tsx 在官方 @opencode/plugin@2.2.7 类型下 typecheck 失败（current/closed/result/saved 为 unknown）；此前仅以本地 SDK 替身通过","area":"src","ref":"src/tui.tsx"}

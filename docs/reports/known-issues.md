@@ -1,7 +1,7 @@
 <!-- 派生视图，由 scripts/defects.mjs replay 生成；禁手改 -->
 # 已知问题（known-issues）
 
-open=0 / total=16
+open=2 / total=18
 
 | id | severity | status | area | title |
 |---|---|---|---|---|
@@ -21,3 +21,5 @@ open=0 / total=16
 | DEF-0014 | high | resolved | src | 第二个乱码根因：PS 5.1 读 .ps1 源码无 BOM 即按 GBK 解码；UTF-8 无 BOM 且含中文的脚本常量/语法皆错（chcp/OutputEncoding 均无效） |
 | DEF-0015 | high | resolved | src | 相位读写异键：写 ddd.phase.<sid>、读 ddd:phase:<sid>，导致按相位选出的纪律切片静默失效 |
 | DEF-0016 | low | resolved | . | package-lock.json 根版本未随发布同步（滞留在 1.0.7），违反历次发布约定 |
+| DEF-0017 | high | open | src | file-lock 符号链接拒绝在 Windows 失效：openSync(wx) 对 symlink 成功创建，lstat 检查在 EEXIST 分支后才执行，rc 用例稳定失败 |
+| DEF-0018 | high | open | src | tui.tsx 在官方 @opencode/plugin@2.2.7 类型下 typecheck 失败（current/closed/result/saved 为 unknown）；此前仅以本地 SDK 替身通过 |

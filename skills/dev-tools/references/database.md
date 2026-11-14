@@ -1,17 +1,7 @@
-# 数据库客户端使用约定
+# 数据库操作与迁移
 
-## mysql
+SQL 与 Redis 分离：MySQL / PostgreSQL / SQLite / ClickHouse 使用各自方言、客户端与事务模型；MongoDB 是文档数据库；Redis 是键值存储，不属于 SQL。常见客户端包括 mysql、psql、sqlite3、clickhouse-client、mongosh、redis-cli；图形客户端如 DBeaver 不能替代审计记录。迁移工具 Flyway、Liquibase、Alembic、Prisma Migrate、Drizzle Kit 按项目选用。
 
-- 只读探查优先：`mysql -e "SELECT ..."`；结构用 `SHOW CREATE TABLE` / `information_schema`。
-- **危险操作**（`DROP`/`TRUNCATE`/无 `WHERE` 的 `UPDATE`/`DELETE`、`ALTER` 大表）走守卫层，须显式确认。
-- 生产库凭据不入版本控制；连接串勿写入受控件。
+生产环境 DDL、TRUNCATE、DELETE、DROP、ALTER 前确认目标环境、权限、备份、回滚和影响范围；无 WHERE 的更新或删除应显式预警，未经授权不执行。ClickHouse 分布式/复制结构必须先确认拓扑和表引擎。数据库迁移测试使用独立测试库并保留 count/checksum 结果。
 
-## redis-cli
-
-- 只读：`GET`/`KEYS`（大库慎用 `KEYS`，用 `SCAN`）/`INFO`/`TTL`。
-- **危险操作**（`FLUSHALL`/`FLUSHDB`/`DEL` 大批量/`CONFIG SET`）走守卫层。
-
-## 通用
-
-- 「零影响行」与「无判定对象」是两个读数，不得混同。
-- 不在权威件里写连接串或宿主绝对路径（R15）。
+- 参考 https://www.postgresql.org/docs/ ; https://clickhouse.com/docs/ ; https://www.mongodb.com/docs/ ; https://redis.io/docs/latest/ ; https://documentation.red-gate.com/fd/

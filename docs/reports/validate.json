@@ -1,5 +1,6 @@
 {
-  "ts": "2026-11-14T14:21:56.470Z",
+  "ts": "2026-11-14T16:58:16.712Z",
+  "version": 2,
   "defectsRegister": false,
   "readings": [
     {
@@ -29,7 +30,7 @@
     {
       "id": "G5",
       "verdict": "pass",
-      "examined": 48,
+      "examined": 87,
       "unrecognized": 0
     },
     {
@@ -48,6 +49,7 @@
   "canAdvance": true,
   "readyForRelease": false,
   "errors": [],
+  "executable": null,
   "evidence": {
     "designGaps": {
       "mismatches": [],
@@ -94,5 +96,5 @@
       ]
     }
   },
-  "note": "na ≠ pass；--release 要求所有门禁 pass，无损坏证据"
+  "note": "--release 需要 G1-G6 全 pass，且项目对应工具链的实际测试通过（未知框架返回 unverified）；--check 不写报告"
 }

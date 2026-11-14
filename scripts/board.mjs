@@ -1,230 +1,57 @@
-/**
- * scripts/board.mjs —— 看板唯一写入器（append-only）。
- *
- * 用法：node scripts/board.mjs <sub> [args] [--root <项目根>]
- *   add --title <t> --acceptance <a> [--priority P0..P3] [--req <id>] [--depends a,b] [--seq n]
- *   move --task <id> --to <status> [--reason <r>]
- *   evidence --task <id> --evidence <text>
- *   archive --task <id>
- *   rehome --task <id> --req <id>
- *   reconcile           # 校验现有 jsonl（手改检出、准入/转移合法性）
- *   replay --check      # 比对派生视图 docs/board/BOARD.md
- *
- * 退出码：0 过；1 失败（含手改检出）；2 用法错。
- * 铁律：append-only；只追加不改旧行；状态转移只以新行表达；禁手改派生视图。
- */
-
-import { readFileSync, existsSync, appendFileSync, mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { project, admit, canTransition, summarize } from "../src/lib/board.ts";
-
-const here = dirname(fileURLToPath(import.meta.url));
-const packageRoot = resolve(here, "..");
-const cfg = JSON.parse(readFileSync(join(packageRoot, "assets", "board.json"), "utf8"));
-
-function usage(msg) {
-  if (msg) console.error(`用法错：${msg}`);
-  console.error("用法：node scripts/board.mjs <add|move|evidence|archive|rehome|reconcile|replay> [--root <dir>]");
-  process.exit(2);
-}
-
-function parseArgs(argv) {
-  const out = { _: [] };
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a.startsWith("--")) {
-      const key = a.slice(2);
-      const next = argv[i + 1];
-      if (next === undefined || next.startsWith("--")) out[key] = true;
-      else { out[key] = next; i++; }
-    } else out._.push(a);
+/** Board CLI: all mutations happen inside one lock, backed by strict history replay. */
+import { readFileSync,existsSync } from 'node:fs';
+import { join,resolve,dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { project,projectAll,admit,canTransition,summarize,validateBoardHistory } from '../src/lib/board.ts';
+import { readBoardRows,withBoardLock,appendBoardRow,writeBoardView,boardPaths } from '../src/lib/board-store.mjs';
+const pkg=resolve(dirname(fileURLToPath(import.meta.url)),'..');
+const cfg=JSON.parse(readFileSync(join(pkg,'assets/board.json'),'utf8'));
+const [sub,...argv]=process.argv.slice(2);
+function argsOf(argv){const result={};for(let i=0;i<argv.length;i++){if(!argv[i].startsWith('--'))throw Error(`未知参数：${argv[i]}`);const k=argv[i].slice(2);result[k]=(argv[i+1]&&!argv[i+1].startsWith('--'))?argv[++i]:true;}return result;}
+function required(a,key){if(typeof a[key]!=='string'||!a[key].trim())throw Error(`缺少 --${key}`);return a[key].trim();}
+function cell(s){return String(s??'').replace(/\|/g,'\\|').replace(/\r?\n/g,' ');}
+function render(rows){const items=project(rows),sum=summarize(projectAll(rows));return ['<!-- 派生视图，由 scripts/board.mjs replay 生成；禁手改 -->','# 看板（BOARD.md）','',`待办 ${sum.pending} / 进行 ${sum.inProgress} / 阻塞 ${sum.blocked}`,'','| 位次 | taskId | 优先级 | 状态 | 标题 | 验收 |','|---|---|---|---|---|---|',...items.map((x,i)=>`| ${i+1} | ${x.taskId} | ${x.priority} | ${x.status} | ${cell(x.title)} | ${cell(x.acceptance)} |`),''].join('\n');}
+function nextSeq(rows){return (rows.at(-1)?.seq??0)+1;}
+function rowBase(kind,taskId,seq){return {kind,taskId,seq,ts:new Date().toISOString()};}
+function nextRow(sub,a,rows){const live=projectAll(rows),visible=project(rows),seq=nextSeq(rows);let row;
+  if(sub==='add'){
+    const taskId=typeof a.task==='string'?a.task:`BRD-${String(seq).padStart(4,'0')}`;
+    if(live.some(x=>x.taskId===taskId))throw Error(`任务已存在：${taskId}`);
+    row={...rowBase('task',taskId,seq),title:required(a,'title'),acceptance:required(a,'acceptance'),reqId:typeof a.req==='string'?a.req:null,priority:typeof a.priority==='string'?a.priority:cfg.defaultPriority,status:'pending',dependsOn:typeof a.depends==='string'?a.depends.split(',').map(x=>x.trim()).filter(Boolean):[],reason:typeof a.reason==='string'?a.reason:undefined};
+    const verdict=admit(row,live,cfg);if(!verdict.ok)throw Error(`准入拒绝：${verdict.reason}`);
+  }else{
+    const taskId=required(a,'task'),cur=live.find(x=>x.taskId===taskId);
+    if(!cur)throw Error(`任务不存在或已归档：${taskId}`);
+    if(sub==='move'){
+      const to=required(a,'to');if(!cfg.statusDomain.includes(to)||!canTransition(cur.status,to))throw Error(`非法转移：${cur.status} → ${to}`);
+      row={...rowBase('move',taskId,seq),from:cur.status,to,reason:typeof a.reason==='string'?a.reason:undefined};
+    }else if(sub==='evidence')row={...rowBase('evidence',taskId,seq),evidence:required(a,'evidence')};
+    else if(sub==='archive'){
+      if(cur.status!=='done'&&cur.status!=='dropped')throw Error('仅 done/dropped 可归档');
+      row=rowBase('archive',taskId,seq);
+    }else if(sub==='rehome')row={...rowBase('task',taskId,seq),reqId:required(a,'req'),title:cur.title,acceptance:cur.acceptance,priority:cur.priority,status:cur.status,dependsOn:cur.dependsOn,reason:'rehome'};
+    else throw Error(`未知子命令 ${sub}`);
   }
-  return out;
+  validateBoardHistory([...rows,row]);return row;
 }
-
-const argv = process.argv.slice(2);
-const sub = argv[0];
-if (!sub) usage("缺少子命令");
-const args = parseArgs(argv.slice(1));
-const root = args.root && args.root !== true ? resolve(String(args.root)) : process.cwd();
-const jsonlPath = join(root, "docs", "board", "board.jsonl");
-const boardMdPath = join(root, "docs", "board", "BOARD.md");
-
-function readRows() {
-  if (!existsSync(jsonlPath)) return [];
-  const text = readFileSync(jsonlPath, "utf8");
-  const rows = [];
-  let lineno = 0;
-  for (const line of text.split(/\r?\n/)) {
-    lineno++;
-    if (!line.trim()) continue;
-    if (Buffer.byteLength(line, "utf8") > cfg.maxLineBytes) {
-      throw new HandEdit(`第 ${lineno} 行超过 maxLineBytes=${cfg.maxLineBytes}`);
+async function main(){if(!sub)throw Error('缺少子命令');const a=argsOf(argv);const root=resolve(typeof a.root==='string'?a.root:process.cwd());const {md}=boardPaths(root);
+  if(sub==='reconcile'||sub==='replay'){
+    const rows=readBoardRows(root,cfg.maxLineBytes);
+    if(sub==='reconcile'){
+      const all=projectAll(rows),count=all.filter(x=>x.reqId===null).length;
+      console.log(`reconcile OK：${all.length} 活跃项，${count} 项 reqId:null（收尾前须 rehome/drop）。`);return;
     }
-    let obj;
-    try {
-      obj = JSON.parse(line);
-    } catch {
-      throw new HandEdit(`第 ${lineno} 行不是合法 JSON`);
-    }
-    if (!obj.kind || !obj.taskId) throw new HandEdit(`第 ${lineno} 行缺 kind/taskId`);
-    rows.push(obj);
+    const expected=render(rows);
+    if(a.check){if(!existsSync(md)||readFileSync(md,'utf8').replace(/\r\n/g,'\n').trim()!==expected.trim())throw Error('派生视图与重放不一致（不会自动覆盖）；先运行 replay');console.log('replay --check OK');}
+    else{await withBoardLock(root,()=>writeBoardView(root,render(readBoardRows(root,cfg.maxLineBytes))));console.log('replay 已写出 BOARD.md');}return;
   }
-  // seq 单调（同 kind 序不要求，但全局 seq 不得回退超过 0）
-  let lastSeq = -1;
-  for (const r of rows) {
-    const s = r.seq ?? 0;
-    if (s < lastSeq) throw new HandEdit(`seq 非单调：${s} < ${lastSeq}`);
-    lastSeq = s;
-  }
-  return rows;
-}
-
-class HandEdit extends Error {}
-
-function nextSeq(rows) {
-  return rows.reduce((m, r) => Math.max(m, r.seq ?? 0), 0) + 1;
-}
-
-function append(row) {
-  mkdirSync(dirname(jsonlPath), { recursive: true });
-  appendFileSync(jsonlPath, JSON.stringify(row) + "\n", "utf8");
-}
-
-function renderView(proj) {
-  const sum = summarize(proj);
-  const lines = [];
-  lines.push("<!-- 派生视图，由 scripts/board.mjs replay 生成；禁手改 -->");
-  lines.push("# 看板（BOARD.md）");
-  lines.push("");
-  lines.push(`待办 ${sum.pending} / 进行 ${sum.inProgress} / 阻塞 ${sum.blocked}`);
-  lines.push("");
-  lines.push("| 位次 | taskId | 优先级 | 状态 | 标题 | 验收 |");
-  lines.push("|---|---|---|---|---|---|");
-  proj.forEach((it, i) => {
-    lines.push(`| ${i + 1} | ${it.taskId} | ${it.priority} | ${it.status} | ${escapeCell(it.title)} | ${escapeCell(it.acceptance)} |`);
+  if(!['add','move','evidence','archive','rehome'].includes(sub))throw Error(`未知子命令 ${sub}`);
+  await withBoardLock(root,()=>{
+    const rows=readBoardRows(root,cfg.maxLineBytes);
+    const row=nextRow(sub,a,rows);
+    appendBoardRow(root,row,cfg.maxLineBytes);
+    writeBoardView(root,render([...rows,row]));
+    console.log(`已执行 ${sub} ${row.taskId}`);
   });
-  lines.push("");
-  return lines.join("\n");
 }
-
-function escapeCell(s) {
-  return String(s ?? "").replace(/\|/g, "\\|").replace(/\n/g, " ");
-}
-
-function fail(msg) {
-  console.error(`失败：${msg}`);
-  process.exit(1);
-}
-
-function main() {
-  let rows;
-  try {
-    rows = readRows();
-  } catch (e) {
-    fail(`手改检出：${e.message}`);
-    return;
-  }
-  const proj = project(rows);
-
-  if (sub === "add") {
-    if (!args.title || !args.acceptance) fail("add 需要 --title 与 --acceptance（acceptance 必填）");
-    const taskId = args.task || `BRD-${String(nextSeq(rows)).padStart(4, "0")}`;
-    const row = {
-      kind: "task",
-      ts: new Date().toISOString(),
-      taskId,
-      reqId: args.req && args.req !== true ? String(args.req) : null,
-      title: String(args.title),
-      acceptance: String(args.acceptance),
-      priority: args.priority && args.priority !== true ? String(args.priority) : cfg.defaultPriority,
-      status: "pending",
-      dependsOn: args.depends && args.depends !== true ? String(args.depends).split(",").map((s) => s.trim()).filter(Boolean) : [],
-      seq: nextSeq(rows),
-      reason: args.reason && args.reason !== true ? String(args.reason) : undefined,
-    };
-    const res = admit(row, proj, cfg);
-    if (!res.ok) fail(`准入拒绝：${res.reason}\nremedy：补齐 acceptance/priority/dependsOn 或附 --reason。`);
-    append(row);
-    replay();
-    console.log(`已入板 ${taskId} @ ${res.rank}`);
-    process.exit(0);
-  }
-
-  if (sub === "move") {
-    if (!args.task || !args.to) fail("move 需要 --task 与 --to");
-    const cur = proj.find((it) => it.taskId === args.task);
-    if (!cur) fail(`任务不存在：${args.task}`);
-    if (!cfg.statusDomain.includes(String(args.to))) fail(`to 越域：${args.to}`);
-    if (!canTransition(cur.status, String(args.to))) fail(`非法转移：${cur.status} → ${args.to}\nremedy：合法转移见 src/lib/DESIGN-board.md。`);
-    append({ kind: "move", ts: new Date().toISOString(), taskId: String(args.task), from: cur.status, to: String(args.to), seq: nextSeq(rows), reason: args.reason && args.reason !== true ? String(args.reason) : undefined });
-    replay();
-    console.log(`已转移 ${args.task}: ${cur.status} → ${args.to}`);
-    process.exit(0);
-  }
-
-  if (sub === "evidence") {
-    if (!args.task || !args.evidence) fail("evidence 需要 --task 与 --evidence");
-    if (!proj.find((it) => it.taskId === args.task)) fail(`任务不存在：${args.task}`);
-    append({ kind: "evidence", ts: new Date().toISOString(), taskId: String(args.task), evidence: String(args.evidence), seq: nextSeq(rows) });
-    replay();
-    console.log(`已挂证据 ${args.task}`);
-    process.exit(0);
-  }
-
-  if (sub === "archive") {
-    if (!args.task) fail("archive 需要 --task");
-    const cur = proj.find((it) => it.taskId === args.task);
-    if (cur && cur.status !== "done" && cur.status !== "dropped") fail(`仅 done/dropped 可 archive；当前 ${cur.status}`);
-    append({ kind: "archive", ts: new Date().toISOString(), taskId: String(args.task), seq: nextSeq(rows) });
-    replay();
-    console.log(`已归档 ${args.task}`);
-    process.exit(0);
-  }
-
-  if (sub === "rehome") {
-    if (!args.task || !args.req) fail("rehome 需要 --task 与 --req");
-    if (!proj.find((it) => it.taskId === args.task)) fail(`任务不存在：${args.task}`);
-    append({ kind: "task", ts: new Date().toISOString(), taskId: String(args.task), reqId: String(args.req), title: proj.find((it) => it.taskId === args.task).title, acceptance: proj.find((it) => it.taskId === args.task).acceptance, priority: proj.find((it) => it.taskId === args.task).priority, status: proj.find((it) => it.taskId === args.task).status, dependsOn: proj.find((it) => it.taskId === args.task).dependsOn, seq: nextSeq(rows), reason: "rehome" });
-    replay();
-    console.log(`已重挂 ${args.task} → ${args.req}`);
-    process.exit(0);
-  }
-
-  if (sub === "reconcile") {
-    // 已读行即通过校验；额外校验：活跃投影里 reqId:null 未收口者列为提示（不判失败）。
-    const unrehomed = proj.filter((it) => it.reqId === null);
-    console.log(`reconcile OK：${proj.length} 活跃项，${unrehomed.length} 项 reqId:null（收尾前须 rehome/drop）。`);
-    process.exit(0);
-  }
-
-  if (sub === "replay") {
-    replay();
-    if (args.check) {
-      if (!existsSync(boardMdPath)) fail("派生视图 docs/board/BOARD.md 不存在；先运行 replay。");
-      const expected = renderView(proj);
-      const actual = readFileSync(boardMdPath, "utf8");
-      if (normalize(actual) !== normalize(expected)) fail("派生视图与重放不一致（手改或未重放）。remedy：重跑 replay 覆盖。");
-      console.log("replay --check OK：派生视图与重放一致。");
-    } else {
-      console.log("replay 已写出 docs/board/BOARD.md。");
-    }
-    process.exit(0);
-  }
-
-  usage(`未知子命令 ${sub}`);
-}
-
-function normalize(s) {
-  return s.replace(/\r\n/g, "\n").trim();
-}
-
-function replay() {
-  const rows = readRows();
-  const proj = project(rows);
-  mkdirSync(dirname(boardMdPath), { recursive: true });
-  writeFileSync(boardMdPath, renderView(proj), "utf8");
-}
-
-main();
+main().catch(e=>{console.error(`失败：${e.message}`);process.exitCode=1;});

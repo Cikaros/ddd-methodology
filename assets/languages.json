@@ -1,17 +1,151 @@
 {
   "$schema": "internal:languages",
+  "generatedFrom": "assets/skills-catalog.json",
   "languages": [
-    { "id": "html", "display": "HTML", "baseline": "google:html-css-style-guide@rev-2024-05-01", "mechanicalKeys": "assets/lang-html.json", "tools": ["formatter-linter", "testing"] },
-    { "id": "css", "display": "CSS", "baseline": "google:html-css-style-guide@rev-2024-05-01", "mechanicalKeys": "assets/lang-css.json", "tools": ["formatter-linter"] },
-    { "id": "javascript", "display": "JavaScript", "baseline": "google:javascript-style-guide@rev-2024-03-01", "mechanicalKeys": "assets/lang-javascript.json", "tools": ["package-manager", "formatter-linter", "testing"] },
-    { "id": "vue", "display": "Vue", "baseline": "official:vue-style-guide@v3", "mechanicalKeys": "assets/lang-vue.json", "tools": ["package-manager", "formatter-linter", "testing"] },
-    { "id": "java", "display": "Java", "baseline": "google:java-style-guide@rev-2024-02-01", "mechanicalKeys": "assets/lang-java.json", "tools": ["build", "testing"] },
-    { "id": "python", "display": "Python", "baseline": "google:python-style-guide@rev-2024-02-01", "mechanicalKeys": "assets/lang-python.json", "tools": ["package-manager", "formatter-linter", "testing"] },
-    { "id": "shell", "display": "Shell (sh/zsh/bash/pwsh)", "baseline": "google:shell-style-guide@rev-2024-01-01", "mechanicalKeys": "assets/lang-shell.json", "tools": ["shell", "formatter-linter"] },
-    { "id": "android", "display": "Android (Kotlin/Java)", "baseline": "official:android-style@rev-2024-04-01", "mechanicalKeys": "assets/lang-android.json", "tools": ["build", "testing"] },
-    { "id": "sql", "display": "SQL (mysql/redis)", "baseline": "official:sql-style@fact-standard", "mechanicalKeys": "assets/lang-sql.json", "tools": ["database"] },
-    { "id": "c", "display": "C", "baseline": "google:c-style-guide@rev-2024-02-01", "mechanicalKeys": "assets/lang-c.json", "tools": ["build", "testing"] },
-    { "id": "cpp", "display": "C++", "baseline": "google:cpp-style-guide@rev-2024-03-01", "mechanicalKeys": "assets/lang-cpp.json", "tools": ["build", "testing"] },
-    { "id": "nasm", "display": "NASM (x86 assembly)", "baseline": "official:nasm-style@fact-standard", "mechanicalKeys": "assets/lang-nasm.json", "tools": ["build"] }
+    {
+      "id": "html",
+      "display": "HTML",
+      "baseline": "https://google.github.io/styleguide/htmlcssguide.html",
+      "mechanicalKeys": "assets/lang-html.json",
+      "tools": [
+        "formatter-linter",
+        "testing"
+      ],
+      "skillId": "lang-html"
+    },
+    {
+      "id": "css",
+      "display": "CSS",
+      "baseline": "https://google.github.io/styleguide/htmlcssguide.html",
+      "mechanicalKeys": "assets/lang-css.json",
+      "tools": [
+        "formatter-linter"
+      ],
+      "skillId": "lang-css"
+    },
+    {
+      "id": "javascript",
+      "display": "JavaScript",
+      "baseline": "https://google.github.io/styleguide/jsguide.html",
+      "mechanicalKeys": "assets/lang-javascript.json",
+      "tools": [
+        "package-manager",
+        "formatter-linter",
+        "testing"
+      ],
+      "skillId": "lang-javascript"
+    },
+    {
+      "id": "java",
+      "display": "Java",
+      "baseline": "https://google.github.io/styleguide/javaguide.html",
+      "mechanicalKeys": "assets/lang-java.json",
+      "tools": [
+        "build",
+        "testing"
+      ],
+      "skillId": "lang-java"
+    },
+    {
+      "id": "python",
+      "display": "Python",
+      "baseline": "https://google.github.io/styleguide/pyguide.html",
+      "mechanicalKeys": "assets/lang-python.json",
+      "tools": [
+        "package-manager",
+        "formatter-linter",
+        "testing"
+      ],
+      "skillId": "lang-python"
+    },
+    {
+      "id": "shell",
+      "display": "Shell",
+      "baseline": "https://google.github.io/styleguide/shellguide.html",
+      "mechanicalKeys": "assets/lang-shell.json",
+      "tools": [
+        "shell",
+        "formatter-linter"
+      ],
+      "skillId": "lang-shell"
+    },
+    {
+      "id": "sql",
+      "display": "SQL",
+      "baseline": "https://www.postgresql.org/docs/current/sql.html",
+      "mechanicalKeys": "assets/lang-sql.json",
+      "tools": [
+        "database"
+      ],
+      "skillId": "lang-sql"
+    },
+    {
+      "id": "c",
+      "display": "C",
+      "baseline": "https://en.cppreference.com/w/c",
+      "mechanicalKeys": "assets/lang-c.json",
+      "tools": [
+        "build",
+        "testing"
+      ],
+      "skillId": "lang-c"
+    },
+    {
+      "id": "cpp",
+      "display": "C++",
+      "baseline": "https://google.github.io/styleguide/cppguide.html",
+      "mechanicalKeys": "assets/lang-cpp.json",
+      "tools": [
+        "build",
+        "testing"
+      ],
+      "skillId": "lang-cpp"
+    },
+    {
+      "id": "nasm",
+      "display": "NASM",
+      "baseline": "https://www.nasm.us/docs.php",
+      "mechanicalKeys": "assets/lang-nasm.json",
+      "tools": [
+        "build"
+      ],
+      "skillId": "lang-nasm"
+    },
+    {
+      "id": "typescript",
+      "display": "TypeScript",
+      "tools": [],
+      "skillId": "lang-typescript"
+    },
+    {
+      "id": "go",
+      "display": "Go",
+      "tools": [],
+      "skillId": "lang-go"
+    },
+    {
+      "id": "rust",
+      "display": "Rust",
+      "tools": [],
+      "skillId": "lang-rust"
+    },
+    {
+      "id": "csharp",
+      "display": "C#",
+      "tools": [],
+      "skillId": "lang-csharp"
+    },
+    {
+      "id": "kotlin",
+      "display": "Kotlin",
+      "tools": [],
+      "skillId": "lang-kotlin"
+    },
+    {
+      "id": "php",
+      "display": "PHP",
+      "tools": [],
+      "skillId": "lang-php"
+    }
   ]
 }

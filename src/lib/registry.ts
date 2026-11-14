@@ -14,7 +14,16 @@ export interface CommandSpec {
   readonly dispatch: "same" | "isolated";
 }
 
+export interface SkillSignals {
+  readonly extensions: readonly string[];
+  readonly markers: readonly string[];
+  readonly keywords: readonly string[];
+  readonly dependencies: readonly string[];
+}
 export interface SkillSpec {
+  readonly category: "methodology" | "language" | "framework" | "platform" | "database" | "toolchain" | "infrastructure";
+  readonly tier: "existing" | "required" | "recommended";
+  readonly signals: SkillSignals;
   readonly id: string;
   readonly name: string;
   readonly description: string;
@@ -51,24 +60,32 @@ function loadCommands(): readonly CommandSpec[] {
 }
 export const COMMANDS: readonly CommandSpec[] = loadCommands();
 
-/** 随包技能清单（主技能 + 前端技能 + 工具技能 + 语言族同构实例）。 */
-export const SKILLS: readonly SkillSpec[] = [
-  { id: "ddd-methodology", name: "ddd-methodology", description: "分治式设计驱动开发方法论主技能", dir: "skills/ddd-methodology" },
-  { id: "frontend-variant-contract", name: "frontend-variant-contract", description: "变体契约奠基（第 0 步）：UI 生成前枚举合法变化空间", dir: "skills/frontend-variant-contract" },
-  { id: "dev-tools", name: "dev-tools", description: "常用开发工具使用规范", dir: "skills/dev-tools" },
-  { id: "lang-html", name: "lang-html", description: "HTML 语言规范", dir: "skills/lang/html" },
-  { id: "lang-css", name: "lang-css", description: "CSS 语言规范", dir: "skills/lang/css" },
-  { id: "lang-javascript", name: "lang-javascript", description: "JavaScript 语言规范", dir: "skills/lang/javascript" },
-  { id: "lang-vue", name: "lang-vue", description: "Vue 语言规范", dir: "skills/lang/vue" },
-  { id: "lang-java", name: "lang-java", description: "Java 语言规范", dir: "skills/lang/java" },
-  { id: "lang-python", name: "lang-python", description: "Python 语言规范", dir: "skills/lang/python" },
-  { id: "lang-shell", name: "lang-shell", description: "Shell（sh/zsh/bash/pwsh）语言规范", dir: "skills/lang/shell" },
-  { id: "lang-android", name: "lang-android", description: "Android 语言规范", dir: "skills/lang/android" },
-  { id: "lang-sql", name: "lang-sql", description: "SQL（mysql/redis）语言规范", dir: "skills/lang/sql" },
-  { id: "lang-c", name: "lang-c", description: "C 语言规范", dir: "skills/lang/c" },
-  { id: "lang-cpp", name: "lang-cpp", description: "C++ 语言规范", dir: "skills/lang/cpp" },
-  { id: "lang-nasm", name: "lang-nasm", description: "NASM（x86 汇编）语言规范", dir: "skills/lang/nasm" },
-];
+/** 单点权威：assets/skills-catalog.json。运行时投影与物化均只消费该文件。 */
+const skillAuthority = resolve(dirname(fileURLToPath(import.meta.url)), "../../assets/skills-catalog.json");
+export function loadSkills(path = skillAuthority): readonly SkillSpec[] {
+  const payload = JSON.parse(readFileSync(path, "utf8")) as { schemaVersion?: number; skills?: unknown[] };
+  if (payload.schemaVersion !== 1 || !Array.isArray(payload.skills)) throw new Error("skills-catalog.json: schemaVersion/skills 非法");
+  const validCategories = new Set(["methodology", "language", "framework", "platform", "database", "toolchain", "infrastructure"]);
+  const seen = new Set<string>();
+  return payload.skills.map((unknownSkill) => {
+    if (!unknownSkill || typeof unknownSkill !== "object") throw new Error("skills-catalog.json: 非法记录");
+    const raw = unknownSkill as Record<string, unknown>;
+    const id = raw.id, dir = raw.dir;
+    const signals = raw.signals as Record<string, unknown> | undefined;
+    if (typeof id !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id) || seen.has(id))
+      throw new Error(`skills-catalog.json: 非法或重复 id ${String(id)}`);
+    if (typeof dir !== "string" || !/^skills\/(?:[a-z0-9-]+\/)*[a-z0-9-]+$/.test(dir) || dir.includes(".."))
+      throw new Error(`skills-catalog.json: 非法目录 ${String(dir)}`);
+    if (typeof raw.description !== "string" || !raw.description.trim()) throw new Error(`skills-catalog.json: ${id} 缺描述`);
+    if (!validCategories.has(String(raw.category)) || !["existing", "required", "recommended"].includes(String(raw.tier)))
+      throw new Error(`skills-catalog.json: ${id} 类别/层级非法`);
+    if (!signals || !["extensions", "markers", "keywords", "dependencies"].every(k => Array.isArray(signals[k]) && (signals[k] as unknown[]).every(v => typeof v === "string" && v.length > 0 && v.length <= 128)))
+      throw new Error(`skills-catalog.json: ${id} 信号非法`);
+    seen.add(id);
+    return raw as unknown as SkillSpec;
+  });
+}
+export const SKILLS: readonly SkillSpec[] = loadSkills();
 
 export function registrations(): Registrations {
   return { commands: COMMANDS, skills: SKILLS };
@@ -91,6 +108,7 @@ export function auditRegistrations(r: Registrations = registrations()): string[]
   for (const s of r.skills) {
     if (!s.description || !s.description.trim()) problems.push(`技能缺描述: ${s.id}`);
     if (!s.dir || !s.dir.trim()) problems.push(`技能缺目录: ${s.id}`);
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(s.id)) problems.push(`技能 ID 非法: ${s.id}`);
     if (seenSkill.has(s.id)) problems.push(`技能重名: ${s.id}`);
     seenSkill.add(s.id);
   }

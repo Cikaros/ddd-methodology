@@ -29,7 +29,7 @@ function fixture(t) {
   put(root,'docs/board/board.jsonl','');
   put(root,'docs/temp.jsonl','');
   put(root,'docs/defects.jsonl','');
-  put(root,'package.json',JSON.stringify({name:'@example/demo',version:'1.2.3'}));
+  put(root,'package.json',JSON.stringify({name:'@example/demo',version:'1.2.3',scripts:{test:`node -e \"const fs=require('fs');if(!fs.readFileSync('src/lib/widget.ts','utf8').includes('enabled: true'))process.exit(1)\"`}}));
   put(root,'docs/CHANGELOG.jsonl',JSON.stringify({version:'v1.2.3'})+'\n');
   put(root,'opencode.json',JSON.stringify({plugin:['@example/demo@1.2.3']}));
   return root;

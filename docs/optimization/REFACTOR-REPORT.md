@@ -2,7 +2,7 @@
 
 > 基线：用户上传的 `ddd-methodology.7z`，`@cikaros/ddd-methodology@1.0.8`。
 > 范围：原版完整源码（不是上次的独立替代候选版）。
-> 状态：**已作为 v1.0.9 发布**；仍**未**在真实 OpenCode 服务 + DeepSeek API 上执行端到端联调。
+> 状态：**历史重构报告（1.0.9 阶段）**，其中的“候选”表述已被后续 2.0.x 迭代取代；当前发布状态见 [2.0.2 发布报告](V2.0.2-INTEGRATION-REPORT.md)。
 
 ## 1. 目标与不变项
 
@@ -44,7 +44,7 @@
 ## 4. 完整性与兼容性
 
 - 基于原始归档逐文件复制后重构；未移除原版 TUI、RPC、12 个 Agent、Skills、资产、scripts 和历史文档。
-- 命令名称不变，`@cikaros/ddd-methodology` 包名不变；版本升为 `1.0.9`（原版基线 `1.0.8`），已同步三处版本声明（`package.json` / 变更流 / 使用者钉版）。此版本尚未通过真实宿主联调，发布它**不等于**已验证性能或行为增益。
+- 命令名称不变，`@cikaros/ddd-methodology` 包名不变；原 `version=1.0.8` 暂保留，**本候选不是 1.0.8 的正式发布构建**。发布时应在通过实际联调后另行升级版本并同步三处版本声明。
 - CLI 所需 Node 升至 **22.16+**（原版 `engines` 写 >=20 但核心 CLI 直接加载 TS 在 Node20/22 的普通运行方式并不可用）。OpenCode 内部的 TS 加载机制仍由宿主处理。
 - 插件 options 新增可选 `contextBudgetChars`，未传时保持自动预算；`powershellUtf8`、`profile` 等原配置入口保留。
 - `scripts/validate.mjs --check` 不写报告；`--release` 需要 G1–G6 全部 pass 且无证据错误。默认模式沿用“无 block 可推进”，所以 `na` 仍不算 pass。

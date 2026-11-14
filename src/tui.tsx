@@ -55,6 +55,40 @@ export default Plugin.define({
           },
         },
         {
+          id: "ddd-workflow",
+          title: "ddd 工作流状态与验收",
+          description: "查看真实执行状态，并在显式确认后运行项目测试",
+          slash: { name: "ddd-tui-workflow" },
+          run: async () => {
+            const sessionID = (await context.ui.dialog.prompt({ title: "输入 OpenCode 会话 ID", placeholder: "从当前会话复制 ID" }))?.trim();
+            if (!sessionID) return;
+            try {
+              const rpc = context.client.rpc(Ddd);
+              const current = await rpc.overview({ sessionID });
+              context.ui.toast.show({ message: `ddd/${current.phase || '-'} ${current.status} #${current.seq}；Skill:${current.skills.join(',')||'-'}；Gates:${current.gates.pass}/6 (阻塞:${current.blockedGates.join(',')||'无'})；Board:${current.board.pending}/${current.board.inProgress}/${current.board.blocked}`.slice(0,260), variant: current.blockedGates.length ? 'warning' : current.status === 'verified' ? 'success' : 'info' });
+              if (current.status === 'verified' || current.status === 'failed' || current.status === 'missing') return;
+              const action = await context.ui.dialog.select({title:'执行验收？会运行项目测试（可能执行项目自定义脚本）', options:[
+                {title:'仅查看，不执行',value:'view'},
+                ...(current.canVerify?[{title:'我确认执行真实测试验证',value:'verify'}]:[]),
+                {title:'关闭未完成任务（需要填写失败原因）',value:'close'},
+              ]});
+              if(action==='close'){
+                const reason=await context.ui.dialog.prompt({title:'未完成/失败原因（至少三字）',placeholder:'说明失败或取消原因'});
+                if(!reason || reason.trim().length<3)return;
+                const confirm=await context.ui.dialog.select({title:'确认关闭？任务不会自动重放',options:[{title:'取消',value:'cancel'},{title:'确认关闭为 failed',value:'close'}]});
+                if(confirm!=='close')return;
+                const closed=await rpc.workflowClose({sessionID,confirmed:true,reason:reason.trim()});
+                context.ui.toast.show({message:`任务已标记 ${closed.status}：${closed.reason}`.slice(0,260),variant:'warning'});
+              }else if(action==='verify'){
+                const result = await rpc.workflowVerify({sessionID,confirmed:true});
+                context.ui.toast.show({message:`验收 ${result.status}：${result.reason}`.slice(0,260),variant:result.status==='verified'?'success':'warning'});
+              }
+            } catch(error) {
+              context.ui.toast.show({message:`工作流查询/验收失败：${String(error).slice(0,150)}`,variant:'warning'});
+            }
+          },
+        },
+        {
           // §9.5：dialog 只做**输入采集**（选场景 + 收四问）；放行（闸机）不在此，由 server assert 承担。
           id: "ddd-intent-input",
           title: "ddd 意图输入（收集场景与四问）",
@@ -71,23 +105,20 @@ export default Plugin.define({
             const result = await context.ui.dialog.prompt({ title: "四问 · 要什么可观察的结果", placeholder: "可见的行为/读数" });
             const accept = await context.ui.dialog.prompt({ title: "四问 · 怎么判断做对", placeholder: "可判定的验收线索" });
             const notdoing = await context.ui.dialog.prompt({ title: "四问 · 本次明确不做", placeholder: "边界" });
-            context.ui.toast.show({
-              message: `已采集：场景=${scenario}；四问已填 ${[who, result, accept, notdoing].filter((x) => x !== undefined && x !== "").length}/4（放行由 server /ddd-intent 的 assert 裁决）`,
-              variant: "info",
-            });
+            // 经 server RPC 保存为原始草稿，不直接冻结需求或越过确认。
+            try {
+              const data = { scenario, who: who ?? "", result: result ?? "", accept: accept ?? "", notdoing: notdoing ?? "" };
+              const saved = await context.client.rpc(Ddd).intentCapture(data);
+              context.ui.toast.show({ message: `四问草稿已持久保存；缺 ${saved.missing} 项。下一步使用 /ddd-intent 澄清并确认。`, variant: saved.missing ? "warning" : "success" });
+            } catch (error) {
+              context.ui.toast.show({ message: `保存失败：${String(error).slice(0,100)}`, variant: "warning" });
+            }
           },
         },
       ],
     }));
 
-    // 会话侧面板：看板与报告（占位渲染，数据经 RPC）。
-    const disposePanel = context.ui.slot({
-      append: "session.panel",
-      render: () => null,
-    });
-
-    return () => {
-      disposePanel();
-    };
+    // 不注册空的 session.panel：宿主显示空面板会误导用户。读数通过上述 RPC 命令展示。
+    return () => {};
   },
 });

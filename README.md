@@ -1,7 +1,16 @@
 # @cikaros/ddd-methodology（Hermess）
 
-> **v1.0.9 · 基于原版源码的重构（2026-11-14）**：保留原版 Hermess 2.0 目标、命令、TUI/RPC、Agent/Skill 与既有文档体系；重构统一证据源、G1–G6 判定、命令元数据及 DeepSeek Flash 上下文预算。详见 [重构与验证报告](docs/optimization/REFACTOR-REPORT.md) 与 [DeepSeek V4.1 Flash 适配说明](docs/optimization/DEEPSEEK-FLASH.md)。本版**尚未**真实 OpenCode/DeepSeek 端到端联调，不能作为性能提升的实测证明。CLI 需 Node ≥22.16。
+> **2.0.2 发布说明：** 本版统一 Agent 子会话、动态 Skill 推荐、上下文、证据/记忆、RPC/TUI 运行状态与初始化预检；不改变 DDD 目标、15 个命令或 33 个 Skills。`docs/optimization/V2.0.2-INTEGRATION-REPORT.md` 提供完整审查和回归证据，[2.0.2 迁移指南](docs/optimization/V2.0.2-MIGRATION.md) 给出升级步骤。
+> **诚实边界：** 官方 OpenCode SDK / DeepSeek Flash 的实机端到端验证仍需在真实宿主环境独立完成；本版不宣称已在真实模型上取得性能增益。
 
+
+> **2.0.1 Skills 优化**：新增 18 项语言/框架/数据库/工具技能；共 33 项，改用 `assets/skills-catalog.json` 注册与检测。详见 [Skills 改造报告](docs/optimization/V2.0.1-SKILLS-REPORT.md)。
+> 检查：`npm run skill-check`；在业务项目物化：`node scripts/materialize.mjs skills --root /path/to/project`（默认绝不覆盖同名自定义 Skill）。
+
+
+**v2.0.2 正式发布 · 2026-11-14**：延续用户上传的原版 1.0.8 源码及 2.0.1 项目重构，保留 15 个命令、12 个 Agent、Skills、RPC/TUI 与 Hermess 的“文档唯一权威”方法论。改变的是执行引擎、证据、门禁、并发事务和 DeepSeek Flash 上下文策略，而不是叠加新代理。详见 [2.0 功能补齐报告](docs/optimization/V2-COMPLETION-REPORT.md)、[历史重构报告](docs/optimization/V2-REFACTOR-REPORT.md) 与 [2.0.2 迁移指南](docs/optimization/V2.0.2-MIGRATION.md)。
+
+- **本包版本落点**：`package.json` 的 `version` 与 `docs/CHANGELOG.jsonl` 最新记录（均为 `2.0.2`/`v2.0.2`）；使用者侧第三处落点为你在 `opencode.json(c)` 的钉版声明（`@2.0.2` 或 `#v2.0.2`）。
 
 > **分区式设计驱动开发方法论** —— 文档为唯一权威，代码为其落地。
 > 一个可装入 [OpenCode](https://opencode.ai) 的插件包；装入后在**当前项目根**搭起设计文档骨架，其后按节点序列与门禁推进当前项目。
@@ -10,7 +19,7 @@
 
 - **产出的不是功能，而是环境**：一套可机械校验的设计驱动开发流程（设计树 / 测试树 / 变更流 / 门禁）。
 - **文档先行**：任何变更先改文档，再落地代码；落地结果可机械对账。
-- **零手动提示**：插件据上下文**自主注入**合适纪律，不必手敲 `@skill`；同时**机械守底线**，不靠模型自觉。
+- **按需技能**：插件自动识别项目并推荐相关 Skill ID，完整技能正文由 OpenCode 的 `skill` 工具按需读取；纪律由插件注入，底线机械执行。
 - **持久多步待办**：看板落盘、跨会话不丢，防「做一半丢一半」。
 
 ---
@@ -18,7 +27,7 @@
 ## 一、安装
 
 ### 前置
-- Node.js ≥ 22.16（`engines` 与 CLI 直接加载 TypeScript 所需）
+- Node.js ≥ **22.19.0**（与锁定依赖的最低版本一致；CLI 直接执行 TypeScript）
 - OpenCode v2.2.7 或更高（`opencode --version`）
 - 同一环境可用的模型（本方法论需模型驱动；见「模型」节）
 
@@ -34,10 +43,11 @@
 }
 ```
 
-### 方式 B：包（发布后）
+### 方式 B：包（已正式发布到 npm）
 ```bash
-opencode plugin add @cikaros/ddd-methodology@1.0.9
+opencode plugin add @cikaros/ddd-methodology@2.0.2
 ```
+> v2.0.2 已可作为发布版本使用；若你的环境尚未同步 npm 注册表，可先用方式 A（本地目录）或方式 C（钉到标签 `#v2.0.2`）。
 
 ### 方式 C：Git 仓库（无需发布到 npm）
 
@@ -48,16 +58,16 @@ OpenCode 支持 npm 兼容的 Git 规格（**hosted 简写 / HTTPS / SSH**），
 opencode plugin add github:Cikaros/ddd-methodology
 
 # ② 钉到标签（推荐：可复现）
-opencode plugin add github:Cikaros/ddd-methodology#v1.0.9
+opencode plugin add github:Cikaros/ddd-methodology#v2.0.2
 
 # ③ 钉到完整提交哈希（最稳：不受标签移动影响）
-#    取当前 v1.0.9 的提交哈希：
-#      git ls-remote https://github.com/Cikaros/ddd-methodology.git refs/tags/v1.0.9^{}
+#    取已发布 v2.0.2 的提交哈希：
+#      git ls-remote https://github.com/Cikaros/ddd-methodology.git refs/tags/v2.0.2^{}
 #    然后：
 opencode plugin add github:Cikaros/ddd-methodology#<完整提交哈希>
 
 # ④ SSH 形式（等价）
-opencode plugin add git+ssh://git@github.com/Cikaros/ddd-methodology.git#v1.0.9
+opencode plugin add git+ssh://git@github.com/Cikaros/ddd-methodology.git#v2.0.2
 ```
 
 也可不装进全局，而直接在**项目 `opencode.jsonc`** 里以 Git 规格声明：
@@ -66,12 +76,12 @@ opencode plugin add git+ssh://git@github.com/Cikaros/ddd-methodology.git#v1.0.9
 {
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
-    { "package": "github:Cikaros/ddd-methodology#v1.0.9", "options": { "profile": "standard" } }
+    { "package": "github:Cikaros/ddd-methodology#v2.0.2", "options": { "profile": "standard" } }
   ]
 }
 ```
 
-> **钉版建议**：用**标签**或**完整提交哈希**（`@1.0.9` 或 `#v1.0.9`/`#<sha>`）——精确版本与完整 commit 会保持钉住；未钉版的分支会被后台自动检查更新。
+> **钉版建议**：用**标签**或**完整提交哈希**（`@2.0.2` 或 `#v2.0.2`/`#<sha>`）——精确版本与完整 commit 会保持钉住；未钉版的分支会被后台自动检查更新。
 > **仓库子目录**：若插件在 monorepo 子目录，用 `::path:` 选择器，如 `github:acme/plugins#main::path:packages/opencode-plugin`。
 
 `plugins` 里可显式停用（`"-<id>"`）或按需装入；`options.profile` 取 `minimal` / `standard` / `strict`（预设套餐，见 `assets/profiles.json`）。
@@ -83,9 +93,56 @@ opencode plugin add git+ssh://git@github.com/Cikaros/ddd-methodology.git#v1.0.9
 opencode plugin list        # 应出现 ddd  local
 ```
 
-启动一次会话后，若看到模型上下文里出现 `[ddd:core]` 等注入行，即装入成功。
+建议在测试会话检查 `[ddd:runtime]` 是否只注入一次，并实际运行 `/ddd-init`、`/ddd-validate` 和一次 RPC 看板读取。单看上下文文本不足以证明宿主兼容。
 
 ---
+
+
+## 2.0.x 运行边界与新能力
+
+- **拆分式架构**：`src/index.ts` 只作为宿主入口；`src/runtime.ts` 注册 SDK；`command-dispatcher.ts` 派发；`context-service.ts` 控制注入；`gate-evaluator.ts` 统一 CLI 与 RPC 判据。
+- **可恢复执行生命周期**：`.ddd/state/workflows/<session-sha256>.json` 保存 prepared / dispatched / running / awaiting_verification / verified / failed / superseded；宿主成功仅代表**待验收**，验收需实际执行测试并绑定源码指纹。恢复时不会自动重放有副作用的命令。
+- **可用的 TUI 输入**：四问通过 `Ddd.intentCapture` RPC 保存到 `.ddd/state/intent-draft.json`（原始草稿，不冻结需求）。
+- **可靠看板**：共享读写器、严格事件重放、跨进程独占锁，`board.mjs replay --check` 不再边检查边覆盖。
+- **DeepSeek Flash 调度**：按模型、阶段与意图分配额外上下文预算，并筛选允许读取的项目证据片段；记忆按阶段与证据版本淘汰/降权。不会覆盖 API reasoning、temperature 或模型选择。
+- **发布前真实检查**：`validate.mjs --release` 要求 G1–G6 满足发布条件，还需运行检测到的 npm / Go / Rust / Python / Maven / Gradle 常规项目测试；验证中源码指纹变化则失败，没有可识别测试时显示 `unverified`。运行项目测试可能执行用户项目脚本，须先审查。
+
+```bash
+# 仅检查 G1–G6，不写报告
+node --experimental-strip-types scripts/validate.mjs --root . --check
+
+# 发布前校验：会实际执行项目 package.json 中的 npm test/typecheck/lint
+node --experimental-strip-types scripts/validate.mjs --root . --release
+
+# 离线对比已真实采集的同一批 OpenCode/DeepSeek 任务数据
+node scripts/eval.mjs --baseline baseline.jsonl --candidate v2.jsonl
+```
+
+跨会话草稿、检查点及不含原始提示词的运行指标放在 `.ddd/state/`（建议加入项目 `.gitignore`）；设计、需求、测试与验收权威仍在 `docs/`。详情见 [2.0 调整说明](docs/optimization/V2-REFACTOR-REPORT.md)。
+
+
+### 显式任务恢复与真实验收（2.0.2）
+
+```bash
+# 查看已有执行检查点：不会改变状态
+node --experimental-strip-types scripts/workflow.mjs status --root . --session <会话ID>
+
+# 只有真实执行完毕而宿主结束事件丢失时，由操作者确认“执行已经结束”
+node --experimental-strip-types scripts/workflow.mjs reconcile --root . --session <会话ID> --ack-execution
+
+# 执行识别到的真实项目测试（可能运行项目自定义脚本），只有测试通过才更新 verified
+node --experimental-strip-types scripts/workflow.mjs verify --root . --session <会话ID> --ack-run-tests
+
+# 执行确实中断时显式关闭；不会重放可能已运行的工具动作
+node --experimental-strip-types scripts/workflow.mjs close --root . --session <会话ID> --ack-close --reason "取消此次执行"
+
+# 查看实际观测到的指标；不完整的 Token 不会填零或导出为真实 A/B 数据
+node --experimental-strip-types scripts/workflow.mjs metrics --root . --session <会话ID> --export
+```
+
+TUI 可通过 `/ddd-tui-workflow` 查看会话检查点，确认后验收或关闭；RPC 提供 `workflow` / `workflowVerify` / `workflowClose`。原有 `/ddd-*` 命令保持不变。
+
+**模型实测边界：** 代码实现了指标采集与导出，但宿主实际是否提供用量事件、模型别名以及模型在真实任务中的改进幅度仍需 OpenCode + DeepSeek 联调。无法提供宿主所需事件时，该数据会保持缺失，不会把未测结果标为完成。
 
 ## 二、快速上手（三类场景）
 
@@ -112,7 +169,7 @@ opencode plugin list        # 应出现 ddd  local
 
 ## 三、命令一览
 
-命令是**稳定接口**；各节点的具体工作由子代理角色以子会话承担（上下文隔离，防漂移）。
+命令是**稳定接口**；默认在同会话执行，只有 review / validate / consolidate 尝试隔离子会话；失败时回退但必须可见。
 
 | 命令 | 用途 | 阻塞 |
 |---|---|---|
@@ -177,16 +234,19 @@ node scripts/map.mjs replay        # 图集重放（M9）
 node scripts/defects.mjs add ...   # 缺陷登记册唯一写入器（R36）
 node scripts/board.mjs list        # 看板唯一写入器（M7）
 node scripts/scaffold.mjs .        # 项目骨架生成器（/ddd-init 的机械承接）
-node scripts/materialize.mjs all . # 物化随包子代理角色到 .opencode/agents/
+node scripts/materialize.mjs all . # 物化角色和 Skills 到 .opencode/agents/ 与 .opencode/skills/
 ```
 
 开发本包时可用 npm 脚本：
 
 ```bash
-npm run typecheck   # tsc --noEmit
-npm test            # 等价于 node scripts/selftest.mjs .
-npm run validate
+npm run typecheck   # tsc --noEmit（官方 @opencode/plugin@2.2.7 类型下当前未通过，见 DEF-0018）
+npm test            # 自测 163 项 + 5 个回归套件共 81 例（当前 80 过 1 失败，见 DEF-0017）
+npm run check       # 设计树、变更流、图集、缺陷登记和反漂移校验
+npm run workflow -- status --session <OpenCode会话ID> --root <业务项目路径>
 ```
+
+> 上述两项失败已在 `docs/defects.jsonl` 登记（`DEF-0017`/`DEF-0018`），详见 [2.0.2 发布报告](docs/optimization/V2.0.2-INTEGRATION-REPORT.md) §4。
 
 ---
 
@@ -209,7 +269,7 @@ ddd-methodology/
 ├── src/            # server / tui / rpc 三 part + 共享纯函数层（lib/）
 ├── scripts/        # 随包机械件（离线自测、门禁、变更流、图集、看板、缺陷、快照、骨架、物化…）
 ├── assets/         # 配置基线的唯一权威（命令/门禁/规则/记忆/底线/角色工具/看板/套餐/切片/语言）
-├── skills/         # 随包技能（主技能 + 前端变体契约 + 语言族 + 开发工具）
+├── skills/         # 随包技能（33 个：方法论、语言、框架、数据库、开发工具）
 ├── agents/         # 随包子代理角色（mode: subagent）
 ├── docs/           # 本方法论自身的文档树（本仓既是包又是项目）
 ├── package.json

@@ -1,19 +1,5 @@
-# 测试运行器使用约定
+# 自动化测试
 
-## 各生态
+从项目脚本及已安装依赖确定 Runner：Node 的 Vitest/Jest；Web E2E 的 Playwright/Cypress；Python pytest；Java JUnit、Mockito、WireMock、Testcontainers；Go go test；Rust cargo test；.NET dotnet test；API 契约 Pact；压力测试 k6。先最小相关测试，再全量回归。记录命令、退出码、关键失败、项目版本，不接受“AI 看起来没问题”作为验收。对 E2E 避免固定 sleep 与共享账户导致的假不稳定。
 
-- **vitest**（前端/TS）：`npx vitest run`；单文件 `npx vitest run path`。
-- **jest**：`npx jest`；单文件 `npx jest path`。
-- **pytest**：`python -m pytest -q`；单测 `pytest path::test_name`。
-- **junit**（Java）：`mvn -q test` 或 `./gradlew test`；单测 `-Dtest=Name`。
-- **node:test**（本仓无模型自测）：`node --test "test/**/*.test.js"`。
-
-## 失败定位
-
-- 先看\*\*首个失败\*\*与断言差异，不追末端连锁失败。
-- 区分「**未落地**」（用例尚未实现，报“待落地”）与「**缺陷**」（实现错）——两个读数。
-
-## 纪律
-
-- 测试以 `node`/语言运行时**具名启动**，不得以宿主进程身份启动（§8.7）。
-- 测试运行器失败即门禁 `block`（G5 / §十二），带 remedy。
+- 参考 https://playwright.dev/docs/intro ; https://docs.pytest.org/ ; https://testcontainers.com/ ; https://grafana.com/docs/k6/latest/

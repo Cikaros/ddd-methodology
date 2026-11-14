@@ -39,3 +39,7 @@ router 据此判定检测到的语言 → 注入切片；dev-tools 据此关联�
 ## 已知约束
 
 - **单点权威**：语言清单与基线来源只在此件；族设计件与技能正文引用不复写。
+
+## 2.0.1 修订
+
+该文件现在是 `assets/skills-catalog.json` 的**自动生成兼容投影**，不再是唯一权威。`vue` 与 `android` 在目录中分别归为 framework 与 platform，保留其旧 Skill ID；严格语言条目由目录 category=language 生成。禁止手改投影，运行 `npm run skill-sync` 同步。

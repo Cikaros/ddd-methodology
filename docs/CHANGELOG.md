@@ -121,34 +121,42 @@
 - 怎么算做对：UT-scripts-selftest-03/04 通过；selftest 全过；npm run release 全绿；工作区派生件一致
 - 涉及：package-lock.json, scripts/selftest.mjs, docs/ddd/scripts/UNIT-TESTS-selftest.md
 
-## v1.0.9 · CHG-0016 · feat
+## v2.0.0 · CHG-0016 · refactor
 
-- 时间：2026-11-14T14:33:15.163Z
-- 为什么做：统一证据源与门禁判定：原 G1–G6 存在硬编码（未决数 0、架构只判标题存在、G5 的 schemaValid/whitelisted 写死 true、G6 版本只读 2 处、看板用可执行投影漏算 blocked）。改为单一采集器 evidence.mjs 从实物读取，snapshot/validate/RPC 共用同一解析与判定；JSONL 严格解析（行号/长度/对象契约，损坏不再吞成空）；G6 增缺陷登记册读数并以 projectAll 统计全部未归档任务。
-- 本次不做：不改门禁编号与命令语义；不以静态扫描冒充业务语义的形式化验证；不引入运行时依赖；不改 assets 中阈值取值。
-- 怎么算做对：UT-evidence-001/002/003 通过；npm run release 全绿；tests/refactor.test.mjs 18 项反例通过（空章节、未落地、符号链接、损坏 JSONL、blocked 看板、版本钉版漂移均被拦下）；snapshot --check 与 validate 读数一致。
-- 涉及：src/lib/evidence.mjs, src/lib/evidence.d.mts, src/lib/gates.ts, scripts/validate.mjs, scripts/snapshot.mjs, src/index.ts, tests/refactor.test.mjs, docs/ddd/src/lib/DESIGN-evidence.md, docs/ddd/src/lib/DESIGN-evidence.d.md
+- 时间：2026-11-14T15:00:00.000Z
+- 为什么做：2.0.0 原版源代码架构性重构：拆解入口、单一门禁执行器、看板事务与严格事件重放、显式派发检查点、输入持久草稿、阶段化 Flash 上下文、发布可执行验证与成对评测
+- 本次不做：不改变 Hermess 文档先行的方法论；不注入模型隐藏推理参数；当前环境未完成真实 OpenCode+DeepSeek API 端到端 A/B
+- 怎么算做对：163 旧版离线断言 + 18 既有回归 + 15 新增 2.0 测试通过；typecheck/check 全绿；真实模型基准测试另需用户宿主及 API 凭据
+- 涉及：src/index.ts, src/runtime.ts, src/lib/command-dispatcher.ts, src/lib/context-service.ts, src/lib/board-store.mjs, src/lib/workflow-store.mjs, src/lib/gate-evaluator.ts, src/lib/executable-verifier.mjs, scripts/board.mjs, scripts/validate.mjs, docs/ddd/src/DESIGN-index.md, docs/optimization/V2-REFACTOR-REPORT.md
 
-## v1.0.9 · CHG-0017 · feat
+## v2.0.0 · CHG-0017 · refactor
 
-- 时间：2026-11-14T14:33:15.201Z
-- 为什么做：DeepSeek V4.1 Flash 上下文预算适配：把每请求多条无上限的注入（切片/看板/记忆）改为单条 composeContext 预算内状态（Flash 1000 字符、其他 1700，可经 options.contextBudgetChars 覆盖），优先保留证据错误，项目文件内容按数据处理；不改温度、推理参数、工具协议与模型选择。
-- 本次不做：不自动改选模型、不劫持宿主推理协议、不改写提供商密钥；不声称可观测的准确度/时延增益（尚无基准对照）。
-- 怎么算做对：UT-model-policy-001/002/003 通过；tests/refactor.test.mjs 的 Flash 识别与预算截断用例通过；typecheck 0 错。
-- 涉及：src/lib/model-policy.ts, src/index.ts, docs/ddd/src/lib/DESIGN-model-policy.md, docs/optimization/DEEPSEEK-FLASH.md, docs/optimization/REFACTOR-REPORT.md
+- 时间：2026-11-14T15:39:20.843Z
+- 为什么做：收口 2.0.0 既定计划：模型执行事件至真实测试验收闭环、恢复、记忆衰减、动态证据、统一锁与多语言测试
+- 本次不做：不新增 Agent/命令目标，不改变文档先行的方法论，不在无真实 SDK/API 的环境声称生产验收通过
+- 怎么算做对：老版 163 项+两轮回归全通过，设计/测试树零缺口，宿主执行成功不等于已验收，只有真实测试通过有证据指纹
+- 涉及：src/runtime.ts, src/lib/workflow-controller.ts, src/lib/memory-store.mjs, src/lib/trace-store.mjs, src/lib/file-lock.mjs, scripts/workflow.mjs, docs/optimization/V2-COMPLETION-REPORT.md
 
-## v1.0.9 · CHG-0018 · fix
+## v2.0.1 · CHG-0018 · refactor
 
-- 时间：2026-11-14T14:33:15.238Z
-- 为什么做：去第二份命令角色映射：原先 COMMAND_ROLE 与 assets/commands.json 各自维护命令→角色/确认/派发，属复写；现以 assets/commands.json 为唯一权威，registry.ts 校验投影，派发与阻塞统一从注册表读取。同时把 board 拆为 projectAll（全量未归档，供 G6）与 project（可执行投影，供 UI）。
-- 本次不做：不改命令名/参数/门禁语义；不改角色清单与派发策略。
-- 怎么算做对：drift-check 的 commands 对账零差异；selftest 全过；registry 对非法/重复命令抛错被反例覆盖。
-- 涉及：assets/commands.json, src/lib/registry.ts, src/lib/board.ts, src/index.ts, docs/ddd/src/lib/DESIGN-registry.md, docs/ddd/src/lib/DESIGN-board.md
+- 时间：2026-11-14T16:11:08.586Z
+- 为什么做：重构 Skills 单点权威、项目检测与按需加载机制；补齐已规划的 6 门语言、5 个框架、3 类数据库及 4 类工具，避免机械重复映射和上下文常驻
+- 本次不做：不扩增原 15 个 DDD 命令及 12 个 Agents；不宣称已完成真实 OpenCode/DeepSeek 模型联调
+- 怎么算做对：33 个技能完整、16 语言投影同步；npm run skill-check、回归测试、目录物化及冲突安全测试通过
+- 涉及：assets/skills-catalog.json, src/lib/skill-router.ts, src/lib/registry.ts, scripts/materialize.mjs, scripts/skills-sync.mjs, docs/optimization/V2.0.1-SKILLS-REPORT.md
 
-## v1.0.9 · CHG-0019 · fix
+## v2.0.2 · CHG-0019 · refactor
 
-- 时间：2026-11-14T14:33:15.275Z
-- 为什么做：环境与发布一致性：CLI 直接加载 TypeScript 需 Node >=22.16，engines 与 README 前置由 >=20 校正为 >=22.16，npm scripts 与嵌套测试统一加 --experimental-strip-types；validate 增 --release/--check，README 与文档同步版本号至 1.0.9。
-- 本次不做：不改 OpenCode 宿主自身的 TS 加载机制；不改发布流程的步骤次序。
-- 怎么算做对：Node22 下 npm test / npm run check / npm run release 全绿；README 无残留 1.0.8 钉版。
-- 涉及：package.json, package-lock.json, scripts/selftest.mjs, README.md, docs/ddd/scripts/DESIGN-validate.md, docs/ddd/scripts/DESIGN-snapshot.md
+- 时间：2026-11-14T16:30:00.000Z
+- 为什么做：2.0.2 全局一致性重构：技能与角色执行链贯通、持久化子会话归属、统一 RPC/TUI 视图、证据与记忆版本一致、安装全局预检
+- 本次不做：不新增业务命令、不干预 DeepSeek 推理协议、不宣称未经实测的 SDK 或模型性能表现
+- 怎么算做对：原有测试及 2.0.2 跨模块回归全部通过，Skills/Agents 安装不发生部分写入，检验与版本清单一致
+- 涉及：src/lib/session-overview.ts, src/lib/skill-plan.ts, src/lib/session-links.mjs, src/lib/context-service.ts, src/lib/workflow-controller.ts, scripts/materialize.mjs, docs/optimization/V2.0.2-INTEGRATION-REPORT.md
+
+## v2.0.2 · CHG-0020 · docs
+
+- 时间：2026-11-14T17:03:00.311Z
+- 为什么做：按 v2.0.2 正式发布口径更新文档：README 与 2.0.2 报告由「离线集成候选(Release Candidate)」提升为正式发布版，去掉「此 ZIP 非官方版本」措辞；补发布复核实测读数(selftest 163/163、回归 81 例 80 过 1 失败、typecheck 未过)；登记两处失败为缺陷 DEF-0017/DEF-0018。不修改代码/agents/skills
+- 本次不做：不改任何 src/**、scripts/**、agents/**、skills/** 代码或资产；不宣称已通过真实 OpenCode/DeepSeek 端到端验证；不生成 git tag
+- 怎么算做对：README 与优化报告无「候选/RC/此 ZIP 非官方版本」表述且版本引用一致为 v2.0.2；docs/defects.jsonl 含 DEF-0017/0018；npm run check 全绿且 changelog 最新版本=v2.0.2
+- 涉及：README.md, docs/optimization/V2.0.2-INTEGRATION-REPORT.md, docs/optimization/V2.0.2-MIGRATION.md, docs/defects.jsonl

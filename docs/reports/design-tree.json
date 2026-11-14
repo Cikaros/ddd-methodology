@@ -1,5 +1,5 @@
 {
-  "ts": "2026-11-14T14:01:51.544Z",
+  "ts": "2026-11-14T16:33:51.090Z",
   "designs": [
     {
       "path": "docs/ddd/DESIGN.md",
@@ -131,6 +131,14 @@
       "depends": "[src/index.ts]"
     },
     {
+      "path": "docs/ddd/assets/DESIGN-skills-catalog.md",
+      "level": "file",
+      "target": "assets/skills-catalog.json",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[assets-skills-catalog-json, src-lib-registry-ts, scripts-skills-sync-mjs]"
+    },
+    {
       "path": "docs/ddd/assets/DESIGN-variant-contract-schema.md",
       "level": "file",
       "target": "assets/variant-contract-schema.json",
@@ -182,6 +190,14 @@
       "depends": "[assets/commands.json, src/lib/registry.ts]"
     },
     {
+      "path": "docs/ddd/scripts/DESIGN-eval.md",
+      "level": "file",
+      "target": "scripts/eval.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[--baseline/--candidate]"
+    },
+    {
       "path": "docs/ddd/scripts/DESIGN-map.md",
       "level": "file",
       "target": "scripts/map.mjs",
@@ -227,6 +243,14 @@
       "depends": "[src/index.ts, src/lib/registry.ts]"
     },
     {
+      "path": "docs/ddd/scripts/DESIGN-skills-sync.md",
+      "level": "file",
+      "target": "scripts/skills-sync.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[assets-skills-catalog-json, assets-languages-json, skills---]"
+    },
+    {
       "path": "docs/ddd/scripts/DESIGN-snapshot.md",
       "level": "file",
       "target": "scripts/snapshot.mjs",
@@ -243,6 +267,14 @@
       "landed": "true",
       "covers": "[gate-reader]",
       "depends": "[src/lib/gates.ts, scripts/snapshot.mjs, scripts/change.mjs]"
+    },
+    {
+      "path": "docs/ddd/scripts/DESIGN-workflow.md",
+      "level": "file",
+      "target": "scripts/workflow.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[status, verify, reconcile, close, metrics, intervention]"
     },
     {
       "path": "docs/ddd/scripts/DESIGN.md",
@@ -401,8 +433,8 @@
       "target": "src/index.ts",
       "status": "frozen",
       "landed": "true",
-      "covers": "[Plugin.define, setup]",
-      "depends": "[src/lib/registry.ts, src/lib/paths.ts, src/rpc.ts]"
+      "covers": "[Plugin.define, setupRuntime]",
+      "depends": "[src/runtime.ts]"
     },
     {
       "path": "docs/ddd/src/DESIGN-rpc.md",
@@ -411,6 +443,14 @@
       "status": "frozen",
       "landed": "true",
       "covers": "[Rpc.define, Ddd]"
+    },
+    {
+      "path": "docs/ddd/src/DESIGN-runtime.md",
+      "level": "file",
+      "target": "src/runtime.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[setupRuntime(ctx)]"
     },
     {
       "path": "docs/ddd/src/DESIGN-tui.md",
@@ -429,6 +469,30 @@
       "landed": "true"
     },
     {
+      "path": "docs/ddd/src/lib/DESIGN-agent-handoff.md",
+      "level": "file",
+      "target": "src/lib/agent-handoff.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[buildHandoff]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-board-store.d.md",
+      "level": "file",
+      "target": "src/lib/board-store.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[readBoardRows, withBoardLock]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-board-store.md",
+      "level": "file",
+      "target": "src/lib/board-store.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[readBoardRows, withBoardLock, appendBoardRow, writeBoardView]"
+    },
+    {
       "path": "docs/ddd/src/lib/DESIGN-board.md",
       "level": "file",
       "target": "src/lib/board.ts",
@@ -436,6 +500,46 @@
       "landed": "true",
       "covers": "[BoardRow, project, canTransition, admit, detectOrphans]",
       "depends": "[assets/board.json]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-command-dispatcher.md",
+      "level": "file",
+      "target": "src/lib/command-dispatcher.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[makeHandler(name,ctx,slices)]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-context-service.md",
+      "level": "file",
+      "target": "src/lib/context-service.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[createContextHook(ctx,config), CORE_DISCIPLINE, foldMemory]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-diagnostics.md",
+      "level": "file",
+      "target": "src/lib/diagnostics.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[Diagnostics, diagnosticMessage]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-evidence-retrieval.d.md",
+      "level": "file",
+      "target": "src/lib/evidence-retrieval.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[selectEvidence, EvidenceSnippet]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-evidence-retrieval.md",
+      "level": "file",
+      "target": "src/lib/evidence-retrieval.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[selectEvidence]"
     },
     {
       "path": "docs/ddd/src/lib/DESIGN-evidence.d.md",
@@ -454,6 +558,46 @@
       "covers": "[collectProjectEvidence, scanDesignTree, readJsonlStrict, EvidenceError]"
     },
     {
+      "path": "docs/ddd/src/lib/DESIGN-executable-verifier.d.md",
+      "level": "file",
+      "target": "src/lib/executable-verifier.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[verifyExecutable, fingerprint]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-executable-verifier.md",
+      "level": "file",
+      "target": "src/lib/executable-verifier.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[verifyExecutable, fingerprint]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-file-lock.d.md",
+      "level": "file",
+      "target": "src/lib/file-lock.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[withFileLock<T>]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-file-lock.md",
+      "level": "file",
+      "target": "src/lib/file-lock.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[withFileLock]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-gate-evaluator.md",
+      "level": "file",
+      "target": "src/lib/gate-evaluator.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[evaluateProject]"
+    },
+    {
       "path": "docs/ddd/src/lib/DESIGN-gates.md",
       "level": "file",
       "target": "src/lib/gates.ts",
@@ -468,6 +612,62 @@
       "status": "frozen",
       "landed": "true",
       "covers": "[evaluateBottomLines, BottomLine, Enforcement]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-intent-store.d.md",
+      "level": "file",
+      "target": "src/lib/intent-store.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[saveIntentDraft]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-intent-store.md",
+      "level": "file",
+      "target": "src/lib/intent-store.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[saveIntentDraft]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-jsonl.d.md",
+      "level": "file",
+      "target": "src/lib/jsonl.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[readJsonlStrict, EvidenceError]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-jsonl.md",
+      "level": "file",
+      "target": "src/lib/jsonl.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[readJsonlStrict, EvidenceError]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-memory-policy.md",
+      "level": "file",
+      "target": "src/lib/memory-policy.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[selectApplicableMemory]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-memory-store.d.md",
+      "level": "file",
+      "target": "src/lib/memory-store.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[foldMemoryRows, recordMemoryHit, recordSessionDecay]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-memory-store.md",
+      "level": "file",
+      "target": "src/lib/memory-store.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[foldMemoryRows, readMemoryRows, recordMemoryHit, recordSessionDecay]"
     },
     {
       "path": "docs/ddd/src/lib/DESIGN-memory.md",
@@ -520,6 +720,27 @@
       "covers": "[routeSlices, detectIntent, Phase]"
     },
     {
+      "path": "docs/ddd/src/lib/DESIGN-session-links.d.md",
+      "level": "file",
+      "target": "src/lib/session-links.d.mts",
+      "status": "frozen",
+      "landed": "true"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-session-links.md",
+      "level": "file",
+      "target": "src/lib/session-links.mjs",
+      "status": "frozen",
+      "landed": "true"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-session-overview.md",
+      "level": "file",
+      "target": "src/lib/session-overview.ts",
+      "status": "frozen",
+      "landed": "true"
+    },
+    {
       "path": "docs/ddd/src/lib/DESIGN-shell-encoding.md",
       "level": "file",
       "target": "src/lib/shell-encoding.ts",
@@ -529,11 +750,81 @@
       "depends": "[assets/commands.json]"
     },
     {
+      "path": "docs/ddd/src/lib/DESIGN-skill-plan.md",
+      "level": "file",
+      "target": "src/lib/skill-plan.ts",
+      "status": "frozen",
+      "landed": "true"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-skill-router.md",
+      "level": "file",
+      "target": "src/lib/skill-router.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[assets-skills-catalog-json, src-lib-registry-ts, src-lib-context-service-ts]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-trace-store.d.md",
+      "level": "file",
+      "target": "src/lib/trace-store.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[SessionTrace, recordTrace, exportEval]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-trace-store.md",
+      "level": "file",
+      "target": "src/lib/trace-store.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[recordTrace, readTrace, exportEval]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-workflow-controller.md",
+      "level": "file",
+      "target": "src/lib/workflow-controller.ts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[WorkflowController, sessionOfEvent]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-workflow-store.d.md",
+      "level": "file",
+      "target": "src/lib/workflow-store.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[WorkflowReceipt, WorkflowCheckpoint]"
+    },
+    {
+      "path": "docs/ddd/src/lib/DESIGN-workflow-store.md",
+      "level": "file",
+      "target": "src/lib/workflow-store.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[checkpointPath, readCheckpoint, recordDispatch, resumeHint]"
+    },
+    {
       "path": "docs/ddd/src/lib/DESIGN.md",
       "level": "group",
       "target": "src/lib",
       "status": "frozen",
       "landed": "true"
+    },
+    {
+      "path": "docs/ddd/tests/DESIGN-integration202.test.md",
+      "level": "file",
+      "target": "tests/integration202.test.mjs",
+      "status": "frozen",
+      "landed": "true"
+    },
+    {
+      "path": "docs/ddd/tests/DESIGN-rc.test.md",
+      "level": "file",
+      "target": "tests/rc.test.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[node --experimental-strip-types --test tests/rc.test.mjs]"
     },
     {
       "path": "docs/ddd/tests/DESIGN-refactor.test.md",
@@ -542,6 +833,22 @@
       "status": "frozen",
       "landed": "true",
       "covers": "[refactor-test]"
+    },
+    {
+      "path": "docs/ddd/tests/DESIGN-skills201.test.md",
+      "level": "file",
+      "target": "tests/skills201.test.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[src-lib-skill-router-ts, scripts-materialize-mjs, scripts-skills-sync-mjs]"
+    },
+    {
+      "path": "docs/ddd/tests/DESIGN-v2.test.md",
+      "level": "file",
+      "target": "tests/v2.test.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "covers": "[node --test tests/v2.test.mjs]"
     }
   ],
   "tests": [
@@ -719,6 +1026,17 @@
       ]
     },
     {
+      "path": "docs/ddd/assets/UNIT-TESTS-skills-catalog.md",
+      "target": "assets/skills-catalog.json",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-SK201-skills-catalog-01",
+        "UT-SK201-skills-catalog-02",
+        "UT-SK201-skills-catalog-03"
+      ]
+    },
+    {
       "path": "docs/ddd/assets/UNIT-TESTS-variant-contract-schema.md",
       "target": "assets/variant-contract-schema.json",
       "status": "frozen",
@@ -791,6 +1109,16 @@
       ]
     },
     {
+      "path": "docs/ddd/scripts/UNIT-TESTS-eval.md",
+      "target": "scripts/eval.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-eval-001",
+        "UT-eval-002"
+      ]
+    },
+    {
       "path": "docs/ddd/scripts/UNIT-TESTS-map.md",
       "target": "scripts/map.mjs",
       "status": "frozen",
@@ -853,6 +1181,17 @@
       ]
     },
     {
+      "path": "docs/ddd/scripts/UNIT-TESTS-skills-sync.md",
+      "target": "scripts/skills-sync.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-SK201-skills-sync-01",
+        "UT-SK201-skills-sync-02",
+        "UT-SK201-skills-sync-03"
+      ]
+    },
+    {
       "path": "docs/ddd/scripts/UNIT-TESTS-snapshot.md",
       "target": "scripts/snapshot.mjs",
       "status": "frozen",
@@ -875,6 +1214,16 @@
         "UT-scripts-validate-03",
         "UT-scripts-validate-04",
         "UT-scripts-validate-05"
+      ]
+    },
+    {
+      "path": "docs/ddd/scripts/UNIT-TESTS-workflow.md",
+      "target": "scripts/workflow.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-workflow-rc-001",
+        "UT-workflow-rc-002"
       ]
     },
     {
@@ -1093,6 +1442,16 @@
       ]
     },
     {
+      "path": "docs/ddd/src/UNIT-TESTS-runtime.md",
+      "target": "src/runtime.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-runtime-001",
+        "UT-runtime-002"
+      ]
+    },
+    {
       "path": "docs/ddd/src/UNIT-TESTS-tui.md",
       "target": "src/tui.tsx",
       "status": "frozen",
@@ -1117,6 +1476,36 @@
       ]
     },
     {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-agent-handoff.md",
+      "target": "src/lib/agent-handoff.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-agent-handoff-rc-001",
+        "UT-agent-handoff-rc-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-board-store.d.md",
+      "target": "src/lib/board-store.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-board-store-d-001",
+        "UT-board-store-d-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-board-store.md",
+      "target": "src/lib/board-store.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-board-store-001",
+        "UT-board-store-002"
+      ]
+    },
+    {
       "path": "docs/ddd/src/lib/UNIT-TESTS-board.md",
       "target": "src/lib/board.ts",
       "status": "frozen",
@@ -1129,6 +1518,56 @@
         "UT-src-lib-board-05",
         "UT-src-lib-board-06",
         "UT-src-lib-board-07"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-command-dispatcher.md",
+      "target": "src/lib/command-dispatcher.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-command-dispatcher-001",
+        "UT-command-dispatcher-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-context-service.md",
+      "target": "src/lib/context-service.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-context-service-001",
+        "UT-context-service-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-diagnostics.md",
+      "target": "src/lib/diagnostics.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-diagnostics-001",
+        "UT-diagnostics-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-evidence-retrieval.d.md",
+      "target": "src/lib/evidence-retrieval.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-evidence-retrieval-d-rc-001",
+        "UT-evidence-retrieval-d-rc-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-evidence-retrieval.md",
+      "target": "src/lib/evidence-retrieval.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-evidence-retrieval-rc-001",
+        "UT-evidence-retrieval-rc-002"
       ]
     },
     {
@@ -1147,6 +1586,56 @@
         "UT-evidence-001",
         "UT-evidence-002",
         "UT-evidence-003"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-executable-verifier.d.md",
+      "target": "src/lib/executable-verifier.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-executable-verifier-d-001",
+        "UT-executable-verifier-d-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-executable-verifier.md",
+      "target": "src/lib/executable-verifier.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-executable-verifier-001",
+        "UT-executable-verifier-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-file-lock.d.md",
+      "target": "src/lib/file-lock.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-file-lock-d-rc-001",
+        "UT-file-lock-d-rc-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-file-lock.md",
+      "target": "src/lib/file-lock.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-file-lock-rc-001",
+        "UT-file-lock-rc-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-gate-evaluator.md",
+      "target": "src/lib/gate-evaluator.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-gate-evaluator-001",
+        "UT-gate-evaluator-002"
       ]
     },
     {
@@ -1169,6 +1658,76 @@
         "UT-src-lib-guard-01",
         "UT-src-lib-guard-02",
         "UT-src-lib-guard-03"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-intent-store.d.md",
+      "target": "src/lib/intent-store.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-intent-store-d-001",
+        "UT-intent-store-d-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-intent-store.md",
+      "target": "src/lib/intent-store.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-intent-store-001",
+        "UT-intent-store-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-jsonl.d.md",
+      "target": "src/lib/jsonl.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-jsonl-d-001",
+        "UT-jsonl-d-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-jsonl.md",
+      "target": "src/lib/jsonl.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-jsonl-001",
+        "UT-jsonl-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-memory-policy.md",
+      "target": "src/lib/memory-policy.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-memory-policy-rc-001",
+        "UT-memory-policy-rc-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-memory-store.d.md",
+      "target": "src/lib/memory-store.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-memory-store-d-rc-001",
+        "UT-memory-store-d-rc-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-memory-store.md",
+      "target": "src/lib/memory-store.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-memory-store-rc-001",
+        "UT-memory-store-rc-002"
       ]
     },
     {
@@ -1245,6 +1804,27 @@
       ]
     },
     {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-session-links.d.md",
+      "target": "src/lib/session-links.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": []
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-session-links.md",
+      "target": "src/lib/session-links.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": []
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-session-overview.md",
+      "target": "src/lib/session-overview.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": []
+    },
+    {
       "path": "docs/ddd/src/lib/UNIT-TESTS-shell-encoding.md",
       "target": "src/lib/shell-encoding.ts",
       "status": "frozen",
@@ -1259,20 +1839,126 @@
       ]
     },
     {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-skill-plan.md",
+      "target": "src/lib/skill-plan.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": []
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-skill-router.md",
+      "target": "src/lib/skill-router.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-SK201-skill-router-01",
+        "UT-SK201-skill-router-02",
+        "UT-SK201-skill-router-03"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-trace-store.d.md",
+      "target": "src/lib/trace-store.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-trace-store-d-rc-001",
+        "UT-trace-store-d-rc-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-trace-store.md",
+      "target": "src/lib/trace-store.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-trace-store-rc-001",
+        "UT-trace-store-rc-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-workflow-controller.md",
+      "target": "src/lib/workflow-controller.ts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-workflow-controller-rc-001",
+        "UT-workflow-controller-rc-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-workflow-store.d.md",
+      "target": "src/lib/workflow-store.d.mts",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-workflow-store-d-001",
+        "UT-workflow-store-d-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/src/lib/UNIT-TESTS-workflow-store.md",
+      "target": "src/lib/workflow-store.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-workflow-store-001",
+        "UT-workflow-store-002"
+      ]
+    },
+    {
+      "path": "docs/ddd/tests/UNIT-TESTS-integration202.test.md",
+      "target": "tests/integration202.test.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": []
+    },
+    {
+      "path": "docs/ddd/tests/UNIT-TESTS-rc.test.md",
+      "target": "tests/rc.test.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-rc-test-rc-001",
+        "UT-rc-test-rc-002"
+      ]
+    },
+    {
       "path": "docs/ddd/tests/UNIT-TESTS-refactor.test.md",
       "target": "tests/refactor.test.mjs",
       "status": "frozen",
       "landed": "true",
       "ids": []
+    },
+    {
+      "path": "docs/ddd/tests/UNIT-TESTS-skills201.test.md",
+      "target": "tests/skills201.test.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-SK201-skills201-01",
+        "UT-SK201-skills201-02",
+        "UT-SK201-skills201-03"
+      ]
+    },
+    {
+      "path": "docs/ddd/tests/UNIT-TESTS-v2.test.md",
+      "target": "tests/v2.test.mjs",
+      "status": "frozen",
+      "landed": "true",
+      "ids": [
+        "UT-v2-test-001",
+        "UT-v2-test-002"
+      ]
     }
   ],
   "counts": {
-    "design": 65,
-    "test": 65,
-    "ids": 202,
+    "design": 104,
+    "test": 104,
+    "ids": 274,
     "byLevel": {
       "subproject": 1,
-      "file": 50,
+      "file": 89,
       "module": 5,
       "group": 9
     }
